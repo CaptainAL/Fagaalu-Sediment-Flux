@@ -1,0 +1,3 @@
+Width entrance: 9 ft
+Width exit: 5 ft
+height: 1.5 ft

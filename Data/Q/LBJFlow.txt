@@ -1,0 +1,280 @@
+Location	Date	Time 
+LBJ	1/7/2012	1045
+Field Measurements		
+Dist(N to S)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+0.492125984	20	0.03
+0.984251969	17	0.1
+1.312335958	19.5	0.17
+1.640419948	15	0.24
+1.968503937	16	0.27
+2.296587927	19	0.28
+2.624671916	16	0.28
+2.952755906	14	0.25
+3.280839895	11	0.27
+3.608923885	9	0.37
+3.937007874	13	0.13
+4.265091864	9	0
+4.593175853	6	0
+4.921259843	0	0
+		
+Location	Date	Time 
+LBJ	1/19/2012	958
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	9	0.03
+2	12	0.09
+3	18	0.21
+4	21	0.47
+5	28	0.53
+6	27	0.44
+7	24	0.04
+8	3	0
+9	4	0
+10	0	0
+		
+Location	Date	Time 
+LBJ	1/19/2012	1424
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	5	0
+2	16	0.11
+3	22	0.13
+4	25	0.37
+5	31	0.31
+6	29	0.62
+7	29	0.29
+8	12	0.06
+9	8	0.02
+10	13	0
+11	0	0
+		
+Location	Date	Time 
+LBJ	1/19/2012	1649
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	22	0.26
+2	22	0.48
+3	30	0.68
+4	40	0.83
+5	36	1.14
+6	37	0.57
+7	16	0.15
+8	14	0.03
+9	8	0.03
+10	1	0
+		
+Location	Date	Time 
+LBJ	1/20/2012	1231
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	11	0.02
+2	12	0.05
+3	9	0.15
+4	24	0.23
+5	24	0.29
+6	22	0.24
+7	20	0.14
+8	1	0
+9	0	0
+10	0	0
+		
+Location	Date	Time 
+LBJ	1/25/2012	1320
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	17	0.17
+2	29	0.22
+3	26	0.66
+4	39	0.7
+5	39	0.87
+6	36	0.45
+7	15	0.17
+8	15	0.02
+9	16	0
+10	0	0
+		
+Location	Date	Time 
+LBJ	1/25/2012	1329
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	16	0.14
+2	20	0.31
+3	26	0.78
+4	39	0.97
+5	38	1.02
+6	36	0.55
+7	15	0.33
+8	16	0.05
+9	16	0
+10	0	0
+		
+Location	Date	Time 
+LBJ	1/25/2012	1836
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	10	0.06
+2	20	0.11
+3	25	0.19
+4	20	0.84
+5	22	0.77
+6	12	0.52
+7	22	0.09
+8	6	0.03
+9	0	0
+10	0	0
+		
+Location	Date	Time 
+LBJ	3/21/2012	1403
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	0	0
+2	12	0
+2.5	22	0.01
+3	24	0.26
+3.5	25	0.34
+4	32	0.35
+4.5	35	0.71
+5	33	1
+5.5	28	0.37
+6	20	0.08
+6.5	20	0.02
+7	5	0
+	
+Location	Date	Time 
+LBJ	3/21/2012	1423
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	0	0
+2	12	0
+2.5	24	0.03
+3	25	0.27
+3.5	26	0.32
+4	32	0.31
+4.5	34	0.77
+5	32	0.8
+5.5	28	0.42
+6	14	0.06
+6.5	10	0
+7	9	0
+		
+Location	Date	Time 
+LBJ	3/21/2012	1445
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	0	0
+2	12	0
+2.5	24	0.03
+3	23	0.28
+3.5	23	0.29
+4	31	0.25
+4.5	33	0.63
+5	31	0.7
+5.5	15	0.29
+6	12	0.06
+6.5	12	0
+7	9	0
+
+Location	Date	Time 
+LBJ	4/17/2013	810
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	17	0.06
+2	24	0.36
+4	26	0.33
+6	20	0.56
+8	12	0.69
+10	12	0.7
+12	14	0.44
+14	16	0.75
+16	12	0.29
+
+Location	Date	Time 
+LBJ	4/17/2013	815
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	24	0.21
+2	29	0.47
+4	22	0.5
+6	22	0.44
+8	22	0.44
+10	18	0.34
+12	14	0.38
+14	14	0.22
+16	10	0.05
+
+Location	Date	Time 
+LBJ	4/18/2013	1600
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	0	0
+1	6	0.39
+2	14	0.25
+3	14	0.24
+4	19	0.06
+5	20	0.32
+6	12	0.47
+7	10	0.26
+8	10	0.33
+9	4	0.2
+10	8	0.13
+11	7	0.02
+12	2	0.45
+13	5	0
+14	0	0
+15	0	0
+16	0	0
+
+Location	Date	Time 
+LBJ	4/23/2013	1815
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	34	0.19
+1	38	0.46
+2	40	0.52
+3	38	0.65
+4	40	0.98
+5	40	0.78
+6	36	0.82
+7	38	1
+8	36	1.35
+9	30	1.4
+10	30	1.5
+11	32	1.45
+12	38	1.01
+13	34	0.89
+14	26	1.3
+15	22	0.85
+16	22	0.5
+
+Location	Date	Time 
+LBJ	4/30/2013	1655
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	26	0.08
+1	30	0.22
+2	32	0.35
+3	30	0.6
+4	30	0.52
+5	28	0.47
+6	30	0.61
+7	26	1.08
+8	22	1.36
+9	22	1.11
+10	10	1.09
+11	22	0.82
+12	24	0.31
+13	24	1.01
+14	16	0.41
+15	20	0.82
+16	14	0.5

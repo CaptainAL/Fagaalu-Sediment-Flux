@@ -1,0 +1,15 @@
+Location	Date	Time 
+Dam	4/17/2013	850
+Field Measurements		
+Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
+0	10	0.71
+1	10	0.75
+2	10	0.75
+3	10	0.84
+4	10	0.6
+5	10	0.66
+6	11	0.43
+7	10	0.4
+8	11	0.6
+9	0	0
+10	0	0
