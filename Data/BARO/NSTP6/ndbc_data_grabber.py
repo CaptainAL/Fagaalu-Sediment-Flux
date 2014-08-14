@@ -11,7 +11,7 @@ datagrab = True
 if datagrab == True:
     slist = ['NSTP6'] ##stations needed
     ylist = ['2014'] ##years needed
-    mlist = ['Jan','Feb','Mar']#,'Apr','May','Jun','Jul'#,'Aug','Sep','Oct','Nov','Dec'] ##months needed
+    mlist = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug']#,'Sep','Oct','Nov','Dec'] ##months needed
     mdict = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
     alldata = open('C:/Users/Alex/Desktop/samoa/WATERSHED_ANALYSIS/BarometricData/NSTP6/'+'2013.txt','w')
     for s in slist:

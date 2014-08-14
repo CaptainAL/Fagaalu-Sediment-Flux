@@ -13,6 +13,10 @@ to calculate the sediment loading at stream gauging locations in Faga'alu waters
 @author: Alex Messina
 """
 #### Import modules
+import sys
+if 'XL' not in locals(): ## XL is the Master_Data.xlsx file
+    sys.exit("Need to load data first. Run 'StartHere-LoadData....'")
+    
 
 ##custom modules
 from misc_time import * 
@@ -298,7 +302,7 @@ def plotSTAGE(show=False):
     #### Format X axis and Primary Y axis
     stage.set_title(title)
     stage.set_ylabel('Stage height in cm')
-    stage.set_ylim(0,110)
+    stage.set_ylim(0,145)
     stage.legend(loc=2)
     #### Add Precip data from Timu1
     AddTimu1(fig,stage,Precip['Timu1-15'])
@@ -311,7 +315,7 @@ def plotSTAGE(show=False):
     stage.grid(True)
     show_plot(show)
     return
-#plotSTAGE(True)
+plotSTAGE(True)
  
 
 def plotPRECIP(show=False):

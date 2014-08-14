@@ -170,6 +170,8 @@ def Tula(datapath=datadir+'BARO/TulaStation/TulaMetData/'):
     baro_offset = (baro/10.0)+.92
     return baro_offset
 
+## To get more NSTP6 data either go to their website and copy and paste the historical data
+## or use wundergrabber_NSTP6-REALTIME.py and copy and paste frome the .csv
 def ndbc(datapath=datadir+'BARO/NSTP6/'):
     print 'loading NDBC baro...'
     ## Analyze data
@@ -232,7 +234,7 @@ def ndbc(datapath=datadir+'BARO/NSTP6/'):
     baro = pd.Series(datadict,name='NDBCbaro')
     return baro
     
-##load data from Tafuna Intl
+##load data from Tafuna Intl ## To get more data from the Airport run wundergrabber_NSTU.py in the 'Maindir+Data/NSTU/' folder
 airport = pd.DataFrame.from_csv(datadir+'BARO/NSTU/NSTU-current.csv') ## download new data using wundergrabber
 airport['Wind Speed m/s']=airport['Wind SpeedMPH'] * 0.44704
 TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] * 3.3863881579}).resample('15Min',fill_method='ffill',limit=2)## inches to kPa

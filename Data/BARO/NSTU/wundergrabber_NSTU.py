@@ -12,8 +12,10 @@ datagrab = True
 now = datetime.datetime.now()
 
 if datagrab == True:
+    print 'Grabbing data...'
     s = 'NSTU' ##stations needed
     daterange = date_range('20120101 00:00:00',now,freq='D')
+    print '...from date range: '+str(daterange[0])+' to '+str(daterange[-1])
 #    mlist = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] ##months needed
 #    mdict = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
     
@@ -22,10 +24,10 @@ if datagrab == True:
     datalist = [] ## write header columns in empty DataFrame
     for date in daterange:
         if date < now:
-#            print date
+            print date
             try:
                 url = 'http://www.wunderground.com/history/airport/'+s+'/'+str(date.year)+'/'+str(date.month)+'/'+str(date.day)+'/DailyHistory.html?req_city=NA&req_state=NA&req_statename=NA&format=1'##enter web address of data
-                #print url
+                print url
                 page = urllib2.urlopen(url)
                 soup = BeautifulSoup(page)
                 soupsplit = str(soup.tagStack).split('\n')
@@ -35,11 +37,12 @@ if datagrab == True:
                         dt = to_datetime(str(date.month)+'/'+str(date.day)+ '/'+ str(date.year)+' '+line.split(',')[0])
                         data = line.split(',')
                         datalist.append((dt,[data[0],float(data[1]),float(data[2]),float(data[3]),float(data[4]),float(data[5]),data[6],float(data[7]),data[8],data[9],data[10],data[11],data[12],data[13]])) ##append tuple to list
-#                        print dt
+                        print dt
             except:
-#                print 'skipped day'
+                print 'skipped day'
                 pass
         else:
+            print 'passed'
             pass
     frame = DataFrame.from_items(datalist,orient='index',columns=columns)
     frame.columns = columns
