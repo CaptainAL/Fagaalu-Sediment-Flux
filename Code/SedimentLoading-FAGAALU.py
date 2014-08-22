@@ -315,7 +315,7 @@ def plotSTAGE(show=False):
     stage.grid(True)
     show_plot(show)
     return
-plotSTAGE(True)
+#plotSTAGE(True)
  
 
 def plotPRECIP(show=False):
