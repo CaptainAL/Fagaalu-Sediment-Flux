@@ -276,7 +276,7 @@ PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0,-10.3)
 PT3 = pd.concat([PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
 
 ## STAGE DATA FOR PT's
-stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT3['stage']})
+Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT3['stage']})
 
 ## Year Interval Times
 start2012, stop2012 = datetime.datetime(2012,1,7,0,0), datetime.datetime(2012,12,31,11,59)    

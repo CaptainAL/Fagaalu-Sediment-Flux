@@ -17,7 +17,7 @@ Dist(N to S)(ft)	Depth(cm)	Flow(m/s)
 4.265091864	9	0
 4.593175853	6	0
 4.921259843	0	0
-		
+-		
 Location	Date	Time 
 LBJ	1/19/2012	958
 Field Measurements		
@@ -33,7 +33,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 8	3	0
 9	4	0
 10	0	0
-		
+-	
 Location	Date	Time 
 LBJ	1/19/2012	1424
 Field Measurements		
@@ -50,7 +50,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 9	8	0.02
 10	13	0
 11	0	0
-		
+-		
 Location	Date	Time 
 LBJ	1/19/2012	1649
 Field Measurements		
@@ -66,7 +66,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 8	14	0.03
 9	8	0.03
 10	1	0
-		
+-		
 Location	Date	Time 
 LBJ	1/20/2012	1231
 Field Measurements		
@@ -82,7 +82,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 8	1	0
 9	0	0
 10	0	0
-		
+-		
 Location	Date	Time 
 LBJ	1/25/2012	1320
 Field Measurements		
@@ -98,7 +98,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 8	15	0.02
 9	16	0
 10	0	0
-		
+-		
 Location	Date	Time 
 LBJ	1/25/2012	1329
 Field Measurements		
@@ -114,7 +114,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 8	16	0.05
 9	16	0
 10	0	0
-		
+-		
 Location	Date	Time 
 LBJ	1/25/2012	1836
 Field Measurements		
@@ -130,7 +130,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 8	6	0.03
 9	0	0
 10	0	0
-		
+-		
 Location	Date	Time 
 LBJ	3/21/2012	1403
 Field Measurements		
@@ -148,7 +148,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 6	20	0.08
 6.5	20	0.02
 7	5	0
-	
+-	
 Location	Date	Time 
 LBJ	3/21/2012	1423
 Field Measurements		
@@ -166,7 +166,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 6	14	0.06
 6.5	10	0
 7	9	0
-		
+-		
 Location	Date	Time 
 LBJ	3/21/2012	1445
 Field Measurements		
@@ -184,7 +184,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 6	12	0.06
 6.5	12	0
 7	9	0
-
+-
 Location	Date	Time 
 LBJ	4/17/2013	810
 Field Measurements		
@@ -198,7 +198,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 12	14	0.44
 14	16	0.75
 16	12	0.29
-
+-
 Location	Date	Time 
 LBJ	4/17/2013	815
 Field Measurements		
@@ -212,7 +212,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 12	14	0.38
 14	14	0.22
 16	10	0.05
-
+-
 Location	Date	Time 
 LBJ	4/18/2013	1600
 Field Measurements		
@@ -234,7 +234,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 14	0	0
 15	0	0
 16	0	0
-
+-
 Location	Date	Time 
 LBJ	4/23/2013	1815
 Field Measurements		
@@ -256,7 +256,7 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 14	26	1.3
 15	22	0.85
 16	22	0.5
-
+-
 Location	Date	Time 
 LBJ	4/30/2013	1655
 Field Measurements		
@@ -278,3 +278,4 @@ Dist(S to N)(ft)	Depth(cm)	Flow(m/s)
 14	16	0.41
 15	20	0.82
 16	14	0.5
+-

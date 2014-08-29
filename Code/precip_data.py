@@ -12,11 +12,11 @@ def raingauge(XL,sheet='',shift=0):
     return gauge       
 
 #### Add Precip from Timu1 to a subplot
-def AddTimu1(FigureNum,SubPlot,Precip):
+def AddTimu1(FigureNum,SubPlot,Precip,LineColor='b'):
     PrecipSeries = Precip.dropna()
     ###### Timu1
     Yax1 = FigureNum.add_axes(SubPlot.get_position(), frameon=False, sharex=SubPlot)
-    Precip = PrecipSeries.plot(x_compat=True,label='Precip',color='b',linestyle='steps-post',lw=.4) 
+    Precip = PrecipSeries.plot(x_compat=True,label='Precip',color=LineColor,linestyle='steps-post',lw=.4) 
     #### Format Secondary Y axis
     Yax1.set_ylabel('Precipitation(mm/15min)')
     Yax1.set_ylim(0,90)

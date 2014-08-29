@@ -15,7 +15,7 @@ def SeparateHydrograph(hydrodata='stage',minimum_length=8):
     maximum = params[7]
     quartiles= params[4:8]
     stormthresh = mean+std
-    print 'Storm threshold= '+str(stormthresh)
+    print 'Storm threshold= '+'%.2f'%stormthresh
     StormFlow = hydrodata.where(hydrodata>stormthresh) ##returns list of data points that meet the condition, the rest are NaN (same shape as original array)
 ## or
 #PT1storm = PT1[PT1>stormthresh] ## NaN values are filtered out

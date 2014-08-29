@@ -215,7 +215,7 @@ def NonlinearFit(x,y,order=2,subplotax=None):
 #xnonlinear = NonlinearFit(x,x2)
     
 #### Define Storm Periods #####
-## Define Storm Intervals at LBJ
+## Define Storm Intervals
 DefineStormIntervalsBy = {'User':'User','Separately':'BOTH','N1':'N1','N2':'N2'}
 StormIntervalDef = DefineStormIntervalsBy['N2']
     
@@ -248,18 +248,20 @@ if StormIntervalDef=='User':
 def showstormintervals(ax,storm_threshold=N2_storm_threshold,showStorms=StormIntervals,shade_color='grey',show=True):
     ## Storms
     if show==True:
-        print 'Storm threshold stage= '+str(storm_threshold)
+        print 'Storm threshold stage= '+'%.1f'%storm_threshold+' cm'
         #ax.axhline(y=storm_threshold,ls='--',color=shade_color)    
         for storm in showStorms.iterrows(): ## shade over storm intervals
             ax.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
     return
+
+from precip_data import raingauge, AddTimu1, AddTimu1Hourly, AddTimu1Daily, AddTimu1Monthly
 
 def plotSTAGE(show=False):
     fig, stage = plt.subplots(1)
     title="Stage for PT's in Nu'uuli Stream"
     #### PT1 stage N1
     stage.plot_date(PT1['stage'].index,PT1['stage'],marker='None',ls='-',color='r',label='N1')
-    print 'Lowest PT1 stage: '+str(PT1['stage'].min())
+    print 'Lowest PT1 stage: '+'%.1f'%PT1['stage'].min()
     #### PT2 stage N2
     stage.plot_date(PT2['stage'].index,PT2['stage'],marker='None',ls='-',color='y',label='N2')
 
@@ -273,6 +275,7 @@ def plotSTAGE(show=False):
     stage.legend(loc=2)
     #### Add Precip data from Timu1
     AddTimu1(fig,stage,Precip['Timu-Nuuuli1-15'])
+    AddTimu1(fig,stage,Precip['Timu-Nuuuli2-15'],LineColor='g')
     
     plt.setp(stage.get_xticklabels(),rotation='vertical',fontsize=9)
     plt.subplots_adjust(left=0.1,right=0.83,top=0.93,bottom=0.15)
@@ -282,7 +285,7 @@ def plotSTAGE(show=False):
     stage.grid(True)
     show_plot(show)
     return
-#plotSTAGE(True)
+plotSTAGE(True)
 
 def plotPRECIP(show=False):
     fig = plt.figure(2)
@@ -303,4 +306,61 @@ def plotPRECIP(show=False):
         plt.show()
     return
 plotPRECIP(True)
+
+
+#### Analyze Storm Precip Characteristics: Intensity, Erosivity Index etc. ####
+def StormPrecipAnalysis(StormIntervals):
+    #### EROSIVITY INDEX for storms (ENGLISH UNITS)
+    stormlist=[]
+    for storm in StormIntervals.iterrows():
+        index = storm[1]['start']
+        start = storm[1]['start']-dt.timedelta(minutes=60) ## storm start is when PT exceeds threshold, retrieve Precip x min. prior to this.
+        end =  storm[1]['end'] ## when to end the storm?? falling limb takes too long I think
+        try:
+            rain_data = pd.DataFrame.from_dict({'Timu':Precip['Timu-Nuuuli2'][start:end]})
+            rain_data['AccumulativeDepth mm']=(rain_data['Timu']).cumsum() ## cumulative depth at 1 min. intervals
+            rain_data['AccumulativeDepth in.']=(rain_data['Timu']/25.4).cumsum() ## cumulative depth at 1 min. intervals
+            rain_data['Intensity (in./hr)']=rain_data['Timu']*60 ## intensity at each minute
+            rain_data['30minMax (in./hr)']=m.rolling_sum(Precip['Timu-Nuuuli2'],window=30)/25.4
+            I30 = rain_data['30minMax (in./hr)'].max()
+            duration_hours = (end - start).days * 24 + (end - start).seconds//3600
+            I = (rain_data['Timu'].sum())/25.4/duration_hours ## I = Storm Average Intensity
+            E = 1099 * (1-(0.72*math.exp(-1.27*I))) ## E = Rain Kinetic Energy
+            EI = E*I30
+            stormlist.append((index,[rain_data['Timu'].sum()/25.4,duration_hours,I30,I,E,EI]))
+        except:
+            print "Can't analyze Storm Precip for storm:"+str(start)
+            pass
+    Stormdf = pd.DataFrame.from_items(stormlist,orient='index',columns=['Total(in)','Duration(hrs)','Max30minIntensity(in/hr)','AvgIntensity(in/hr)','E-RainKineticEnergy(ft-tons/acre/inch)','EI'])
+    Stormdf = Stormdf[(Stormdf['Total(in)']>0.0)] ## filter out storms without good Timu1 data
+    return Stormdf
+    
+N2_Stormdf = StormPrecipAnalysis(N2_StormIntervals)
+
+## STAGE DATA FOR PT's
+Nuuuli_stage_data = pd.DataFrame({'N1':PT1['stage'],'N2':PT2['stage']})
+
+#### STAGE TO DISCHARGE ####
+order=1
+powerlaw = False
+from AV_RatingCurve import AV_RatingCurve
+## Q = a(stage)**b
+def power(x,a,b):
+    y = a*(x**b)
+    return y
+
+### Area Velocity and Mannings from in situ measurments
+## stage2discharge_ratingcurve.AV_rating_curve(datadir,location,stage_data,trapezoid=False,Slope=0.01,Mannings_n=0.03,width=4.9276)
+## Returns DataFrame of Stage (cm) and Discharge (L/sec) calc. from AV measurements with time index
+
+#### N1 (rating curves:A measurment * Mannings V, Area of Rectangular section * Mannings V)
+Slope = 0.013# m/m
+Mannings_n=0.050 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
+#DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
+N1stageDischarge = AV_RatingCurve(datadir+'Q/','N1',Nuuuli_stage_data,slope=Slope,n=Mannings_n,trapezoid=True)
+
+N1_AManningV = pd.ols(y=N1stageDischarge['Q-AManningV(L/sec)'],x=N1stageDischarge['stage(cm)'],intercept=True)
+N1_AManningVLog = pd.ols(y=N1stageDischargeLog['Q-AManningV(L/sec)'],x=N1stageDischargeLog['stage(cm)'],intercept=True)
+N1_Mannings = pd.ols(y=N1stageDischarge['Q-Mannings(L/sec)'],x=N1stageDischarge['stage(cm)'],intercept=True) ## Rectangular channel
+N1_ManningsLog = pd.ols(y=N1stageDischargeLog['Q-Mannings(L/sec)'],x=N1stageDischargeLog['stage(cm)'],intercept=True) ## Rectangular channel
 

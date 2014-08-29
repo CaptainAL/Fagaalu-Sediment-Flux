@@ -391,20 +391,21 @@ DAM_Stormdf = StormPrecipAnalysis(DAM_StormIntervals)
 
 order=1
 powerlaw = False
-from stage2discharge_ratingcurve import AV_rating_curve, Mannings_rect, Weir_rect, Weir_vnotch, Flume
+from stage2discharge_ratingcurve import AV_RatingCurve, Mannings_rect, Weir_rect, Weir_vnotch, Flume
 ## Q = a(stage)**b
 def power(x,a,b):
     y = a*(x**b)
     return y
 
 ### Area Velocity and Mannings from in situ measurments
-## stage2discharge_ratingcurve.AV_rating_curve(datadir,location,stage_data,trapezoid=False,Slope=0.01,Mannings_n=0.03,width=4.9276)
+## stage2discharge_ratingcurve.AV_rating_curve(datadir,location,Fagaalu_stage_data,trapezoid=False,Slope=0.01,Mannings_n=0.03,width=4.9276)
 ## Returns DataFrame of Stage (cm) and Discharge (L/sec) calc. from AV measurements with time index
 
 #### LBJ (3 rating curves: AV measurements, A measurment * Mannings V, Area of Rectangular section * Mannings V)
 Slope = 0.0161 # m/m
-Mannings_n=0.050 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
-LBJstageDischarge = AV_rating_curve(datadir,'LBJ',stage_data,True,Slope,Mannings_n).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
+n=0.050 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
+
+LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
 LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
 LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
 
@@ -413,8 +414,8 @@ LBJ_AV= pd.ols(y=LBJstageDischarge['Q-AV(L/sec)'],x=LBJstageDischarge['stage(cm)
 LBJ_AVLog= pd.ols(y=LBJstageDischargeLog['Q-AV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) #linear fit to log-transformed stage and Q
 LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True)
 LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
-LBJ_Mannings = pd.ols(y=LBJstageDischarge['Q-Mannings(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) ## Rectangular channel
-LBJ_ManningsLog = pd.ols(y=LBJstageDischargeLog['Q-Mannings(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) ## Rectangular channel
+#LBJ_Mannings = pd.ols(y=LBJstageDischarge['Q-Mannings(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) ## Rectangular channel
+#LBJ_ManningsLog = pd.ols(y=LBJstageDischargeLog['Q-Mannings(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) ## Rectangular channel
 
 #### LBJ: Q from OrangePeel method 
 from notebook import OrangePeel
@@ -429,7 +430,7 @@ orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT
 #LBJ['Q-ManningsRect']=LBJ_AVratingcurve_ManningsRect(LBJ['stage']) ## Calculate Q from A-Mannings rating
 
 #### DAM(3 rating curves: AV measurements, WinFlume, HEC-RAS
-DAMstageDischarge = AV_rating_curve(datadir,'Dam',stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
+DAMstageDischarge = AV_rating_curve(datadir,'Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 #### DAM: Q from WinFlume equation
 def D_Flume(stage):
     K1 = 252.5
@@ -478,7 +479,6 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     both = plt.subplot2grid((2,2),(0,1),rowspan=2)
     mpl.rc('lines',markersize=15)
     
-        
     title="Stage-Discharge Relationships for LBJ and DAM"
     xy = np.linspace(0,150,150)
     #LBJ AV Measurements and Rating Curve
@@ -541,6 +541,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     show_plot(show,fig)
     savefig(save,title)
     return
+plotStageDischargeRatings(show=True,log=False,save=False)
 #plotStageDischargeRatings(show=True,log=False,save=True)
 #plotStageDischargeRatings(show=True,log=True,save=True)
 
