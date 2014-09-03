@@ -391,7 +391,7 @@ DAM_Stormdf = StormPrecipAnalysis(DAM_StormIntervals)
 
 order=1
 powerlaw = False
-from stage2discharge_ratingcurve import AV_RatingCurve, Mannings_rect, Weir_rect, Weir_vnotch, Flume
+from stage2discharge_ratingcurve import AV_RatingCurve, calcQ, Mannings_rect, Weir_rect, Weir_vnotch, Flume
 ## Q = a(stage)**b
 def power(x,a,b):
     y = a*(x**b)
@@ -408,6 +408,11 @@ n=0.050 # Mountain stream rocky bed and rivers with variable sections and veg al
 LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
 LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
 LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
+
+### Calculate Q from a single AV measurement
+#fileQ = calcQ(datadir+'Q/LBJ_4-18-13.txt','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True)
+### and save to CSV
+#pd.concat(fileQ).to_csv(datadir+'Q/LBJ_4-18-13.csv')
 
 ## LBJ: Q Models 
 LBJ_AV= pd.ols(y=LBJstageDischarge['Q-AV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) 
@@ -430,7 +435,7 @@ orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT
 #LBJ['Q-ManningsRect']=LBJ_AVratingcurve_ManningsRect(LBJ['stage']) ## Calculate Q from A-Mannings rating
 
 #### DAM(3 rating curves: AV measurements, WinFlume, HEC-RAS
-DAMstageDischarge = AV_rating_curve(datadir,'Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
+DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 #### DAM: Q from WinFlume equation
 def D_Flume(stage):
     K1 = 252.5

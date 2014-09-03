@@ -284,7 +284,7 @@ start2013, stop2013 = datetime.datetime(2013,1,1,0,0), datetime.datetime(2013,12
 start2014, stop2014 = datetime.datetime(2014,1,1,0,0), datetime.datetime(2014,12,31,11,59)   
 PT1 = PT1.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 PT3 = PT3.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
-stage_data = stage_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+Fagaalu_stage_data = Fagaalu_stage_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 
 
 #### Import T and SSC Data
