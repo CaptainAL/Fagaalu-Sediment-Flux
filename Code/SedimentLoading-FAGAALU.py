@@ -189,23 +189,32 @@ def LinearFit(x,y,xspace=None,ax=plt,**kwargs):
 #xlinfun = linearfunction(x,y,name)
 #xlinear = LinearFit(x,y)
 
-def nonlinearfunction(x,y,order=2):
+def nonlinearfunction(x,y,order=2,interceptZero=False):
     datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna() ## put x and y in a dataframe so you can drop ones that don't match up    
     datadf = datadf[datadf>=0].dropna() ##verify data is valid (not inf)
-    PolyCoeffs = np.polyfit(datadf['x'], datadf['y'], order) ## calculates polynomial coeffs
-    PolyEq = np.poly1d(PolyCoeffs) ## turns the coeffs into an equation
+    if interceptZero!=True:
+        PolyCoeffs = np.polyfit(datadf['x'].values, datadf['y'].values, order) ## calculates polynomial coeffs
+        PolyEq = np.poly1d(PolyCoeffs) ## turns the coeffs into an equation
+        
+    ## Calculate polynomial with a y-intercept of zero    
+    if interceptZero==True:
+        coeff = np.transpose([datadf['x'].values*datadf['x'].values, datadf['x'].values])
+        ((a, b), _, _, _) = np.linalg.lstsq(coeff, datadf['y'].values)
+        PolyEq = np.poly1d([a, b, 0])
     return PolyEq
 
-def NonlinearFit(x,y,order=2,subplotax=None):
-    linfunc = nonlinearfunction(x,y,order)
+def NonlinearFit(x,y,order=2,interceptZero=False,xspace=None,Ax=plt,**kwargs):
+    nonlinfunc = nonlinearfunction(x,y,order,interceptZero)
     #print linfunc
-    xvals = np.linspace(x.min(),x.max())
-    ypred = linfunc(xvals)
-    if subplotax == True:
-        subplotax.plot(xvals,ypred)
+    if xspace==None:
+        xvals = np.linspace(0,x.max()*1.2) ##list of dummy x's as predictors
     else:
-        plt.plot(xvals,ypred)
-    return linfunc
+        xvals=xspace
+    ypred = nonlinfunc(xvals)
+    Ax.plot(xvals,ypred,**kwargs)
+    plt.draw()
+    return nonlinfunc
+
 ## test
 #x= np.linspace(1.0,10.0,10)
 #y = 10*x + 15
@@ -416,6 +425,7 @@ LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed versio
 
 ## LBJ: Q Models 
 LBJ_AV= pd.ols(y=LBJstageDischarge['Q-AV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) 
+LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=3,interceptZero=False)  
 LBJ_AVLog= pd.ols(y=LBJstageDischargeLog['Q-AV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) #linear fit to log-transformed stage and Q
 LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True)
 LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
@@ -546,7 +556,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     show_plot(show,fig)
     savefig(save,title)
     return
-plotStageDischargeRatings(show=True,log=False,save=False)
+#plotStageDischargeRatings(show=True,log=False,save=False)
 #plotStageDischargeRatings(show=True,log=False,save=True)
 #plotStageDischargeRatings(show=True,log=True,save=True)
 
@@ -561,6 +571,8 @@ b = LBJ_AVLog.beta[0] # beta[0] is the slope = b
 
 LBJ['Q-AVLog'] = a * (LBJ['stage']**b)
 LBJ['Q-AManningVLog'] = (10**LBJ_AManningVLog.beta[1])*(LBJ['stage']**LBJ_AManningVLog.beta[0])
+
+LBJ['Q-AVLog'] = LBJ_AVnonLinear(LBJ['stage'])
 
 ## Build Dataframe of all discharge measurments
 DAM = DataFrame(PT3,columns=['stage']) ## Build DataFrame with all stage records for location
@@ -1421,7 +1433,7 @@ def plotS_storm_table(show=False):
     if show==True:
         plt.show()
     return
-#plotS_storm_table(show=True)
+plotS_storm_table(show=True)
 
 ## Calculate the percent of total Q with raw vales, BEFORE NORMALIZING by area!
 def plotQ_storm_table(show=False):
@@ -2033,6 +2045,7 @@ def plotQmaxS(show=False,log=False,save=True,norm=True):
     show_plot(show,fig)
     savefig(save,title)
     return
+plotQmaxS(show=True,log=False,save=False)  
 #plotQmaxS(show=True,log=False,save=True)
 #plotQmaxS(show=True,log=True,save=True,norm=False)
 #plotQmaxS(show=True,log=True,save=True,norm=True)

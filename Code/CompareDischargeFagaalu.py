@@ -196,23 +196,33 @@ def LinearFit(x,y,xspace=None,ax=plt,**kwargs):
 #xlinfun = linearfunction(x,y,name)
 #xlinear = LinearFit(x,y)
 
-def nonlinearfunction(x,y,order=2):
+def nonlinearfunction(x,y,order=2,interceptZero=False):
     datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna() ## put x and y in a dataframe so you can drop ones that don't match up    
     datadf = datadf[datadf>=0].dropna() ##verify data is valid (not inf)
-    PolyCoeffs = np.polyfit(datadf['x'], datadf['y'], order) ## calculates polynomial coeffs
-    PolyEq = np.poly1d(PolyCoeffs) ## turns the coeffs into an equation
+    if interceptZero!=True:
+        PolyCoeffs = np.polyfit(datadf['x'].values, datadf['y'].values, order) ## calculates polynomial coeffs
+        PolyEq = np.poly1d(PolyCoeffs) ## turns the coeffs into an equation
+        
+    ## Calculate polynomial with a y-intercept of zero    
+    if interceptZero==True:
+        coeff = np.transpose([datadf['x'].values*datadf['x'].values, datadf['x'].values])
+        ((a, b), _, _, _) = np.linalg.lstsq(coeff, datadf['y'].values)
+        PolyEq = np.poly1d([a, b, 0])
     return PolyEq
 
-def NonlinearFit(x,y,order=2,subplotax=None):
-    linfunc = nonlinearfunction(x,y,order)
+
+def NonlinearFit(x,y,order=2,interceptZero=False,xspace=None,Ax=plt,**kwargs):
+    nonlinfunc = nonlinearfunction(x,y,order,interceptZero)
     #print linfunc
-    xvals = np.linspace(x.min(),x.max())
-    ypred = linfunc(xvals)
-    if subplotax == True:
-        subplotax.plot(xvals,ypred)
+    if xspace==None:
+        xvals = np.linspace(0,x.max()*1.2) ##list of dummy x's as predictors
     else:
-        plt.plot(xvals,ypred)
-    return linfunc
+        xvals=xspace
+    ypred = nonlinfunc(xvals)
+    Ax.plot(xvals,ypred,**kwargs)
+    plt.draw()
+    return nonlinfunc
+
 ## test
 #x= np.linspace(1.0,10.0,10)
 #y = 10*x + 15
@@ -242,7 +252,7 @@ def power(x,a,b):
 Slope = 0.0161 # m/m
 n=0.050 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
 
-LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
+LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True,printResults=False).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
 LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
 LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
 
@@ -272,7 +282,7 @@ orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT
 #LBJ['Q-ManningsRect']=LBJ_AVratingcurve_ManningsRect(LBJ['stage']) ## Calculate Q from A-Mannings rating
 
 #### DAM(3 rating curves: AV measurements, WinFlume, HEC-RAS
-DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
+DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data,printResults=False) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 #### DAM: Q from WinFlume equation
 def D_Flume(stage):
     K1 = 252.5
@@ -330,7 +340,7 @@ def V_vs_ManningV(show=False,log=False):
     Q_Mq.plot([0,2000],[0,2000])
     Q_Mq.set_title('Q from AV measuremnt vs Q from measured A and Mannings V'), Q_Mq.set_xlabel('Q-AV L/sec'), Q_Mq.set_ylabel('Q-AManningV L/sec')
     return
-V_vs_ManningV(show=True,log=False)    
+#V_vs_ManningV(show=True,log=False)    
 
 def A_vs_V(show=False,log=False):
     fig, ((stage_Area, stage_V), (A_V, V_Q)) = plt.subplots(2,2)
@@ -346,10 +356,80 @@ def A_vs_V(show=False,log=False):
     A_V.set_title('Measured Velocity m/s vs Crossectional Area'), A_V.set_xlabel('Mean Velocity m/s'), A_V.set_ylabel('Cross sectional Area')
     
     V_Q.scatter(LBJstageDischarge['V(m/s)'],LBJstageDischarge['Q-AV(L/sec)'])
-    V_Q.set_title('V from AV measuremnt vs Q from measured AV'), Q_Mq.set_xlabel('V m/s'), Q_Mq.set_ylabel('Q-AV L/sec')
+    V_Q.set_title('V from AV measuremnt vs Q from measured AV'), V_Q.set_xlabel('V m/s'), V_Q.set_ylabel('Q-AV L/sec')
     return
-A_vs_V(show=True,log=False)    
+#A_vs_V(show=True,log=False)    
 
+def plotLBJstageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
+    fig, (ax, logax) = plt.subplots(1,2)
+    xy = np.linspace(0,150,150)
+    #### Linear
+    #LBJ AV Measurements and Rating Curve
+    LBJ_AVlinear= linearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])
+    LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=2,interceptZero=True)    
+    LBJ_AVpower = powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])  
+    
+    LinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,ax,c='g',ls='-',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
+    NonlinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=3,interceptZero=False,xspace=xy,Ax=ax,c='r',ls='-',label='LBJ_AVnonLinear '+r'$r^2$')#+"%.2f"%LBJ_AVnonLinear['r2'])
+    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,ax,c='y',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    
+    ax.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],'.',color='r',markeredgecolor='k',label='LBJ_AV')   
+    
+    #LBJ A*ManningV Measurements and Rating Curves
+    LBJ_MANlinear=linearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])
+    LBJ_MANnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])
+    LBJ_MANpower =powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])
+    
+    LinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,ax,c='g',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
+    NonlinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],order=3,interceptZero=False,xspace=xy,Ax=ax,c='r',ls='--',label='LBJ_MANnonLinear') ## rating from LBJ_AManningV
+    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,ax,c='y',ls='-',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
+    ax.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')    
+    
+    ##LBJ Orange Peel Measurements and Rating Curve
+    LinearFit(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],xy,ax,c='DarkOrange',ls='--',label='LBJ_OPlinear') ## a b values from excel file  FagaaluStage-Discharge
+    PowerFit(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],xy,ax,c='DarkOrange',ls='-',label='LBJ_OPpower')    
+    ax.plot(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],'.',color='DarkOrange',label='LBJ_OP')  
+
+    #### Logarithmic
+    #LBJ AV Measurements and Rating Curve
+
+    LinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,logax,c='g',ls='-',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
+    NonlinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=2,interceptZero=True,xspace=xy,Ax=logax,c='r',ls='-',label='LBJ_AVnonLinear '+r'$r^2$')
+    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,logax,c='y',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    logax.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],'.',color='r',markeredgecolor='k',label='LBJ_AV')   
+    
+    #LBJ A*ManningV Measurements and Rating Curves
+
+    LinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,logax,c='g',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
+    NonlinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],order=2,interceptZero=True,xspace=xy,Ax=logax,c='r',ls='--',label='LBJ_MANnonLinear')  ## rating from LBJ_AManningV
+    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,logax,c='y',ls='--',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
+    logax.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')    
+    
+    ##LBJ Orange Peel Measurements and Rating Curve
+    LinearFit(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],xy,logax,c='DarkOrange',ls='--',label='LBJ_OPlinear') ## a b values from excel file  FagaaluStage-Discharge
+    PowerFit(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],xy,logax,c='DarkOrange',ls='-',label='LBJ_OPpower')    
+    logax.plot(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],'.',color='DarkOrange',label='LBJ_OP')  
+    
+    ## Label subplots    
+    ax.set_title('VILLLAGE'),ax.set_xlabel('Stage(cm)'),ax.set_ylabel('Q(L/sec)')
+    logax.set_title('VILLLAGE'),logax.set_xlabel('Stage(cm)'),logax.set_ylabel('Q(L/sec)')
+    
+    ## Format subplots
+    ax.set_xlim(10,PT1['stage'].max()+10),ax.set_ylim(10,4000)
+    logax.set_xlim(10,PT3['stage'].max()+10),logax.set_ylim(10,4000)
+    ## Legends
+    #site_lbj.legend(loc='best',ncol=2,fancybox=True),site_dam.legend(loc='best',ncol=2,fancybox=True),both.legend(loc='best',ncol=2,fancybox=True)
+    plt.legend(loc='best')    
+    ## Figure title
+    #plt.suptitle(title,fontsize=16)
+
+    logax.set_yscale('log'),logax.set_xscale('log')
+    for ax in fig.axes:
+        ax.autoscale_view(True,True,True)
+    show_plot(show,fig)
+    
+    return
+plotLBJstageDischargeRatings(show=True)
 
 def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     fig =plt.figure()
@@ -421,7 +501,8 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     show_plot(show,fig)
     savefig(save,title)
     return
-plotStageDischargeRatings(show=True,log=False,save=False)
+#plotStageDischargeRatings(show=True,log=False,save=False)
+    
 #plotStageDischargeRatings(show=True,log=False,save=True)
 #plotStageDischargeRatings(show=True,log=True,save=True)
 

@@ -10,7 +10,7 @@ import datetime as dt
 
 
 #################################################################################################################
-def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True):
+def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True,printResults=False):
     Filelist = os.listdir(path)
     
     S = slope
@@ -100,13 +100,15 @@ def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=
                     except:
                         stage =np.nan
                     Qdf = Qdf.append(pd.DataFrame({'stage(cm)':stage,'Q-AV(L/sec)':AV_Q,'Q-AManningV(L/sec)':ManningQ,'Area(m2)':Area,'V(m/s)':V,'ManningV(m/s)':ManningV,'WP':WP,'R':R},index=[DateTime]))
-                    #print str(DateTime)+': stage='+'%.2f'%stage+' Q= '+'%.2f'%AV_Q+' ManningQ= '+'%.2f'%ManningQ
-                    print df
+                    
+                    if printResults==True:                    
+                        print str(DateTime)+': stage='+'%.2f'%stage+' Q= '+'%.2f'%AV_Q+' ManningQ= '+'%.2f'%ManningQ
+                        print df
                     
                     
     return Qdf 
 
-def calcQ(filename,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True):
+def calcQ(filename,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True,printResults=False):
   
     S = slope
     n = Mannings_n
@@ -193,9 +195,11 @@ def calcQ(filename,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True)
             except:
                 stage =np.nan
             Qdf = Qdf.append(pd.DataFrame({'stage(cm)':stage,'Q-AV(L/sec)':AV_Q,'Q-AManningV(L/sec)':ManningQ,'Area(m2)':Area,'V(m/s)':V,'ManningV(m/s)':ManningV,'WP':WP,'R':R},index=[DateTime]))
-            print str(DateTime)+': stage='+'%.2f'%stage+' Q= '+'%.2f'%AV_Q+' ManningQ= '+'%.2f'%ManningQ
-            print df
             
+            if printResults==True:            
+                print str(DateTime)+': stage='+'%.2f'%stage+' Q= '+'%.2f'%AV_Q+' ManningQ= '+'%.2f'%ManningQ
+                print df
+                
                  
     return Qdf,df 
     
