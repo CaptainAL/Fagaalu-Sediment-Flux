@@ -281,15 +281,15 @@ if StormIntervalDef=='LBJ':
 if StormIntervalDef=='User':
     stormintervalsXL = pd.ExcelFile(datadir+'StormIntervals.xlsx')
     StormIntervals = stormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
-    LBJ_StormIntervals=StormIntervals
-    DAM_StormIntervals=StormIntervals
+    LBJ_StormIntervals, DAM_StormIntervals = StormIntervals, StormIntervals
 
     
 def showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=StormIntervals,shade_color='grey',show=True):
     ## Storms
     if show==True:
-        print 'Storm threshold stage= '+str(storm_threshold)
-        #ax.axhline(y=storm_threshold,ls='--',color=shade_color)    
+        if storm_threshold==True:
+            print 'Storm threshold stage= '+ '%.'%storm_threshold   
+            ax.axhline(y=storm_threshold,ls='--',color=shade_color)    
         for storm in showStorms.iterrows(): ## shade over storm intervals
             ax.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
     return
@@ -424,50 +424,62 @@ LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed versio
 #pd.concat(fileQ).to_csv(datadir+'Q/LBJ_4-18-13.csv')
 
 ## LBJ: Q Models 
+## Linear
 LBJ_AV= pd.ols(y=LBJstageDischarge['Q-AV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) 
-LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=3,interceptZero=False)  
+## Power
 LBJ_AVLog= pd.ols(y=LBJstageDischargeLog['Q-AV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) #linear fit to log-transformed stage and Q
+## Linear with Mannings
 LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True)
+## Power with Mannings
 LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
-#LBJ_Mannings = pd.ols(y=LBJstageDischarge['Q-Mannings(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) ## Rectangular channel
-#LBJ_ManningsLog = pd.ols(y=LBJstageDischargeLog['Q-Mannings(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) ## Rectangular channel
+
+## Fit nonlinear wiht intercept zero
+for _ in range(3):
+    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AV(L/sec)':0},index=[np.random.rand()])) ## add zero/zero intercept
+LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=3,interceptZero=False)  
+LBJstageDischarge=LBJstageDischarge.dropna() ## get rid of zero/zero interctp
+
+for _ in range(3):
+    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AManningV(L/sec)':0},index=[np.random.rand()])) ## add zero/zero intercept
+LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],order=3,interceptZero=False)
+LBJstageDischarge=LBJstageDischarge.dropna() 
+
 
 #### LBJ: Q from OrangePeel method 
 from notebook import OrangePeel
 orangepeel = OrangePeel('OrangePeel',1,datadir+'Q/Fagaalu-StageDischarge.xlsx')
 orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT]))
 
-#### LBJ: Q directly from MANNING'S EQUATION:  Q = CrossSectionalArea * 1.0/n * R^(2/3) * S^(1/2)
-#width = 4.9276 ## meters   
-#LBJ['Q-ManningsRect']=(LBJ['stage']/100*width) * (((LBJ['stage']/100*width)/((2*LBJ['stage']/100)+width)**(2.0/3.0)) * (Slope**0.5))/Mannings_n
-#LBJ['Q-ManningsRect']=LBJ['Q-ManningsRect']*1000 ##m3/s to L/s
-###using rating curve from Mannings Rect
-#LBJ['Q-ManningsRect']=LBJ_AVratingcurve_ManningsRect(LBJ['stage']) ## Calculate Q from A-Mannings rating
 
 #### DAM(3 rating curves: AV measurements, WinFlume, HEC-RAS
 DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 DAMstageDischargeLog=DAMstageDischarge.apply(np.log10) #log-transformed version
 
+## DAM: Q Models
+## Linear
+DAM_AV = pd.ols(y=DAMstageDischarge['Q-AV(L/sec)'],x=DAMstageDischarge['stage(cm)'],intercept=True) 
+## Power
+DAM_AVLog = pd.ols(y=DAMstageDischargeLog['Q-AV(L/sec)'],x=DAMstageDischargeLog['stage(cm)'],intercept=True) 
+
 ## HEC-RAS Model of the DAM structure: Documents/HEC/FagaaluDam.prj
 def HEC_piecewise(PTdata):
     if type(PTdata)!=pd.Series:
         PTdata = pd.Series(data=PTdata)
-    HEC_a1, HEC_b1 = 22.831, 54.573 ## from excel DAM_HEC.xlsx
-    HEC_a2, HEC_b2 = 98.546, -3469.4 
+    HEC_a1, HEC_b1 = 9.9132, -5.7184## from excel DAM_HEC.xlsx
+    HEC_a2, HEC_b2 = 25.823, -171.15 
+    HEC_a3, HEC_b3 = 98.546, -3469.4
     
-    Func1=PTdata[PTdata<=45]*HEC_a1 + HEC_b1
-    Func2=PTdata[PTdata>45]*HEC_a2 + HEC_b2
-    AllValues = Func1.append(Func2)
+    Func1=PTdata[PTdata<=11]*HEC_a1 + HEC_b1
+    Func2=PTdata[(PTdata>11)&(PTdata<=45)]*HEC_a2 + HEC_b2
+    Func3=PTdata[PTdata>45]*HEC_a3 + HEC_b3
+    AllValues = Func1.append([Func2,Func3])
     return AllValues
-DAM_HECstageDischarge= pd.DataFrame(data=range(0,45),columns=['stage(cm)'])
+DAM_HECstageDischarge= pd.DataFrame(data=range(0,150),columns=['stage(cm)'])
 DAM_HECstageDischarge['Q_HEC(L/sec)'] = HEC_piecewise(DAM_HECstageDischarge['stage(cm)'])
 
-DAMstageDischarge['Q_HEC(L/sec)']= HEC_piecewise(DAMstageDischarge['stage(cm)'])
+DAMstageDischarge['Q_HEC(L/sec)']= HEC_piecewise(DAMstageDischarge['stage(cm)']).values
 
 
-## DAM: Q Models
-DAM_AV = pd.ols(y=DAMstageDischarge['Q-AV(L/sec)'],x=DAMstageDischarge['stage(cm)'],intercept=True) 
-DAM_AVLog = pd.ols(y=DAMstageDischargeLog['Q-AV(L/sec)'],x=DAMstageDischargeLog['stage(cm)'],intercept=True) 
 DAM_HEC = pd.ols(y=DAMstageDischarge['Q_HEC(L/sec)'],x=DAMstageDischarge['stage(cm)'],intercept=True) 
 
 def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
@@ -488,7 +500,9 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
    
     LBJ_AVpower = powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])    
     PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,site_lbj,c='r',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
-    site_lbj.plot(xy,LBJ_AVnonLinear(xy,interceptZero=True),color='b',label='LBJ_AVnonLinear')
+    ## NonLinear    
+    site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='b',label='LBJ_AVnonLinear')
+    site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='b',ls='--',label='LBJ_AManningVnonLinear')
     
     #LBJ A*ManningV Measurements and Rating Curves
     LBJ_MANlinear=linearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])
@@ -512,24 +526,25 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     
 
     #DAM HEC-RAS Model and Rating Curve
-    LinearFit(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
-    PowerFit(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
-    site_dam.plot(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],'.',color='b',label='DAM HEC-RAS Model')
+    #LinearFit(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
+    #PowerFit(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
+    site_dam.plot(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],'-',color='b',label='DAM HEC-RAS Model')
     
     ## Plot selected rating curves for LBJ and DAM
+    ## AV measurements
     both.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],'.',color='r',markeredgecolor='k',label='VILLAGE A-V')  
     both.plot(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],'.',color='g',markeredgecolor='k',label='FOREST A-V')    
-    
+    ## LBJ Nonlinear Model
     xy = np.linspace(0,PT1['stage'].max())
     both.plot(xy,LBJ_AVnonLinear(xy),color='r',label='LBJ_AVnonLinear')    
+    both.plot(xy,LBJ_AManningVnonLinear(xy),color='b',ls='--',label='LBJ_AManningVnonLinear')
     
     #LBJ_AVpower=powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])
     #PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,both,c='r',ls='-',label='VILLAGE AV Power '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2']) ## rating from LBJ_AVLog
     
+    ## DAM HEC-RAS Model
     xy = np.linspace(0,PT3['stage'].max())  
-    
-    both.plot(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],'.',color='b',label='DAM HEC-RAS Model')
-    both.plot(DAMstageDischarge['stage(cm)'], HEC_piecewise(DAMstageDischarge['stage(cm)']),color='b',label='DAM HEC-RAS piecewise')
+    both.plot(xy, HEC_piecewise(xy),'-',color='b',label='DAM HEC-RAS piecewise')
 
     ## Label subplots    
     site_lbj.set_title('VILLLAGE'),site_lbj.set_xlabel('Stage(cm)'),site_lbj.set_ylabel('Q(L/sec)')
@@ -550,7 +565,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     show_plot(show,fig)
     savefig(save,title)
     return
-plotStageDischargeRatings(show=True,log=False,save=False)
+#plotStageDischargeRatings(show=True,log=False,save=False)
 #plotStageDischargeRatings(show=True,log=False,save=True)
 #plotStageDischargeRatings(show=True,log=True,save=True)
 
@@ -572,15 +587,13 @@ LBJ['Q-AManningVLog'] = (10**LBJ_AManningVLog.beta[1])*(LBJ['stage']**LBJ_AManni
 DAM = DataFrame(PT3,columns=['stage']) ## Build DataFrame with all stage records for location
 DAM['Q-AV']=(DAM['stage']*DAM_AV.beta[0]) + DAM_AV.beta[1] ## Calculate Q from AV rating=
 DAM['Q-AVLog']=(10**DAM_AVLog.beta[1])*(DAM['stage']**DAM_AVLog.beta[0]) 
-
-#DAM['Q-HEC']=(10**DAM_HEC.beta[1])*(DAM['stage']**DAM_HEC.beta[0]) 
 DAM['Q-HEC']= HEC_piecewise(DAM['stage'])
 
 #plt.plot(DAM['Q-HEC'])
 #plt.plot(LBJ['Q-AVnonLinear'])
 
 #### CHOOSE Q RATING CURVE
-LBJ['Q']=LBJ_AVnonLinear(LBJ['stage'])
+LBJ['Q']=LBJ_AManningVnonLinear(LBJ['stage'])
 DAM['Q']= HEC_piecewise(DAM['stage'])
 
 ## Aggregate LBJ
@@ -597,13 +610,16 @@ DAMq['stage']=PT3['stage'] ## put unaltered stage back in
 DAMhourly = DAMq.resample('H',how='sum')
 DAMdaily = DAMq.resample('D',how='sum')
 
+#plt.plot(DAM['Q'])
+#plt.plot(LBJ['Q'])
+
 #### Event-wise
 from HydrographTools import StormSums
 ## LBJ
 Pstorms_LBJ = StormSums(LBJ_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
 Pstorms_LBJ.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_LBJ['EI'] = LBJ_Stormdf['EI']
-Qstorms_LBJ=StormSums(LBJ_StormIntervals,LBJq['Q-AVnonLinear']) #### CHOOSE STAGE-DISCHARGE RATING TO USE for ANALYSIS
+Qstorms_LBJ=StormSums(LBJ_StormIntervals,LBJq['Q']) #### CHOOSE STAGE-DISCHARGE RATING TO USE for ANALYSIS
 Qstorms_LBJ.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
 Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900
 
@@ -611,7 +627,7 @@ Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900
 Pstorms_DAM = StormSums(DAM_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
 Pstorms_DAM.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_DAM['EI'] = DAM_Stormdf['EI']
-Qstorms_DAM= StormSums(DAM_StormIntervals,DAMq['Q-HEC']) #### CHOOSE STAGE-DISCHARGE RATING TO USE for ANALYSIS
+Qstorms_DAM= StormSums(DAM_StormIntervals,DAMq['Q']) #### CHOOSE STAGE-DISCHARGE RATING TO USE for ANALYSIS
 Qstorms_DAM.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
 Qstorms_DAM['Qmax']=Qstorms_DAM['Qmax']/900
 
@@ -627,7 +643,7 @@ StormsDAM['RunoffCoeff']=StormsDAM['Qsum']/StormsDAM['PsumVol']
 
 #### Daily
 PQdaily = DataFrame(PrecipFilled['Precip'])
-PQdaily['LBJ-Qdaily']=LBJdaily['Q-AVLog']
+PQdaily['LBJ-Qdaily']=LBJdaily['Q']
 
 
 def ALL_Q(show=False): ## Discharge
@@ -655,26 +671,34 @@ def ALL_Q(show=False): ## Discharge
     return
 #ALL_Q(True)
 
-def Q_Analysis(show=False):
+def Q_Analysis(show=False, log=False,):
     fig, (Q,stage) = plt.subplots(2,sharex=True)
     title = 'Discharge L/Sec from Rating Curves'
     
     ## Plot Q from the rating curve selected above
-    LBJ['Q-AVLog'].plot(ax=Q,c='r',label='LBJ (Q-AVLog)')
-    DAM['Q-D_Flume'].plot(ax=Q,c='g',ls='-',label='DAM (Q-D_Flume)')
+    LBJ['Q'].plot(ax=Q,c='r',label='LBJ Q (L/sec)')
+    DAM['Q'].plot(ax=Q,c='g',ls='-',label='DAM Q (L/sec)')
     ## Plot Stage    
-    LBJ['stage'].plot(ax=stage,c='r',ls='--',label='LBJ Stage(cm)')
-    DAM['stage'].plot(ax=stage,c='g',ls='--',label='DAM Stage(cm)')
+    LBJ['stage'].plot(ax=stage,c='r',ls='-',label='LBJ Stage(cm)')
+    DAM['stage'].plot(ax=stage,c='g',ls='-',label='DAM Stage(cm)')
+    
+    showstormintervals(Q,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='g',show=True)
+    showstormintervals(stage,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='g',show=True)
     
     Q.grid(True),stage.grid(True)
     Q.legend(),stage.legend()
     stage.set_ylim(0,100)
     plt.suptitle(title)
+    
+    logaxes(log,fig)
+    for ax in fig.axes:
+        ax.autoscale_view(True,True,True)    
+    
     plt.draw()
     if show==True:
         plt.show()
     return
-#Q_Analysis(True)
+Q_Analysis(show=True,log=False)
 
 #    LBJfieldnotesStage['Stage (cm)']=LBJfieldnotesStage['Stage (cm)']-LBJfieldnotesStage['SG-PT'].mean() ## correct for staff gage offset   
 def plotStageIntervals(fig,ax,start,stop):
@@ -727,8 +751,8 @@ def plotStageYears(show=False):
 #plotStageYears(True)
 
 def plotdischargeintervals(fig,ax,start,stop):
-    LBJ['Q-AVLog'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AVLog)')
-    DAM['Q-D_Flume'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-D_Flume)')
+    LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AVLog)')
+    DAM['Q'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-D_Flume)')
     AddTimu1(fig,ax,Precip['Timu1-15'][start:stop])
     AddTimu1(fig,ax,Precip['FPrain'][start:stop])    
     showstormintervals(ax,show=True)
@@ -961,7 +985,7 @@ dam2013 = dam[start2013:stop2013]
 dam2014 = dam[start2014:stop2014]
 
 dt_ssc = pd.DataFrame(TSS[TSS['Location'].isin(['DT','R2'])]['TSS (mg/L)']).resample('15Min')
-dt_ssc ['Q']=DAM['Q']
+dt_ssc['Q']=DAM['Q']
 dt_ssc =dt_ssc.dropna()
 dt2012 = dt_ssc[start2012:stop2012]
 dt2013 = dt_ssc[start2013:stop2013]
@@ -1038,6 +1062,7 @@ def plotQvsC(ms=6,show=False,log=False,save=True):
     show_plot(show,fig)
     savefig(save,title)
     return
+#plotQvsC(ms=20,show=True,log=False,save=False)
 #plotQvsC(ms=20,show=True,log=False,save=True)
     
 def InterpolateGrabSamples(Stormslist,Data,offset=0):
@@ -1134,7 +1159,7 @@ def plotNTU_LBJ(show=False):
     ##Precip
     precip.plot_date(PrecipFilled.index,PrecipFilled['Precip'],ls='steps-post',marker='None',c='b',label='Precip-Filled')
     ##LBJ Discharge
-    lbjQ.plot_date(LBJ['Q-AVLog'].index,LBJ['Q-AVLog'],ls='-',marker='None',c='k',label='LBJ Q-AVLog')
+    lbjQ.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='k',label='LBJ Q-AVLog')
     ##LBJ Turbidity
     ntu.plot_date(LBJntu15minute.index,LBJntu15minute,ls='-',marker='None',c='r',label='LBJ 15min NTU')
     ntu.plot_date(LBJ_OBS.index,LBJ_OBS['NTU'],marker='None',ls='-',c='y',label='LBJ OBS 5min NTU')
@@ -1173,7 +1198,7 @@ def plotNTU_DAM(show=False):
     ##Precip
     precip.plot_date(PrecipFilled.index,PrecipFilled['Precip'],ls='steps-post',marker='None',c='b',label='Precip-Filled')
     ##DAM Discharge
-    damQ.plot_date(DAM['Q-D_Flume'].index,DAM['Q-D_Flume'],ls='-',marker='None',c='k',label='DAM D_Flume')
+    damQ.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='k',label='DAM D_Flume')
     ##DAM Turbidity
     ntu.plot_date(DAMntu15minute.index,DAMntu15minute,ls='-',marker='None',c='r',label='DAM 15min NTU')
     ntu.plot_date(DAM_YSI.index,DAM_YSI['NTU'],ls='-',marker='None',c='y',label='DAM YSI 5min NTU')
@@ -1209,8 +1234,8 @@ def plotNTU_BOTH(show=False,lwidth=0.5):
     ##Precip
     precip.plot_date(PrecipFilled.index,PrecipFilled['Precip'],ls='steps-post',marker='None',c='b',label='Precip-Filled')
     ##Discharge
-    Q.plot_date(LBJ['Q-AVLog'].index,LBJ['Q-AVLog'],ls='-',marker='None',c='r',label='VILLAGE Q-AVLog')
-    Q.plot_date(DAM['Q-D_Flume'].index,DAM['Q-D_Flume'],ls='-',marker='None',c='g',label='FOREST WinFlume')
+    Q.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='r',label='VILLAGE Q-AVLog')
+    Q.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='g',label='FOREST WinFlume')
     Q.axhline(y=66,ls='--',color='k')
     ## Total storm sediment flux (Mg)
     #sed = fig.add_axes(Q.get_position(), frameon=False, sharex=Q)
@@ -1243,14 +1268,14 @@ def plotNTU_BOTH(show=False,lwidth=0.5):
     showstormintervals(ntu)
 
     precip.set_ylabel('Precip (mm/15min)'),precip.legend()
-    Q.set_ylabel('Discharge (L/sec)'),Q.set_ylim(0,LBJ['Q-AVLog'].max()+100),Q.legend()
+    Q.set_ylabel('Discharge (L/sec)'),Q.set_ylim(0,LBJ['Q'].max()+100),Q.legend()
     ntu.set_ylabel('Turbidity (NTU)'),ntu.set_ylim(0,LBJntu15minute['NTU'].max()),ntu.legend(loc='upper left')
     plt.suptitle('Precipitation, Discharge, Turbidity and SSC at FOREST and VILLAGE',fontsize=14)
     plt.draw()
     if show==True:
         plt.show()
     return
-#plotNTU_BOTH(True,lwidth=0.5)
+plotNTU_BOTH(True,lwidth=0.5)
 
 def plotNTUratingstable(show=False,save=False):
     
@@ -1357,7 +1382,7 @@ DAM['TSS-mg/L']=NTU_TSSrating_LBJ_YSI[0].beta[0] * DAM['NTU'] + NTU_TSSrating_LB
 DAM['SedFlux-mg/sec']=DAM['Q'] * DAM['TSS-mg/L']# Q(L/sec) * C (mg/L)
 DAM['SedFlux-tons/sec']=DAM['SedFlux-mg/sec']*(10**-6) ## mg x 10**-6 = tons
 DAM['SedFlux-tons/15min']=DAM['SedFlux-tons/sec']*900 ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
-SedFluxStorms_DAM = StormSums(DAM_StormIntervals,DAM['SedFlux-tons/15min']).dropna()
+SedFluxStorms_DAM = StormSums(DAM_StormIntervals,DAM['SedFlux-tons/15min'])
 SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_DAM=Pstorms_DAM.join(SedFluxStorms_DAM)#Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
@@ -1374,7 +1399,7 @@ LBJ['TSS-mg/L'] = NTU_TSSrating_LBJ_YSI[0].beta[0] * LBJ['NTU'] + NTU_TSSrating_
 LBJ['SedFlux-mg/sec']=LBJ['Q'] * LBJ['TSS-mg/L']# Q(L/sec) * C (mg/L) = mg/sec
 LBJ['SedFlux-tons/sec']=LBJ['SedFlux-mg/sec']*(10**-6) ## mg x 10**-6 = tons
 LBJ['SedFlux-tons/15min']=LBJ['SedFlux-tons/sec']*900 ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
-SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,LBJ['SedFlux-tons/15min']).dropna()
+SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,LBJ['SedFlux-tons/15min'])
 SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
@@ -1383,18 +1408,17 @@ SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
 #### Calculate correlation coefficients and sediment rating curves    
 def compileALLStorms():
     ALLStorms=pd.DataFrame({'Supper':SedFluxStorms_DAM['Ssum'],'Slower':SedFluxStorms_LBJ['Ssum']-SedFluxStorms_DAM['Ssum'],'Stotal':SedFluxStorms_LBJ['Ssum']})
-    ## Get rid of outliers where Slower is negative    
-    ALLStorms['Slower']=ALLStorms['Slower'][ALLStorms['Slower']>=0]
     
     ## Qsum
-    ALLStorms['Qsumlower']=SedFluxStorms_LBJ['Qsum']-SedFluxStorms_DAM['Qsum']
-    ALLStorms['Qsumupper']=SedFluxStorms_DAM['Qsum']
-    ALLStorms['Qsumlower']=ALLStorms['Qsumlower']
     ALLStorms['Qsumtotal']=SedFluxStorms_LBJ['Qsum']
+    ALLStorms['Qsumupper']=SedFluxStorms_DAM['Qsum']
+    ALLStorms['Qsumlower']=SedFluxStorms_LBJ['Qsum']-SedFluxStorms_DAM['Qsum']
+    
     ## Qmax
     ALLStorms['Qmaxupper']=SedFluxStorms_DAM['Qmax']
     ALLStorms['Qmaxlower']=SedFluxStorms_LBJ['Qmax']
     ALLStorms['Qmaxtotal']=SedFluxStorms_LBJ['Qmax']
+    
     ## Add Event Precipitation and EI
     ALLStorms['Pstorms']=Pstorms_LBJ['Psum'] ## Add Event Precip
     ALLStorms['EI'] = LBJ_Stormdf['EI'][LBJ_Stormdf['EI']>1] ## Add Event Erosion Index
@@ -1403,7 +1427,7 @@ ALLStorms = compileALLStorms()
 
 ## Calculate the percent of total SSY with raw vales, BEFORE NORMALIZING by area!
 def plotS_storm_table(show=False):
-    diff = compileALLStorms().dropna()
+    diff = ALLStorms.dropna()
     ## Calculate percent contributions from upper and lower watersheds
     diff['Supper']=diff['Supper'].apply(np.int)
     diff['Slower']=diff['Slower'].apply(np.int)
@@ -1435,20 +1459,20 @@ def plotS_storm_table(show=False):
     if show==True:
         plt.show()
     return
-#plotS_storm_table(show=True)
+plotS_storm_table(show=True)
 
 ## Calculate the percent of total Q with raw vales, BEFORE NORMALIZING by area!
 def plotQ_storm_table(show=False):
     diff = ALLStorms.dropna()
     ## Calculate percent contributions from upper and lower watersheds
-    diff['Qupper']=diff['Qsumupper'].apply(int)
-    diff['Qlower']=diff['Qsumlower'].apply(int)
-    diff['Qtotal']=diff['Qsumtotal'].apply(int)
+    diff['Qupper']=diff['Qsumupper']
+    diff['Qlower']=diff['Qsumlower']
+    diff['Qtotal']=diff['Qsumtotal']
     diff['% Upper'] = diff['Qupper']/diff['Qtotal']*100
     diff['% Upper'] = diff['% Upper'].round(0)
     diff['% Lower'] = diff['Qlower']/diff['Qtotal']*100
     diff['% Lower'] = diff['% Lower'].round(0)
-    diff['Psum'] = diff['Pstorms'].apply(int)
+    diff['Psum'] = diff['Pstorms']
     diff['Storm#']=range(1,len(diff)+1)
     ## add summary stats to bottom of table
     diff=diff.append(pd.DataFrame({'Storm#':'-','Psum':'-','Qupper':'-','Qlower':'-','Qtotal':'Average:','% Upper':'%.1f'%diff['% Upper'].mean(),'% Lower':'%.1f'%diff['% Lower'].mean()},index=['']))
@@ -1470,7 +1494,7 @@ def plotQ_storm_table(show=False):
     if show==True:
         plt.show()
     return
-#plotQ_storm_table(True)
+plotQ_storm_table(True)
 
 def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms,pval=0.05,show=False):
     nrows, ncols = 3,4

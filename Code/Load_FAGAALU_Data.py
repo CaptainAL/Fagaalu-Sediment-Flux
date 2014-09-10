@@ -266,15 +266,29 @@ PT1 = pd.concat([PT1a,PT1b,PT1c])
 
 PT2 = PT_Levelogger(allbaro,'PT2 Drive Thru',XL,'PT-Fagaalu2',0,-22)
 # tshift in 15Min(or whatever the timestep is), zshift in cm
-PT3a = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3a',12,-2)
-PT3b = PT_Levelogger(allbaro,'PT3b Dam',XL,'PT-Fagaalu3b',0,-22)
+PT3a = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3a',12,-3)
+PT3b = PT_Levelogger(allbaro,'PT3b Dam',XL,'PT-Fagaalu3b',0,-23)
 PT3c = PT_Levelogger(allbaro,'PT3c Dam',XL,'PT-Fagaalu3c',0,-18.5)
 PT3d = PT_Levelogger(allbaro,'PT3d Dam',XL,'PT-Fagaalu3d',0,-16)
-PT3e = PT_Levelogger(allbaro,'PT3e Dam',XL,'PT-Fagaalu3e',0,-17.5)
+PT3e = PT_Levelogger(allbaro,'PT3e Dam',XL,'PT-Fagaalu3e',0,-17.4)
 PT3f = PT_Levelogger(allbaro,'PT3f Dam',XL,'PT-Fagaalu3f',0,-17)
-PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0,-10.3)
+PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0,-10.5)
 PT3 = pd.concat([PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
+PT3 = PT3[PT3>0]
 
+fig, ax = plt.subplots()
+allbaro.plot(ax=ax)
+PT1list = [PT1a,PT1b,PT1c]
+PT3list = [PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g]
+for PT in PT3list:
+    try:
+        PT['Pressure'][PT['Pressure']>0].plot(ax=ax,c=np.random.rand(3,1))
+    except KeyError:
+        PT['LEVEL'][PT['LEVEL']>0].plot(ax=ax,c=np.random.rand(3,1))
+    plt.legend()
+    plt.draw()
+    plt.show()
+    
 ## STAGE DATA FOR PT's
 Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT3['stage']})
 
