@@ -364,3 +364,20 @@ N1_AManningVLog = pd.ols(y=N1stageDischargeLog['Q-AManningV(L/sec)'],x=N1stageDi
 N1_Mannings = pd.ols(y=N1stageDischarge['Q-Mannings(L/sec)'],x=N1stageDischarge['stage(cm)'],intercept=True) ## Rectangular channel
 N1_ManningsLog = pd.ols(y=N1stageDischargeLog['Q-Mannings(L/sec)'],x=N1stageDischargeLog['stage(cm)'],intercept=True) ## Rectangular channel
 
+
+#### SSC Analysis
+SampleCounts = DataFrame(data=[str(val) for val in pd.unique(TSS['Location'])],columns=['Location'])
+SampleCounts['#ofTSSsamples']=pd.Series([len(TSS[TSS['Location']==str(val)]) for val in pd.unique(TSS['Location'])]) ##add column of Locations
+
+AllN1Samples = pd.DataFrame(data=[[SampleCounts[SampleCounts['Location'].str.startswith('N1')]['#ofTSSsamples'].sum(),'AllN1']],columns=['#ofTSSsamples','Location'])
+SampleCounts = SampleCounts.append(AllN1Samples)
+AllN2Samples = pd.DataFrame(data=[[SampleCounts[SampleCounts['Location'].str.startswith('N2')]['#ofTSSsamples'].sum(),'AllN1']],columns=['#ofTSSsamples','Location'])
+SampleCounts = SampleCounts.append(AllN2Samples)
+
+
+#### SSC Boxplots and Discharge Concentration
+N1grab = TSS['TSS (mg/L)'][TSS['Location'].isin(['N1H','N1','N1B'])].resample('15Min',fill_method='pad',limit=0)
+N2grab = TSS['TSS (mg/L)'][TSS['Location'].isin(['N2','N2A','N2B'])].resample('15Min',fill_method='pad',limit=0)
+Quarrygrab = TSS['TSS (mg/L)'][TSS['Location'].isin(['N2','N2A','N2B'])].resample('15Min',fill_method='pad',limit=0)
+GrabSamples = pd.concat([DAMgrab,DTgrab,LBJgrab],axis=1)
+GrabSamples.columns = ['DAM','DT','LBJ']

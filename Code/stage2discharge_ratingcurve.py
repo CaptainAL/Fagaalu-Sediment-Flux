@@ -20,7 +20,7 @@ def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=
     for f in Filelist:
         ## Select Flow.txt file
         if f.endswith('Flow.txt')==True and f.startswith(location)==True:
-            print 'file selected for analysis: '+f
+            print 'AV measurements file selected for analysis: '+f
             ## Open File, create blank parameters
             Flowfile = open(path+f)
             Qdf = pd.DataFrame() ## empty dataframe to append calculated Q
