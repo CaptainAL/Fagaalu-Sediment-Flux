@@ -102,8 +102,12 @@ def scaleSeries(series,new_scale=[100,10]):
     OldRange = (series.max() - series.min())  
     NewRange = (new_scale[0] - new_scale[1])  
     NewSeriesValues = (((series - series.min()) * NewRange) / OldRange) + new_scale[1]
-    return NewSeriesValues            
-
+    return NewSeriesValues          
+    
+def power(x,a,b):
+    y = a*(x**b)
+    return y
+    
 def powerfunction(x,y,name='power rating'):
     datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna().apply(np.log10) ## put x and y in a dataframe so you can drop ones that don't match up    
     datadf = datadf[datadf>=-10] ##verify data is valid (not inf)
@@ -223,31 +227,18 @@ def NonlinearFit(x,y,order=2,interceptZero=False,xspace=None,Ax=plt,**kwargs):
 #xnonlinfun = nonlinearfunction(x,x2)
 #xnonlinear = NonlinearFit(x,x2)
 
-def plot_AirportWind(show=False):
-    fig, (speed,direction) = plt.subplots(2,1,sharex=True)
-    
-    airport['Wind Speed m/s'].dropna().plot(ax=speed)
-    airport['WindDirDegrees'].dropna().plot(ax=direction)
-    
-    speed.set_ylim(0,25)
-    plt.suptitle('Wind speed and direction at TAFUNA INTL Airport')
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plot_AirportWind(True)  ## No Data for Drifter Week  
 
 #### Define Storm Periods #####
 ## Define Storm Intervals at LBJ
 DefineStormIntervalsBy = {'User':'User','Separately':'BOTH','DAM':'DAM','LBJ':'LBJ'}
-StormIntervalDef = DefineStormIntervalsBy['User']
+StormIntervalDef = DefineStormIntervalsBy['LBJ']
 
 from HydrographTools import SeparateHydrograph, StormSums
 ## Define by Threshold = Mean Stage+ 1 Std Stage
 LBJ_storm_threshold = PT1['stage'].describe()[1]+PT1['stage'].describe()[2] 
 DAM_storm_threshold = PT3['stage'].describe()[1]+PT3['stage'].describe()[2]
 
-if StormIntervalDef=='LBJ' or StormIntervalDef=='Separately':
+if StormIntervalDef=='LBJ' or StormIntervalDef=='BOTH':
     ## Define Storm Intervals at LBJ
     LBJ_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT1['stage']))
     ## Combine Storm Events where the storm end is the storm start for the next storm
@@ -259,7 +250,7 @@ if StormIntervalDef=='LBJ' or StormIntervalDef=='Separately':
     LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
     LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) #drop the second storm that was combined
 
-if StormIntervalDef == 'DAM'or StormIntervalDef=='Separately':  
+if StormIntervalDef == 'DAM'or StormIntervalDef=='BOTH':  
     ## Define Storm Intervals at DAM
     DAM_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT3['stage']))
     ## Combine Storm Events where the storm end is the storm start for the next storm
@@ -274,9 +265,10 @@ if StormIntervalDef == 'DAM'or StormIntervalDef=='Separately':
 ## Take just one definition of Storm Intervals....
 if StormIntervalDef=='DAM':    
     LBJ_StormIntervals=DAM_StormIntervals 
+    StormIntervals=LBJ_StormIntervals    
 if StormIntervalDef=='LBJ':    
     DAM_StormIntervals=LBJ_StormIntervals     
-
+    StormIntervals=LBJ_StormIntervals    
 ## Use User-defined storm intervals
 if StormIntervalDef=='User':
     stormintervalsXL = pd.ExcelFile(datadir+'StormIntervals.xlsx')
@@ -294,118 +286,47 @@ def showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=StormIn
             ax.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
     return
 
-def plotSTAGE(show=False):
-    fig, stage = plt.subplots(1)
-    title="Stage for PT's in Fagaalu Stream"
-    #### PT1 stage LBJ
-    stage.plot_date(PT1['stage'].index,PT1['stage'],marker='None',ls='-',color='r',label='LBJ')
-    print 'Lowest PT1 stage: '+str(PT1['stage'].min())
-    #### PT2 stage DT
-    stage.plot_date(PT2['stage'].index,PT2['stage'],marker='None',ls='-',color='y',label='DT')
-    #### PT3 stage Dam
-    stage.plot_date(PT3['stage'].index,PT3['stage'],marker='None',ls='-',color='g',label='DAM')
-    LBJfieldnotesStage['Stage (cm)'].plot(ax=stage,marker='o',ls='None',color='r',label='LBJ Field Notes')
-    ## show storm intervals?
-    showstormintervals(stage,shade_color='g',show=True)
-    
-    #### Format X axis and Primary Y axis
-    stage.set_title(title)
-    stage.set_ylabel('Stage height in cm')
-    stage.set_ylim(0,145)
-    stage.legend(loc=2)
-    #### Add Precip data from Timu1
-    AddTimu1(fig,stage,Precip['Timu1-15'])
-    
-    plt.setp(stage.get_xticklabels(),rotation='vertical',fontsize=9)
-    plt.subplots_adjust(left=0.1,right=0.83,top=0.93,bottom=0.15)
-    #### Legend
-    plt.legend(loc=1)
-    fig.canvas.manager.set_window_title('Figure 1: '+title) 
-    stage.grid(True)
-    show_plot(show)
-    return
-#plotSTAGE(True)
- 
-
-def plotPRECIP(show=False):
-    fig = plt.figure(2)
-    Precip['FPhourly'].dropna().plot(label='Precip Hourly (Wx Station)',color='b',linestyle='steps-mid')
-    Precip['FPdaily'].dropna().plot(label='Precip Daily (Wx Station)',color='c',linestyle='steps-post')
-    Precip['Timu1hourly'].dropna().plot(label='Precip Hourly',color='y',linestyle='steps-mid')
-    Precip['Timu1daily'].dropna().plot(label='Precip Daily',color='g',linestyle='steps-post')
-    #PrecipMonthly = Timu1monthly.plot(label='Precip Monthly',color='k',linestyle='steps-post')    
-    plt.axes().xaxis_date()
-    plt.setp(plt.axes().get_xticklabels(), rotation=45, fontsize=9)
-    plt.ylabel('Precipitation (mm)')
-    fig.canvas.manager.set_window_title('Figure 2: Precipitation(mm)') 
-    plt.legend(),plt.grid(True)
-    if show==True:
-        plt.show()
-    return
-#plotPRECIP(True)
-    
-def plotPrecipIntervals(fig,ax,start,stop):
-    Precip['FPhourly'][start:stop].dropna().plot(ax=ax,label='Precip Hourly (Wx Station)',color='b',linestyle='steps-mid')
-    Precip['Timu1hourly'][start:stop].dropna().plot(ax=ax,label='Precip Hourly',color='y',linestyle='steps-mid')
-    showstormintervals(ax,show=True)
-    ax.set_ylim(0,60)
-    return
-
-def plotPrecipYears(show=False):
-    fig, (precip2012,precip2013,precip2014) = plt.subplots(3)
-    title="Precipitation in Faga'alu"
-    plotPrecipIntervals(fig,precip2012,start2012,stop2012)
-    plotPrecipIntervals(fig,precip2013,start2013,stop2013)    
-    plotPrecipIntervals(fig,precip2014,start2014,stop2014)    
-    
-    precip2012.set_title(title)
-    precip2014.legend()
-    plt.tight_layout()
-    if show==True:
-        plt.show()
-    return
-#plotPrecipYears(True)
 
 #### Analyze Storm Precip Characteristics: Intensity, Erosivity Index etc. ####
-def StormPrecipAnalysis(StormIntervals):
+def StormPrecipAnalysis(storms=StormIntervals):
+    storms=StormIntervals
     #### EROSIVITY INDEX for storms (ENGLISH UNITS)
-    stormlist=[]
-    for storm in StormIntervals.iterrows():
-        index = storm[1]['start']
+    Stormdf = pd.DataFrame()
+    for storm in storms.iterrows():
+        StormIndex = storm[1]['start']
         start = storm[1]['start']-dt.timedelta(minutes=60) ## storm start is when PT exceeds threshold, retrieve Precip x min. prior to this.
         end =  storm[1]['end'] ## when to end the storm?? falling limb takes too long I think
-        try:
-            rain_data = pd.DataFrame.from_dict({'Timu1':PrecipFilled['Precip'][start:end]})
-            rain_data['AccumulativeDepth mm']=(rain_data['Timu1']).cumsum() ## cumulative depth at 1 min. intervals
-            rain_data['AccumulativeDepth in.']=(rain_data['Timu1']/25.4).cumsum() ## cumulative depth at 1 min. intervals
-            rain_data['Intensity (in./hr)']=rain_data['Timu1']*60 ## intensity at each minute
-            rain_data['30minMax (in./hr)']=m.rolling_sum(Precip['Timu1'],window=30)/25.4
-            I30 = rain_data['30minMax (in./hr)'].max()
-            duration_hours = (end - start).days * 24 + (end - start).seconds//3600
-            I = (rain_data['Timu1'].sum())/25.4/duration_hours ## I = Storm Average Intensity
-            E = 1099 * (1-(0.72*math.exp(-1.27*I))) ## E = Rain Kinetic Energy
-            EI = E*I30
-            stormlist.append((index,[rain_data['Timu1'].sum()/25.4,duration_hours,I30,I,E,EI]))
-        except:
-            print "Can't analyze Storm Precip for storm:"+str(start)
-            pass
-    Stormdf = pd.DataFrame.from_items(stormlist,orient='index',columns=['Total(in)','Duration(hrs)','Max30minIntensity(in/hr)','AvgIntensity(in/hr)','E-RainKineticEnergy(ft-tons/acre/inch)','EI'])
-    Stormdf = Stormdf[(Stormdf['Total(in)']>0.0)] ## filter out storms without good Timu1 data
+        
+        rain_data = pd.DataFrame.from_dict({'Timu1':PrecipFilled['Precip'][start:end]})
+        if len(rain_data)>0:
+            try:
+                #print start,end
+                rain_data['AccumulativeDepth mm']=(rain_data['Timu1']).cumsum() ## cumulative depth at 1 min. intervals
+                rain_data['AccumulativeDepth in.']=rain_data['AccumulativeDepth mm']/25.4 ## cumulative depth at 1 min. intervals
+                rain_data['Intensity (in./hr)']=rain_data['Timu1']*60 ## intensity at each minute
+                rain_data['30minMax (in./hr)']=m.rolling_sum(Precip['Timu1'],window=30)/25.4
+                
+                Psum_in = rain_data['Timu1'].sum()/25.4
+                duration_hours = (end - start).days * 24 + (end - start).seconds//3600
+                I = Psum_in/duration_hours ## I = Storm Average Intensity
+                E = 1099. * (1.-(0.72*math.exp(-1.27*I))) ## E = Rain Kinetic Energy
+                I30 = rain_data['30minMax (in./hr)'].max()
+                EI = E*I30
+                EIm = EI*1.702
+                Stormdf=Stormdf.append(pd.DataFrame({'Total(in)':Psum_in,'Duration(hrs)':duration_hours,
+                'Max30minIntensity(in/hr)':I30,'AvgIntensity(in/hr)':I,'E-RainKineticEnergy(ft-tons/acre/inch)':E,'EI':EI,'EIm':EIm},index=[StormIndex]))
+                Stormdf = Stormdf[(Stormdf['Total(in)']>0.0)] ## filter out storms without good Timu1 data
+            except:
+                raise
+                print "Can't analyze Storm Precip for storm:"+str(start)
+                pass
     return Stormdf
     
-LBJ_Stormdf = StormPrecipAnalysis(LBJ_StormIntervals)
-DAM_Stormdf = StormPrecipAnalysis(DAM_StormIntervals)
+LBJ_Stormdf = StormPrecipAnalysis(storms=LBJ_StormIntervals)
+DAM_Stormdf = StormPrecipAnalysis(storms=DAM_StormIntervals)
 
 #### STAGE TO DISCHARGE ####
-
-order=1
-powerlaw = False
 from stage2discharge_ratingcurve import AV_RatingCurve, calcQ, Mannings_rect, Weir_rect, Weir_vnotch, Flume
-## Q = a(stage)**b
-def power(x,a,b):
-    y = a*(x**b)
-    return y
-
 ### Area Velocity and Mannings from in situ measurments
 ## stage2discharge_ratingcurve.AV_rating_curve(datadir,location,Fagaalu_stage_data,trapezoid=False,Slope=0.01,Mannings_n=0.03,width=4.9276)
 ## Returns DataFrame of Stage (cm) and Discharge (L/sec) calc. from AV measurements with time index
@@ -413,15 +334,15 @@ def power(x,a,b):
 #### LBJ (3 rating curves: AV measurements, A measurment * Mannings V, Area of Rectangular section * Mannings V)
 Slope = 0.0161 # m/m
 n=0.050 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
-
-LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
-LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
-LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
-
 ### Calculate Q from a single AV measurement
 #fileQ = calcQ(datadir+'Q/LBJ_4-18-13.txt','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True)
 ### and save to CSV
 #pd.concat(fileQ).to_csv(datadir+'Q/LBJ_4-18-13.csv')
+
+## LBJ AV measurements
+LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
+LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
+LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
 
 ## LBJ: Q Models 
 ## Linear
@@ -434,24 +355,22 @@ LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDisch
 LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
 
 ## Fit nonlinear wiht intercept zero
-for _ in range(3):
-    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AV(L/sec)':0},index=[np.random.rand()])) ## add zero/zero intercept
+for _ in range(3):## add zero/zero intercept
+    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AV(L/sec)':0},index=[np.random.rand()])) 
 LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=3,interceptZero=False)  
 LBJstageDischarge=LBJstageDischarge.dropna() ## get rid of zero/zero interctp
 
-for _ in range(3):
-    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AManningV(L/sec)':0},index=[np.random.rand()])) ## add zero/zero intercept
+for _ in range(3):## add zero/zero intercept
+    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AManningV(L/sec)':0},index=[np.random.rand()])) 
 LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],order=3,interceptZero=False)
-LBJstageDischarge=LBJstageDischarge.dropna() 
+LBJstageDischarge=LBJstageDischarge.dropna() ## get rid of zero/zero interctp
 
-
-#### LBJ: Q from OrangePeel method 
+## LBJ: Q from OrangePeel method 
 from notebook import OrangePeel
 orangepeel = OrangePeel('OrangePeel',1,datadir+'Q/Fagaalu-StageDischarge.xlsx')
 orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT]))
 
-
-#### DAM(3 rating curves: AV measurements, WinFlume, HEC-RAS
+## DAM AV Measurements
 DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 DAMstageDischargeLog=DAMstageDischarge.apply(np.log10) #log-transformed version
 
@@ -479,7 +398,6 @@ DAM_HECstageDischarge['Q_HEC(L/sec)'] = HEC_piecewise(DAM_HECstageDischarge['sta
 
 DAMstageDischarge['Q_HEC(L/sec)']= HEC_piecewise(DAMstageDischarge['stage(cm)']).values
 
-
 DAM_HEC = pd.ols(y=DAMstageDischarge['Q_HEC(L/sec)'],x=DAMstageDischarge['stage(cm)'],intercept=True) 
 
 def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
@@ -494,37 +412,36 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     xy = np.linspace(0,150,150)
     
     #LBJ AV Measurements and Rating Curve
-    site_lbj.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],'.',color='k',markeredgecolor='k',label='LBJ_AV')   
+    site_lbj.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],'.',color='r',markeredgecolor='k',label='LBJ_AV')   
+    #LBJ A*ManningV Measurements and Rating Curves
+    site_lbj.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')
+
+    ## LBJ MODELS
+    ## LBJ Linear    
     LBJ_AVlinear= linearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])    
     LinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,site_lbj,c='r',ls='--',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
-   
+    ## LBJ Power
     LBJ_AVpower = powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])    
-    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,site_lbj,c='r',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
-    ## NonLinear    
-    site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='b',label='LBJ_AVnonLinear')
-    site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='b',ls='--',label='LBJ_AManningVnonLinear')
-    
-    #LBJ A*ManningV Measurements and Rating Curves
+    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,site_lbj,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    ## LBJ NonLinear
+    site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='-',label='LBJ_AVnonLinear')    
+    ## LBJ Mannings Linear    
     LBJ_MANlinear=linearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])
-    LBJ_MANpower =powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])
     LinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,site_lbj,c='grey',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
-    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,site_lbj,c='grey',ls='-',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
-    site_lbj.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')    
-    
-    ##LBJ Orange Peel Measurements and Rating Curve
-    #LinearFit(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],xy,site_lbj,c='DarkOrange',ls='--',label='LBJ_OPlinear') ## a b values from excel file  FagaaluStage-Discharge
-    #PowerFit(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],xy,site_lbj,c='DarkOrange',ls='-',label='LBJ_OPpower')    
-    #site_lbj.plot(orangepeel['PT reading(cm)'],orangepeel['AVG L/sec'],'.',color='DarkOrange',label='LBJ_OP')    
+    ## LBJ Manning Power    
+    LBJ_MANpower =powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])    
+    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,site_lbj,c='grey',ls='-.',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
+    ## LBJ Manning NonLinear    
+    site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
     
     #DAM AV Measurements and Rating Curve
     site_dam.plot(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],'.',color='g',markeredgecolor='k',label='DAM_AV')
-    
+    ## DAM Linear
     DAM_AVlinear=linearfunction(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'])    
-    DAM_AVpower=powerfunction(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'])
     LinearFit(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],xy,site_dam,c='g',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
-    PowerFit(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],xy,site_dam,c='g',ls='-', label='DAM AV '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
-    
-
+    ## DAM Power    
+    DAM_AVpower=powerfunction(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'])    
+    PowerFit(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],xy,site_dam,c='g',ls='-.', label='DAM AV '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
     #DAM HEC-RAS Model and Rating Curve
     #LinearFit(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
     #PowerFit(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
@@ -535,16 +452,11 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     both.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],'.',color='r',markeredgecolor='k',label='VILLAGE A-V')  
     both.plot(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],'.',color='g',markeredgecolor='k',label='FOREST A-V')    
     ## LBJ Nonlinear Model
-    xy = np.linspace(0,PT1['stage'].max())
-    both.plot(xy,LBJ_AVnonLinear(xy),color='r',label='LBJ_AVnonLinear')    
-    both.plot(xy,LBJ_AManningVnonLinear(xy),color='b',ls='--',label='LBJ_AManningVnonLinear')
-    
-    #LBJ_AVpower=powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])
-    #PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,both,c='r',ls='-',label='VILLAGE AV Power '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2']) ## rating from LBJ_AVLog
-    
-    ## DAM HEC-RAS Model
-    xy = np.linspace(0,PT3['stage'].max())  
-    both.plot(xy, HEC_piecewise(xy),'-',color='b',label='DAM HEC-RAS piecewise')
+    both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
+    both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
+        
+    ## DAM HEC-RAS Model 
+    both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
 
     ## Label subplots    
     site_lbj.set_title('VILLLAGE'),site_lbj.set_xlabel('Stage(cm)'),site_lbj.set_ylabel('Q(L/sec)')
@@ -554,7 +466,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     site_lbj.set_xlim(0,PT1['stage'].max()+10),site_lbj.set_ylim(0,LBJ_AVnonLinear(PT1['stage'].max()+10))
     site_dam.set_xlim(0,PT3['stage'].max()+10),site_dam.set_ylim(0,HEC_piecewise(PT3['stage'].max()+10).values)
     ## Legends
-    #site_lbj.legend(loc='best',ncol=2,fancybox=True),site_dam.legend(loc='best',ncol=2,fancybox=True),both.legend(loc='best',ncol=2,fancybox=True)
+    site_lbj.legend(loc='best',ncol=2,fancybox=True),site_dam.legend(loc='best',ncol=2,fancybox=True),both.legend(loc='best',ncol=2,fancybox=True)
     plt.legend(loc='best')    
     ## Figure title
     #plt.suptitle(title,fontsize=16)
@@ -565,71 +477,69 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     show_plot(show,fig)
     savefig(save,title)
     return
-#plotStageDischargeRatings(show=True,log=False,save=False)
+plotStageDischargeRatings(show=True,log=False,save=False)
 #plotStageDischargeRatings(show=True,log=False,save=True)
 #plotStageDischargeRatings(show=True,log=True,save=True)
 
 #### Calculate Discharge
-## Calculate Q for LBJ: From AV rating, from A-Manning, from Manning-Rectangular Cross Section
+## Calculate Q for LBJ
+## Stage
 LBJ = DataFrame(PT1,columns=['stage']) ## Build DataFrame with all stage records for location (cm)
+## Linear Models
 LBJ['Q-AV']=(LBJ['stage']*LBJ_AV.beta[0]) + LBJ_AV.beta[1] ## Calculate Q from AV rating (L/sec)
 LBJ['Q-AManningV']= (LBJ['stage']*LBJ_AManningV.beta[0]) + LBJ_AManningV.beta[1] ## Calculate Q from A-Mannings rating (L/sec)
-LBJ['Q-AVnonLinear'] = LBJ_AVnonLinear(LBJ['stage'])
-
-a = 10**LBJ_AVLog.beta[1] # beta[1] is the intercept = log10(a), so a = 10**beta[1] 
-b = LBJ_AVLog.beta[0] # beta[0] is the slope = b
-
+## Power Models
+a,b = 10**LBJ_AVLog.beta[1], LBJ_AVLog.beta[0]# beta[1] is the intercept = log10(a), so a = 10**beta[1] # beta[0] is the slope = b
 LBJ['Q-AVLog'] = a * (LBJ['stage']**b)
-LBJ['Q-AManningVLog'] = (10**LBJ_AManningVLog.beta[1])*(LBJ['stage']**LBJ_AManningVLog.beta[0])
+a,b = 10**LBJ_AManningVLog.beta[1], LBJ_AManningVLog.beta[0]
+LBJ['Q-AManningVLog'] = a*(LBJ['stage']**b)
+## NonLinear Models
+LBJ['Q-AVnonLinear'] = LBJ_AVnonLinear(LBJ['stage'])
+LBJ['Q-AManningVnonLinear']= LBJ_AManningVnonLinear(LBJ['stage'])
 
 
-## Build Dataframe of all discharge measurments
+#### Calculate Q for DAM
+## Stage
 DAM = DataFrame(PT3,columns=['stage']) ## Build DataFrame with all stage records for location
+## Linear Model
 DAM['Q-AV']=(DAM['stage']*DAM_AV.beta[0]) + DAM_AV.beta[1] ## Calculate Q from AV rating=
-DAM['Q-AVLog']=(10**DAM_AVLog.beta[1])*(DAM['stage']**DAM_AVLog.beta[0]) 
+## Power Model
+a,b = 10**DAM_AVLog.beta[1], DAM_AVLog.beta[0]
+DAM['Q-AVLog']=(a)*(DAM['stage']**b) 
+## HEC-RAS Model
 DAM['Q-HEC']= HEC_piecewise(DAM['stage'])
-
-#plt.plot(DAM['Q-HEC'])
-#plt.plot(LBJ['Q-AVnonLinear'])
 
 #### CHOOSE Q RATING CURVE
 LBJ['Q']=LBJ_AManningVnonLinear(LBJ['stage'])
+print 'LBJ Q from Area * Manning V (NonLinear fit)'
 DAM['Q']= HEC_piecewise(DAM['stage'])
+print 'DAM Q from HEC-RAS piecewise'
 
 ## Aggregate LBJ
 LBJq = (LBJ*900) ## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
 LBJq['stage']=PT1['stage'] ## put unaltered stage back in
 
-LBJhourly = LBJq.resample('H',how='sum')
-LBJdaily = DataFrame(LBJq.resample('D',how='sum'))
-
 ## Aggregate DAM
 DAMq= (DAM*900)## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
 DAMq['stage']=PT3['stage'] ## put unaltered stage back in
 
-DAMhourly = DAMq.resample('H',how='sum')
-DAMdaily = DAMq.resample('D',how='sum')
 
-#plt.plot(DAM['Q'])
-#plt.plot(LBJ['Q'])
-
-#### Event-wise
+#### Integrate per Storm Event
 from HydrographTools import StormSums
 ## LBJ
 Pstorms_LBJ = StormSums(LBJ_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
 Pstorms_LBJ.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_LBJ['EI'] = LBJ_Stormdf['EI']
-Qstorms_LBJ=StormSums(LBJ_StormIntervals,LBJq['Q']) #### CHOOSE STAGE-DISCHARGE RATING TO USE for ANALYSIS
+Qstorms_LBJ=StormSums(LBJ_StormIntervals,LBJq['Q']) 
 Qstorms_LBJ.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
-Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900
-
+Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900 ## Have to divide by 900 to get instantaneous 
 ## DAM
 Pstorms_DAM = StormSums(DAM_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
 Pstorms_DAM.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_DAM['EI'] = DAM_Stormdf['EI']
-Qstorms_DAM= StormSums(DAM_StormIntervals,DAMq['Q']) #### CHOOSE STAGE-DISCHARGE RATING TO USE for ANALYSIS
+Qstorms_DAM= StormSums(DAM_StormIntervals,DAMq['Q']) 
 Qstorms_DAM.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
-Qstorms_DAM['Qmax']=Qstorms_DAM['Qmax']/900
+Qstorms_DAM['Qmax']=Qstorms_DAM['Qmax']/900 ## Have to divide by 900 to get instantaneous 
 
 ## Event Runoff Coefficient
 StormsLBJ = Pstorms_LBJ[Pstorms_LBJ['Psum']>0].join(Qstorms_LBJ)
@@ -645,297 +555,6 @@ StormsDAM['RunoffCoeff']=StormsDAM['Qsum']/StormsDAM['PsumVol']
 PQdaily = DataFrame(PrecipFilled['Precip'])
 PQdaily['LBJ-Qdaily']=LBJdaily['Q']
 
-
-def ALL_Q(show=False): ## Discharge
-    plt.ion()
-    fig, (site_lbj,site_dam) = plt.subplots(2,sharex=True)
-    title = 'Discharge L/Sec from Rating Curves'
-    
-    LBJ['Q-AV'].plot(ax=site_lbj,c='r',marker='None',ls='-',label='LBJ-AV')
-
-    LBJ['Q-AVLog'].plot(ax=site_lbj,c='r',ls='--',label='LBJ-AVLog')
-    LBJ['Q-AManningV'].plot(ax=site_lbj,c='g',ls='-',label='LBJ-AManningV')
-    LBJ['Q-AManningVLog'].plot(ax=site_lbj,c='g',ls='--',label='LBJ-AManningVLog')
-    
-    DAM['Q-AV'].plot(ax=site_dam,c='r',ls='-',label='DAM-AV')
-    DAM['Q-AVLog'].plot(ax=site_dam,c='r',ls='--',label='DAM-AVLog')
-    DAM['Q-HEC'].plot(ax=site_dam,c='g',ls='-',label='DAM-HEC')
-    DAM['Q-D_Flume'].plot(ax=site_dam,c='g',ls='--',label='DAM-WinFlume')
-    
-    site_lbj.grid(True),site_dam.grid(True)
-    site_lbj.legend(),site_dam.legend()
-    plt.suptitle(title)
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#ALL_Q(True)
-
-def Q_Analysis(show=False, log=False,):
-    fig, (Q,stage) = plt.subplots(2,sharex=True)
-    title = 'Discharge L/Sec from Rating Curves'
-    
-    ## Plot Q from the rating curve selected above
-    LBJ['Q'].plot(ax=Q,c='r',label='LBJ Q (L/sec)')
-    DAM['Q'].plot(ax=Q,c='g',ls='-',label='DAM Q (L/sec)')
-    ## Plot Stage    
-    LBJ['stage'].plot(ax=stage,c='r',ls='-',label='LBJ Stage(cm)')
-    DAM['stage'].plot(ax=stage,c='g',ls='-',label='DAM Stage(cm)')
-    
-    showstormintervals(Q,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='g',show=True)
-    showstormintervals(stage,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='g',show=True)
-    
-    Q.grid(True),stage.grid(True)
-    Q.legend(),stage.legend()
-    stage.set_ylim(0,100)
-    plt.suptitle(title)
-    
-    logaxes(log,fig)
-    for ax in fig.axes:
-        ax.autoscale_view(True,True,True)    
-    
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-Q_Analysis(show=True,log=False)
-
-#    LBJfieldnotesStage['Stage (cm)']=LBJfieldnotesStage['Stage (cm)']-LBJfieldnotesStage['SG-PT'].mean() ## correct for staff gage offset   
-def plotStageIntervals(fig,ax,start,stop):
-    ## This is for the StageYears plot below
-    #### PT1 stage LBJ
-    ax.plot_date(PT1['stage'][start:stop].index,PT1['stage'][start:stop],marker='None',ls='-',color='r',label='LBJ')
-    print 'Lowest PT1 stage: '+str(PT1['stage'].min())
-    #### PT2 stage DT
-    ax.plot_date(PT2['stage'][start:stop].index,PT2['stage'][start:stop],marker='None',ls='-',color='y',label='DT')
-    #### PT3 stage Dam
-    ax.plot_date(PT3['stage'][start:stop].index,PT3['stage'][start:stop],marker='None',ls='-',color='g',label='Dam')
-    #### LBJ field notes for verification
-    #ax.plot_date(LBJfieldnotesStage['Stage (cm)'][start:stop].index,LBJfieldnotesStage['Stage (cm)'][start:stop],marker='o',ls='None',color='r',label='LBJ Field Notes')
-    ## show storm intervals?
-
-    showstormintervals(ax,storm_threshold=DAM_storm_threshold,showStorms=DAM_StormIntervals,shade_color='g',show=True)
-    showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='grey',show=True)
-    
-    AddTimu1(fig,ax,Precip['Timu1-15'])
-    AddTimu1(fig,ax,Precip['FPrain'])
-    
-    ax.set_ylim(0,110)
-    ax.set_xlim(start,stop)
-    ax.set_ylabel('Stage (cm)')
-    return
-
-
-def plotStageYears(show=False):
-    fig, (stage2012, stage2013, stage2014) = plt.subplots(3)
-    title="Stage for PT's in Fagaalu Stream"
-    #### PT1 stage LBJ
-    plotStageIntervals(fig,stage2012,start2012,stop2012)
-    stage2012.plot(DAMstageDischarge['stage(cm)'],'.')
-    #### PT2 stage DT
-    plotStageIntervals(fig,stage2013,start2013,stop2013)    
-    #### PT3 stage Dam    
-    plotStageIntervals(fig,stage2014,start2014,stop2014)    
-
-    plt.subplots_adjust(left=0.1,right=0.83,top=0.93,bottom=0.15)
-    #### Legend
-    #LegendWithPrecip(stage2012)
-    fig.canvas.manager.set_window_title('Figure 1: '+title) 
-    stage2012.set_title(title)
-    stage2014.legend()
-    plt.tight_layout()
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotStageYears(True)
-
-def plotdischargeintervals(fig,ax,start,stop):
-    LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AVLog)')
-    DAM['Q'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-D_Flume)')
-    AddTimu1(fig,ax,Precip['Timu1-15'][start:stop])
-    AddTimu1(fig,ax,Precip['FPrain'][start:stop])    
-    showstormintervals(ax,show=True)
-    ax.set_ylim(0,2600)
-    return
-    
-def QYears(show=False):
-    fig, (Q2012,Q2013,Q2014)=plt.subplots(3)
-    plotdischargeintervals(fig,Q2012,start2012,stop2012)
-    plotdischargeintervals(fig,Q2013,start2013,stop2013)
-    plotdischargeintervals(fig,Q2014,start2014,stop2014)
-    
-    Q2014.legend()
-    Q2013.set_ylabel('Discharge (Q) L/sec')
-    Q2012.set_title("Discharge (Q) L/sec at the Upstream and Downstream Sites, Faga'alu")
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#QYears(True)
-
-#P_Q.scatter(PQdaily['Timu1daily'],PQdaily['Qdaily'],marker='o',s=dotsize,color='r')
-def PQ(show=False): ## "Event Rainfall(mm) vs. Event Discharge (L) Fagaalu Stream"
-    fig,P_Q = plt.subplots(1)    
-    dotsize=20
-    ### LBJ
-    P_Q.scatter(StormsLBJ['Psum'],StormsLBJ['Qsum'],color='r',marker='o',s=scaleSeries(StormsLBJ['Pmax'].dropna().values),edgecolors='grey')
-    Polyfit(StormsLBJ['Psum'],StormsLBJ['Qsum'],1,'r','Rainfall-Runoff-LBJ',100,P_Q)
-    ### DAM
-    P_Q.scatter(StormsDAM['Psum'],StormsDAM['Qsum'],color='g',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna().values),edgecolors='grey')
-    Polyfit(StormsDAM['Psum'],StormsDAM['Qsum'],1,'g','Rainfall-Runoff-DAM',100,P_Q) ### Won't work if na values in np.array->polyfit
-    ### Label on click
-    labelindex(StormsLBJ.index,StormsLBJ['Psum'],StormsLBJ['Qsum'])
-    labelindex(StormsDAM.index,StormsDAM['Psum'],StormsDAM['Qsum'])
-    
-    title="Event Rainfall(mm) vs. Event Discharge (L) Fagaalu Stream"
-    P_Q.set_title(title)
-    P_Q.set_ylabel('Event Discharge (L)'),P_Q.set_xlabel('Event Precipitation (mm)-DotSize = Max 15min. Precip')
-    P_Q.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), P_Q.set_xlim(0,250)
-    fig.canvas.manager.set_window_title('Figure: '+title)
-    P_Q.grid(True), P_Q.legend(loc=4)
-    
-    log=False
-    if log==True:
-        P_Q.set_yscale('log'), P_Q.set_xscale('log')
-
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#PQ(True)
-
-def PQyears_LBJ(show=False):
-    fig, site_lbj=plt.subplots(1)
-    
-    site_lbj.scatter(StormsLBJ['Psum'][start2012:stop2012],StormsLBJ['Qsum'][start2012:stop2012],color='g',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2012:stop2012].dropna().values),label='2012')
-    site_lbj.scatter(StormsLBJ['Psum'][start2013:stop2013],StormsLBJ['Qsum'][start2013:stop2013],color='y',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2013:stop2013].dropna().values),label='2013')
-    site_lbj.scatter(StormsLBJ['Psum'][start2014:stop2014],StormsLBJ['Qsum'][start2014:stop2014],color='r',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2014:stop2014].dropna().values),label='2014')
-
-    ### Label on click
-    labelindex(StormsLBJ.index,StormsLBJ['Psum'],StormsLBJ['Qsum'])
-        
-    title="Event Rainfall(mm) vs. Event Discharge (L) Fagaalu Stream"
-    fig.suptitle(title)
-    site_lbj.set_title('LBJ')
-    site_lbj.set_ylabel('Discharge (L)'),site_lbj.set_xlabel('Precipitation (mm) - DotSize=15minMaxPrecip(mm)')
-    site_lbj.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), site_lbj.set_xlim(0,250)
-    fig.canvas.manager.set_window_title('Figure: '+title)
-    site_lbj.legend()
-    site_lbj.grid(True)
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#PQyears_LBJ(True)
-
-def PQyears_DAM(show=False):
-    fig, site_dam=plt.subplots(1)
-    dotsize=20
-    site_dam.scatter(StormsDAM['Psum'][start2012:stop2012],StormsDAM['Qsum'][start2012:stop2012],color='g',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2012:stop2012].values),label='2012')
-    site_dam.scatter(StormsDAM['Psum'][start2013:stop2013],StormsDAM['Qsum'][start2013:stop2013],color='y',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2013:stop2013].values),label='2013')
-    site_dam.scatter(StormsDAM['Psum'][start2014:stop2014],StormsDAM['Qsum'][start2014:stop2014],color='r',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2014:stop2014].values),label='2014')
-
-    ### Label on click
-    labelindex(StormsDAM.index,StormsDAM['Psum'],StormsDAM['Qsum'])
-    
-    title="Event Rainfall(mm) vs. Event Discharge (L) Fagaalu Stream"
-    fig.suptitle(title)
-    site_dam.set_title('DAM')
-    site_dam.set_ylabel('Discharge (L)'),site_dam.set_xlabel('Precipitation (mm) - DotSize=15minMaxPrecip(mm)')
-    site_dam.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), site_dam.set_xlim(0,250)
-    fig.canvas.manager.set_window_title('Figure: '+title)
-    site_dam.legend()
-    site_dam.grid(True)
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#PQyears_DAM(True)
-
-def PQyears_BOTH(show=False):
-    fig, (site_dam,site_lbj)=plt.subplots(1,2,sharey=True,sharex=True)
-    dotsize=30
-    site_lbj.scatter(StormsLBJ['Psum'][start2012:stop2012],StormsLBJ['Qsum'][start2012:stop2012]*.001,color='g',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2012:stop2012].dropna().values),label='2012')
-    site_lbj.scatter(StormsLBJ['Psum'][start2013:stop2013],StormsLBJ['Qsum'][start2013:stop2013]*.001,color='y',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2013:stop2013].dropna().values),label='2013')
-    site_lbj.scatter(StormsLBJ['Psum'][start2014:stop2014],StormsLBJ['Qsum'][start2014:stop2014]*.001,color='r',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2014:stop2014].dropna().values),label='2014')
-
-    site_lbj.set_title('VILLAGE',fontsize=16)
-    site_lbj.set_ylabel(r'$Event Discharge (m^3)$'),site_lbj.set_xlabel('Precipitation (mm) - DotSize=Intensity(mm/15min)')
-    #site_lbj.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), site_lbj.set_xlim(0,250)
-    site_lbj.legend(loc=4)
-    site_lbj.grid(True)
-
-    site_dam.scatter(StormsDAM['Psum'][start2012:stop2012],StormsDAM['Qsum'][start2012:stop2012]*.001,color='g',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2012:stop2012].values),label='2012')
-    site_dam.scatter(StormsDAM['Psum'][start2013:stop2013],StormsDAM['Qsum'][start2013:stop2013]*.001,color='y',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2013:stop2013].values),label='2013')
-    site_dam.scatter(StormsDAM['Psum'][start2014:stop2014],StormsDAM['Qsum'][start2014:stop2014]*.001,color='r',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2014:stop2014].values),label='2014')
-    
-    site_dam.set_title('FOREST',fontsize=16)
-    site_dam.set_ylabel(r'$Event Discharge (m^3)$'),site_dam.set_xlabel('Precipitation (mm) - DotSize=Intensity(mm/15min)')
-    #site_dam.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), site_dam.set_xlim(0,250)
-    site_dam.legend(loc=4)
-    site_dam.grid(True)
-    
-    ### Label on click
-    labelindex(StormsLBJ.index,StormsLBJ['Psum'],StormsLBJ['Qsum'])
-    labelindex(StormsDAM.index,StormsDAM['Psum'],StormsDAM['Qsum'])
-    
-    title="Event Rainfall vs. Event Discharge Fagaalu Stream"
-    fig.suptitle(title,fontsize=16)
-    fig.canvas.manager.set_window_title('Figure: '+title)
-    
-    
-    log=False
-    if log==True:
-        site_lbj.set_yscale('log'), site_lbj.set_xscale('log')
-        site_dam.set_yscale('log'), site_dam.set_xscale('log')
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#PQyears_BOTH(True)
-
-def PQvol_years_BOTH(show=False):
-    fig, (site_lbj,site_dam)=plt.subplots(1,2,sharey=True,sharex=True)
-    dotsize=20
-    site_lbj.scatter(StormsLBJ['PsumVol'][start2012:stop2012]*.001,StormsLBJ['Qsum'][start2012:stop2012]*.001,color='g',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2012:stop2012].dropna().values),label='2012')
-    site_lbj.scatter(StormsLBJ['PsumVol'][start2013:stop2013]*.001,StormsLBJ['Qsum'][start2013:stop2013]*.001,color='y',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2013:stop2013].dropna().values),label='2013')
-    site_lbj.scatter(StormsLBJ['PsumVol'][start2014:stop2014]*.001,StormsLBJ['Qsum'][start2014:stop2014]*.001,color='r',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2014:stop2014].dropna().values),label='2014')
-
-    site_lbj.set_title('LBJ')
-    site_lbj.set_ylabel('Event Discharge (m3)'),site_lbj.set_xlabel('Precipitation (m3) - DotSize=15minMaxPrecip(mm)')
-    #site_lbj.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), site_lbj.set_xlim(0,250)
-    site_lbj.legend(loc=4)
-    site_lbj.grid(True)
-
-    site_dam.scatter(StormsDAM['PsumVol'][start2012:stop2012]*.001,StormsDAM['Qsum'][start2012:stop2012]*.001,color='g',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2012:stop2012].values),label='2012')
-    site_dam.scatter(StormsDAM['PsumVol'][start2013:stop2013]*.001,StormsDAM['Qsum'][start2013:stop2013]*.001,color='y',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2013:stop2013].values),label='2013')
-    site_dam.scatter(StormsDAM['PsumVol'][start2014:stop2014]*.001,StormsDAM['Qsum'][start2014:stop2014]*.001,color='r',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2014:stop2014].values),label='2014')
-    
-    site_dam.set_title('DAM')
-    site_dam.set_ylabel('Event Discharge (m3)'),site_dam.set_xlabel('Precipitation (m3) - DotSize=15minMaxPrecip(mm)')
-    #site_dam.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), site_dam.set_xlim(0,250)
-    site_dam.legend(loc=4)
-    site_dam.grid(True)
-    
-    ### Label on click
-    labelindex(StormsLBJ.index,StormsLBJ['Psum'],StormsLBJ['Qsum'])
-    labelindex(StormsDAM.index,StormsDAM['Psum'],StormsDAM['Qsum'])
-    
-    title="Event Rainfall vs. Event Discharge Fagaalu Stream"
-    fig.suptitle(title,fontsize=16)
-    fig.canvas.manager.set_window_title('Figure: '+title)
-    
-    
-    log=False
-    if log==True:
-        site_lbj.set_yscale('log'), site_lbj.set_xscale('log')
-        site_dam.set_yscale('log'), site_dam.set_xscale('log')
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#PQvol_years_BOTH(True)
 
 
 #### SSC Analysis
@@ -1091,38 +710,8 @@ QuarryGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, DTgrab,0)
 #plt.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['Grab'],marker='o',ls='None',color='y')
 #plt.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['GrabInterpolated'],marker='None',ls='-',color='y')
 
-#### Nutrient Data
-#### NTU to SSC rating curve from LAB ANALYSIS
-NTU_TSSrating_Lab= pd.ols(y=TSS[TSS['Location']=='LBJ']['TSS (mg/L)'],x=TSS[TSS['Location']=='LBJ']['NTU'])
-NTU_TSSrating_Lab= pd.ols(y=TSS['TSS (mg/L)'],x=TSS['NTU'])
-def plotNTU_TSS_lab(show=True):
-    title='NTU-SSC relationship from Lab Analysis with LaMotte 2020'
-    fig, ALL = plt.subplots(1)
-    xy = np.linspace(0,1500,1500)
-    
-    ALL.scatter(TSS[TSS['Location']=='DT']['NTU'],TSS[TSS['Location']=='DT']['TSS (mg/L)'],c='y',label='DT',s=50)
-    ALL.scatter(TSS[TSS['Location']=='DAM']['NTU'],TSS[TSS['Location']=='DAM']['TSS (mg/L)'],c='g',label='DAM',s=50)
-    ALL.scatter(TSS[TSS['Location']=='LBJ']['NTU'],TSS[TSS['Location']=='LBJ']['TSS (mg/L)'],c='r',label='LBJ',s=50)
-    nturating = pd.ols(y=TSS[TSS['Location']=='LBJ']['TSS (mg/L)'],x=TSS[TSS['Location']=='LBJ']['NTU'])
-    ALL.plot(xy,np.poly1d(NTU_TSSrating_Lab.beta)(xy),c='r')
 
-    DTlabels = TSS[TSS['Location']=='DT'][['NTU','TSS (mg/L)']].dropna()
-    labelindex(DTlabels.index,DTlabels['NTU'],DTlabels['TSS (mg/L)'])
-    LBJlabels = TSS[TSS['Location']=='LBJ'][['NTU','TSS (mg/L)']].dropna()
-    labelindex(LBJlabels.index,LBJlabels['NTU'],LBJlabels['TSS (mg/L)'])
-
-    ALL.grid(True),ALL.legend()
-    ALL.set_xlabel('NTU lab')
-    ALL.set_ylabel('SSC mg/L')
-    plt.title(title)
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotNTU_TSS_lab(True)    
-
-    
-### NTU to TSS rating curve for FIELD INSTRUMENTS
+#### T to SSC rating curve for FIELD INSTRUMENTS
 def NTU2TSSrating(TurbidimeterData,TSSdata,TurbidimeterName,location='LBJ',log=False):
     T_name = TurbidimeterName+'-NTU'
     TSSsamples = TSSdata[TSSdata['Location'].isin([location])].resample('5Min',fill_method = 'pad',limit=0) ## pulls just the samples matching the location name and roll to 5Min.
@@ -1131,6 +720,10 @@ def NTU2TSSrating(TurbidimeterData,TSSdata,TurbidimeterName,location='LBJ',log=F
     TSSsamples = TSSsamples[pd.notnull(TSSsamples[T_name])]
     NTU_TSSrating = pd.ols(y=TSSsamples['TSS (mg/L)'],x=TSSsamples[T_name],intercept=True)
     return NTU_TSSrating,TSSsamples## Rating, Turbidity and Grab Sample TSS data
+
+#### NTU to SSC rating curve from LAB ANALYSIS
+NTU_TSSrating_Lab= pd.ols(y=TSS[TSS['Location']=='LBJ']['TSS (mg/L)'],x=TSS[TSS['Location']=='LBJ']['NTU'])
+NTU_TSSrating_Lab= pd.ols(y=TSS['TSS (mg/L)'],x=TSS['NTU'])
 
 ## LBJ YSI and OBS
 NTU_TSSrating_LBJ_YSI=NTU2TSSrating(LBJ_YSI,TSS,'LBJ-YSI','LBJ',log=False)
@@ -1154,88 +747,14 @@ DAM_YSIrating= NTU_TSSrating_DAM_YSI[0]
 DAM_YSI15minute = DAM_YSI.resample('15Min',how='mean',label='right')
 DAMntu15minute =  pd.DataFrame(pd.concat([DAM_TS3K15minute['NTU'],DAM_YSI15minute['NTU']])).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 
-def plotNTU_LBJ(show=False):
-    fig, (precip, lbjQ, ntu) = plt.subplots(3,1,sharex=True)
-    ##Precip
-    precip.plot_date(PrecipFilled.index,PrecipFilled['Precip'],ls='steps-post',marker='None',c='b',label='Precip-Filled')
-    ##LBJ Discharge
-    lbjQ.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='k',label='LBJ Q-AVLog')
-    ##LBJ Turbidity
-    ntu.plot_date(LBJntu15minute.index,LBJntu15minute,ls='-',marker='None',c='r',label='LBJ 15min NTU')
-    ntu.plot_date(LBJ_OBS.index,LBJ_OBS['NTU'],marker='None',ls='-',c='y',label='LBJ OBS 5min NTU')
-    ntu.plot_date(LBJ_YSI.index,LBJ_YSI['NTU'],marker='None',ls='-',c='g',label='LBJ YSI 5min NTU')
-    ##plot all Grab samples at location    
-    tss = fig.add_axes(ntu.get_position(), frameon=False, sharex=ntu,sharey=ntu)
-    LBJtss = TSS[TSS['Location']=='LBJ']
-    tss.plot_date(LBJtss.index,LBJtss['TSS (mg/L)'],c='y')    
-    ##plot Grab samples used for rating
-    tss.plot_date(NTU_TSSrating_LBJ_OBS[1].index,NTU_TSSrating_LBJ_OBS[1]['TSS (mg/L)'],ls='None',marker='o',c='r',label='LBJ TSS samples')
-    tss.yaxis.set_ticks_position('right')
-    tss.yaxis.set_label_position('right')
-    tss.set_ylabel('SSC (mg/L)')
-    ## label with field notes
-    NTU_TSSrating_LBJ_OBS[1]['fieldnotes'] = LBJfieldnotes['Condition']
-    #annotate_plot(NTU_TSSrating_LBJ_OBS[1],'TSS (mg/L)','fieldnotes')
-    ## Shade storm intervals
-    showstormintervals(precip)
-    showstormintervals(lbjQ)
-    showstormintervals(ntu)
-
-    precip.set_ylabel('Precip (mm/15min)')
-    lbjQ.set_ylabel('Discharge (L/sec)')
-    ntu.set_ylabel('Turbidity (NTU)'),
-    ntu.set_ylim(0,LBJntu15minute['NTU'].max())
-    ntu.legend()
-    plt.suptitle('Precipitation, Discharge, Turbidity and SSC grab samples at LBJ')
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotNTU_LBJ(True)
-
-def plotNTU_DAM(show=False):
-    fig, (precip, damQ, ntu) = plt.subplots(3,1,sharex=True)
-    ##Precip
-    precip.plot_date(PrecipFilled.index,PrecipFilled['Precip'],ls='steps-post',marker='None',c='b',label='Precip-Filled')
-    ##DAM Discharge
-    damQ.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='k',label='DAM D_Flume')
-    ##DAM Turbidity
-    ntu.plot_date(DAMntu15minute.index,DAMntu15minute,ls='-',marker='None',c='r',label='DAM 15min NTU')
-    ntu.plot_date(DAM_YSI.index,DAM_YSI['NTU'],ls='-',marker='None',c='y',label='DAM YSI 5min NTU')
-    ntu.plot_date(DAM_TS3K.index,DAM_TS3K['NTU'],ls='-',marker='None',c='g',label='DAM TS3K 5min NTU')
-    ##plot all Grab samples at location 
-    tss = fig.add_axes(ntu.get_position(), frameon=False, sharex=ntu,sharey=ntu)
-    DAMtss = TSS[TSS['Location']=='DAM']
-    tss.plot_date(DAMtss.index,DAMtss['TSS (mg/L)'],c='y')    
-    ##plot Grab samples used for rating
-    tss.plot_date(NTU_TSSrating_DAM_TS3K[1].index,NTU_TSSrating_DAM_TS3K[1]['TSS (mg/L)'],ls='None',marker='o',c='r',label='DAM TSS samples')
-    tss.yaxis.set_ticks_position('right')
-    tss.yaxis.set_label_position('right')
-    tss.set_ylabel('SSC (mg/L)')
-    ## Shade storm intervals
-    showstormintervals(precip)
-    showstormintervals(damQ)
-    showstormintervals(ntu)
-
-    precip.set_ylabel('Precip (mm/15min)')
-    damQ.set_ylabel('Discharge (L/sec)')
-    ntu.set_ylabel('Turbidity (NTU)'),ntu.set_ylim(0,DAMntu15minute['NTU'].max())
-    plt.suptitle('Precipitation, Discharge, Turbidity and SSC grab samples at DAM')
-    ntu.legend()
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotNTU_DAM(True)
-
 def plotNTU_BOTH(show=False,lwidth=0.5):
     fig, (precip, Q, ntu) = plt.subplots(3,1,sharex=True)
     mpl.rc('lines',markersize=10,linewidth=lwidth)
     ##Precip
     precip.plot_date(PrecipFilled.index,PrecipFilled['Precip'],ls='steps-post',marker='None',c='b',label='Precip-Filled')
     ##Discharge
-    Q.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='r',label='VILLAGE Q-AVLog')
-    Q.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='g',label='FOREST WinFlume')
+    Q.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='r',label='VILLAGE Q')
+    Q.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='g',label='FOREST Q')
     Q.axhline(y=66,ls='--',color='k')
     ## Total storm sediment flux (Mg)
     #sed = fig.add_axes(Q.get_position(), frameon=False, sharex=Q)
@@ -1275,7 +794,7 @@ def plotNTU_BOTH(show=False,lwidth=0.5):
     if show==True:
         plt.show()
     return
-plotNTU_BOTH(True,lwidth=0.5)
+#plotNTU_BOTH(True,lwidth=0.5)
 
 def plotNTUratingstable(show=False,save=False):
     
@@ -1291,7 +810,6 @@ def plotNTUratingstable(show=False,save=False):
 
     dam_ts3k = ['%.2f'%DAM_TS3K['a'],'%.2f'%DAM_TS3K['b'],'%.2f'%DAM_TS3K['r2'],'%.2f'%DAM_TS3K['pearson'],'%.2f'%DAM_TS3K['spearman'],'%.2f'%DAM_TS3K['rmse']]
     dam_ysi = ['%.2f'%DAM_YSI['a'],'%.2f'%DAM_YSI['b'],'%.2f'%DAM_YSI['r2'],'%.2f'%DAM_YSI['pearson'],'%.2f'%DAM_YSI['spearman'],'%.2f'%DAM_YSI['rmse']]    
-
 
     nrows, ncols = 3,6
     hcell, wcell=0.3,1
@@ -1349,29 +867,8 @@ def plotNTUratings(ms=10,show=False,log=False,save=False,lwidth=0.3):
     return
 #plotNTUratings(show=True,log=False,save=True,lwidth=0.5,ms=20)
 
-def plotLBJ_NTUratings(show=False):
-    fig, (ax) = plt.subplots(1)
-    xy = np.linspace(0,1000)
-    dotsize = 20
-    ax.scatter(NTU_TSSrating_LBJ_YSI[1]['LBJ-YSI-NTU'],NTU_TSSrating_LBJ_YSI[1]['TSS (mg/L)'],s=dotsize,color='g',marker='o',label='LBJ-YSI')
-    ax.scatter(NTU_TSSrating_LBJ_OBS[1]['LBJ-OBS-NTU'],NTU_TSSrating_LBJ_OBS[1]['TSS (mg/L)'],s=dotsize,color='r',marker='o',label='LBJ-OBS')
-    ax.plot(xy,xy*LBJ_OBSrating.beta[0]+LBJ_OBSrating.beta[1],ls='-',c='r',label='LBJ-OBS rating')
-    ax.plot(xy,xy*LBJ_YSIrating.beta[0]+LBJ_YSIrating.beta[1],ls='-',c='g',label='LBJ-YSI rating')
-    ax.set_ylim(0,1000),ax.set_xlim(0,1700)
-
-    labelindex(NTU_TSSrating_LBJ_OBS[1].index,NTU_TSSrating_LBJ_OBS[1]['LBJ-OBS-NTU'],NTU_TSSrating_LBJ_OBS[1]['TSS (mg/L)'])
-    labelindex(NTU_TSSrating_LBJ_YSI[1].index,NTU_TSSrating_LBJ_YSI[1]['LBJ-YSI-NTU'],NTU_TSSrating_LBJ_YSI[1]['TSS (mg/L)'])
-    
-    ax.set_xlabel('Turbidity (NTU)'),ax.set_ylabel('Suspended Sediment Concentration (mg/L)')
-    ax.grid(True), ax.legend()
-    plt.suptitle('Turbidity to Suspended Sediment Concentration Rating Curves at LBJ')
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotLBJ_NTUratings(True)
-    
-### DAM Event-wise Sediment Flux DataFrame
+ 
+#### DAM Event-wise Sediment Flux DataFrame
 ### TODO model TSS at dam
 DAM['TS3k-NTU']=DAM_TS3K15minute['NTU']
 DAM['YSI-NTU']=DAM_YSI15minute['NTU']
@@ -1387,7 +884,7 @@ SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_DAM=Pstorms_DAM.join(SedFluxStorms_DAM)#Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
 
-### LBJ Event-wise Sediment Flux DataFrame
+#### LBJ Event-wise Sediment Flux DataFrame
 LBJ['YSI-NTU']=LBJ_YSI15minute['NTU']
 LBJ['YSI-TSS']=NTU_TSSrating_LBJ_YSI[0].beta[0] * LBJ_YSI15minute['NTU'] + NTU_TSSrating_LBJ_YSI[0].beta[1]
 LBJ['OBS-NTU']=LBJ_OBS15minute['NTU']
@@ -1405,6 +902,76 @@ SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
 
 
+#### Storm Data
+def stormdata(StormIntervals):
+    storm_data = pd.DataFrame(columns=['Precip','LBJq','DAMq','LBJtss','DAMtss','LBJ-Sed','DAM-Sed','LBJgrab','DTgrab','DAMgrab'],dtype=np.float64,index=pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))
+    for storm in StormIntervals.iterrows():
+        start = storm[1]['start']-dt.timedelta(minutes=60)
+        end =  storm[1]['end']
+        data = pd.DataFrame.from_dict({'Precip':PrecipFilled['Precip'][start:end].dropna(),'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],'LBJtss':LBJ['TSS-mg/L'][start:end],'DAMtss':DAM['TSS-mg/L'][start:end],'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab[start:end],'DTgrab':DTgrab[start:end],'DAMgrab':DAMgrab[start:end]},orient='columns') ## slice desired data by storm 
+        data['sEMC-DAM']=data['DAMgrab'].mean()
+        data['sEMC-LBJ']=data['LBJgrab'].mean()
+        storm_data = storm_data.combine_first(data) ## add each storm to each other
+        return storm_data
+storm_data_LBJ = stormdata(LBJ_StormIntervals)
+storm_data_DAM = stormdata(DAM_StormIntervals)
+
+def SedFlux(show=False):
+    title = 'Figure7:Storm Data'
+    fig, (QP,TSS) = plt.subplots(nrows=2,ncols=1,sharex=True)
+    
+    storm_data_LBJ['LBJq'].plot(ax=QP,color='r',label='LBJ-Q')
+    storm_data_DAM['DAMq'].plot(ax=QP,color='g',label='DAM-Q')
+    P = QP.twinx()
+    storm_data['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Timu1')
+    QP.set_ylabel('Q m^3/15min.')
+    P.set_ylabel('Precip mm/15min.')
+    
+    QP.legend(loc=0)
+    P.legend(loc=1)
+    
+    storm_data_LBJ['LBJtss'].plot(ax=TSS,color='r',label='LBJ-TSS')
+    storm_data_DAM['DAMtss'].plot(ax=TSS,color='g',label='DAM-TSS')
+    
+    storm_data_LBJ['LBJgrab'].plot(ax=TSS,color='r',marker='o',ls='None',label='LBJ-grab')
+    storm_data_LBJ['DTgrab'].plot(ax=TSS,color='y',marker='o',ls='None',label='DT-grab')
+    storm_data_DAM['DAMgrab'].plot(ax=TSS,color='g',marker='o',ls='None',label='DAM-grab')
+    
+    SED=TSS.twinx()
+    storm_data_LBJ['LBJ-Sed'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-.')
+    storm_data_LBJ['DAM-Sed'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-.')
+    
+    TSS.set_ylabel('TSS mg/L')
+    TSS.set_ylim(0,1400)
+    SED.set_ylabel('Sediment Flux (Mg/15minutes)')
+    SED.set_ylim(0,10)
+                 
+    TSS.legend(loc=0)
+    SED.legend(loc=1)
+    
+    #Shade Storms
+    showstormintervals(TSS)
+    
+    plt.draw()
+    if show==True:
+        plt.show()
+    return
+#SedFlux(True)
+    
+def Q_EMC(show=False):
+    fig, qemc = plt.subplots(1,1)
+    
+    qemc.plot(storm_data['sEMC-LBJ'].drop_duplicates(),c='r',marker='o',ls='None')
+    qemc.plot(storm_data['sEMC-DAM'].drop_duplicates(),c='g',marker='o',ls='None')
+    plt.grid()
+    
+    plt.draw()
+    if show==True:
+        plt.show()
+    return
+#Q_EMC(True)
+    
+    
 #### Calculate correlation coefficients and sediment rating curves    
 def compileALLStorms():
     ALLStorms=pd.DataFrame({'Supper':SedFluxStorms_DAM['Ssum'],'Slower':SedFluxStorms_LBJ['Ssum']-SedFluxStorms_DAM['Ssum'],'Stotal':SedFluxStorms_LBJ['Ssum']})
@@ -1459,7 +1026,7 @@ def plotS_storm_table(show=False):
     if show==True:
         plt.show()
     return
-plotS_storm_table(show=True)
+#plotS_storm_table(show=True)
 
 ## Calculate the percent of total Q with raw vales, BEFORE NORMALIZING by area!
 def plotQ_storm_table(show=False):
@@ -1494,7 +1061,7 @@ def plotQ_storm_table(show=False):
     if show==True:
         plt.show()
     return
-plotQ_storm_table(True)
+#plotQ_storm_table(True)
 
 def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms,pval=0.05,show=False):
     nrows, ncols = 3,4
@@ -1652,50 +1219,6 @@ def NormalizeSSYbyCatchmentArea(ALLStorms):
     ALLStorms['EI'] = LBJ_Stormdf['EI'][LBJ_Stormdf['EI']>1] ## Add Event Erosion Index
     return ALLStorms
 
-    
-def plotLinCoeffTable(show=False,norm=False):
-    if norm==True:
-        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
-        Upper = linearfunction(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'])
-        Total = linearfunction(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'])    
-        
-        Up = ['%.2f'%Upper['a'],'%.2f'%Upper['b'],'%.2f'%Upper['r2'],'%.2f'%Upper['pearson'],'%.2f'%Upper['spearman'],'%.2f'%Upper['rmse']]
-        Tot = ['%.2f'%Total['a'],'%.2f'%Total['b'],'%.2f'%Total['r2'],'%.2f'%Total['pearson'],'%.2f'%Total['spearman'],'%.2f'%Total['rmse']]
-        
-        nrows, ncols = 2,6
-        hcell, wcell=0.3,1
-        hpad, wpad = 1,1
-        fig = plt.figure(figsize=(ncols*wcell+wpad,nrows*hcell+hpad)) 
-        coeff = fig.add_subplot(111)
-        coeff.patch.set_visible(False), coeff.axis('off')
-        coeff.xaxis.set_visible(False), coeff.yaxis.set_visible(False) 
-        coeff.table(cellText = [Up,Tot],rowLabels=['Upper','Total'],colLabels=[r'$\alpha$',r'$\beta$',r'$r^2$',"Pearson's","Spearman's",'RMSE'],loc='center left')
-   
-    elif norm==False:
-        ALLStorms = compileALLStorms()
-        Upper = linearfunction(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'])
-        Lower = linearfunction(ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'])    
-        Total = linearfunction(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'])
-        
-        Up = ['%.2f'%Upper['a'],'%.2f'%Upper['b'],'%.2f'%Upper['r2'],'%.2f'%Upper['pearson'],'%.2f'%Upper['spearman'],'%.2f'%Upper['rmse']]
-        Low = ['%.2f'%Lower['a'],'%.2f'%Lower['b'],'%.2f'%Lower['r2'],'%.2f'%Lower['pearson'],'%.2f'%Lower['spearman'],'%.2f'%Lower['rmse']]
-        Tot = ['%.2f'%Total['a'],'%.2f'%Total['b'],'%.2f'%Total['r2'],'%.2f'%Total['pearson'],'%.2f'%Total['spearman'],'%.2f'%Total['rmse']]    
-    
-        nrows, ncols = 3,6
-        hcell, wcell=0.3,1
-        hpad, wpad = 1,1
-        fig = plt.figure(figsize=(ncols*wcell+wpad,nrows*hcell+hpad)) 
-        coeff = fig.add_subplot(111)
-        coeff.patch.set_visible(False), coeff.axis('off')
-        coeff.xaxis.set_visible(False), coeff.yaxis.set_visible(False) 
-        coeff.table(cellText = [Up,Low,Tot],rowLabels=['Upper','Lower','Total'],colLabels=[r'$\alpha$',r'$\beta$',r'$r^2$',"Pearson's","Spearman's",'RMSE'],loc='center left')
-    
-    plt.suptitle("Model parameters for LINEAR Qmax-SSYev model: "+r'$SSY_{ev} = \beta*Q_{max}+\alpha$',fontsize=14)
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotLinCoeffTable(show=True,norm=False)
 
 def plotCoeffTable(show=False,norm=False):
     if norm==True:
@@ -1860,155 +1383,15 @@ def plotALLStorms_ALLRatings(ms=10,show=False,log=False,save=False,norm=False):
     show_plot(show,fig)
     savefig(save,title)
     return
+#plotALLStorms_ALLRatings(show=True,log=True,save=False)
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
 
-def plotPS(show=False): ### P vs. S and Q vs. S,
-    fig, ps = plt.subplots(1)
-    xy=None
-    upperdotsize = scaleSeries(SedFluxStorms_DAM['Pmax'])
-    lowerdotsize = scaleSeries(SedFluxStorms_LBJ['Pmax'])
-    
-    ps.scatter(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'],color='g',s=upperdotsize.values,label='Upper (DAM)')
-    ps.scatter(ALLStorms['Pstorms'],ALLStorms['Slower'],color='y',s=lowerdotsize.values,label='Lower (LBJ-DAM)')
-    ps.scatter(SedFluxStorms_LBJ['Psum'],SedFluxStorms_LBJ['Ssum'],color='r',s=lowerdotsize.values,label='Total(LBJ)')
-    ## Upper Watershed (=DAM)
-    PS_upper_power = powerfunction(ALLStorms['Pstorms'],ALLStorms['Supper'])
-    PowerFit(ALLStorms['Pstorms'],ALLStorms['Supper'],xy,ps,linestyle='-',color='g',label='PS_upper_power '+r'$r^2$'+'%.2f'%PS_upper_power['r2'].values)
-    PS_upper_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Supper'])
-    LinearFit(ALLStorms['Pstorms'],ALLStorms['Supper'],xy,ps,linestyle='--',color='g',label='PS_upper_linear '+r'$r^2$'+'%.2f'%PS_upper_linear['r2'].values)  
-    ## Lower Watershed (=LBJ-DAM)
-    PS_lower_power = powerfunction(ALLStorms['Pstorms'],ALLStorms['Slower'])
-    PowerFit(ALLStorms['Pstorms'],ALLStorms['Slower'],ps,linestyle='-',color='y',label='PS_lower_power '+r'$r^2$'+'%.2f'%PS_lower_power['r2'].values) 
-    PS_lower_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Slower'])
-    LinearFit(ALLStorms['Pstorms'],ALLStorms['Slower'],ps,linestyle='--',color='y',label='PS_lower_linear '+r'$r^2$'+'%.2f'%PS_lower_linear['r2'].values) 
-    ## Total Watershed (=LBJ)
-    PS_total_power = powerfunction(ALLStorms['Pstorms'],ALLStorms['Stotal'])
-    PowerFit(ALLStorms['Pstorms'],ALLStorms['Stotal'],ps,linestyle='-',color='r',label='PS_total_power '+r'$r^2$'+'%.2f'%PS_total_power['r2'].values) 
-    PS_total_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Stotal'])
-    LinearFit(ALLStorms['Pstorms'],ALLStorms['Stotal'],ps,linestyle='--',color='r',label='PS_total_linear '+r'$r^2$'+'%.2f'%PS_total_linear['r2'].values) 
-    
-    labelindex(SedFluxStorms_LBJ.index,SedFluxStorms_LBJ['Psum'],SedFluxStorms_LBJ['Ssum'])
-    labelindex(SedFluxStorms_DAM.index,SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])
-    
-    ps.set_title("Event Rainfall(mm) vs. Event Sediment Flux from Fagaalu Stream")
-    ps.set_ylabel('Sediment Flux (Mg)')
-    ps.set_xlabel('Precipitation (mm); Dot Size = MaxP (mm/15min.)')
-    ps.grid(True)
-    
-    plt.legend(loc='upper right',fontsize=8)              
-    fig.canvas.manager.set_window_title('Figure : '+'P vs. S')
-
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotPS(True)
-    
-def plotPsumS(show=False,log=False,save=True,norm=True): 
-    fig, ps = plt.subplots(1)
-    xy=np.linspace(10,200)
-    upperdotsize = 50#scaleSeries(SedFluxStorms_DAM['Qsum']/1000)
-    lowerdotsize = 50#scaleSeries(SedFluxStorms_LBJ['Qsum']/1000)
-    
-    if norm==True:
-        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
-        ylabel,xlabel= r'$SSY (Mg \ km^{-2})$','Precip (mm)'
-    elif norm==False:
-        ALLStorms=compileALLStorms()
-        ylabel,xlabel = 'SSY (Mg)','Precip (mm)'
-   
-    ## Lower is below in norm==False loop
-    
-    ## Upper Watershed (=DAM)
-    ps.scatter(ALLStorms['Pstorms'],ALLStorms['Supper'],edgecolors='grey',color='g',s=upperdotsize,label='Upper (FOREST)')
-    PsumS_upper_power = powerfunction(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'])
-    PowerFit(ALLStorms['Pstorms'],ALLStorms['Supper'],xy,ps,linestyle='-',color='g',label='Psum_UPPER')
-    PsumS_upper_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Supper'])
-    #LinearFit(ALLStorms['Pstorms'],ALLStorms['Supper'],xy,ps,linestyle='--',color='g',label='PsumS_upper_linear')  
-    labelindex(ALLStorms.index,ALLStorms['Pstorms'],ALLStorms['Supper'])
-    ## Total Watershed (=LBJ)
-    ps.scatter(ALLStorms['Pstorms'],ALLStorms['Stotal'],edgecolors='grey',color='r',s=lowerdotsize,label='Total(VILLAGE)')
-    PsumS_total_power = powerfunction(ALLStorms['Pstorms'],ALLStorms['Stotal'])
-    PowerFit(ALLStorms['Pstorms'],ALLStorms['Stotal'],xy,ps,linestyle='-',color='r',label='Psum_TOTAL') 
-    PsumS_total_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Stotal'])
-    #LinearFit(ALLStorms['Pstorms'],ALLStorms['Stotal'],xy,ps,linestyle='--',color='r',label='PsumS_total_linear') 
-    labelindex(ALLStorms.index,ALLStorms['Pstorms'],ALLStorms['Stotal'])    
-    
-    ## Lower Watershed (=LBJ-DAM)
-    ps.scatter(ALLStorms['Pstorms'],ALLStorms['Slower'],edgecolors='grey',color='y',s=lowerdotsize,label='Lower (VIL-FOR)')
-    PsumS_lower_power = powerfunction(ALLStorms['Pstorms'],ALLStorms['Slower'])
-    PowerFit(ALLStorms['Pstorms'],ALLStorms['Slower'],xy,ps,linestyle='-',color='y',label='Psum_LOWER') 
-    PsumS_lower_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Slower'])
-    #LinearFit(ALLStorms['Pstorms'],ALLStorms['Slower'],xy,ps,linestyle='--',color='y',label='PsumS_lower_linear') 
-    labelindex(ALLStorms.index,ALLStorms['Pstorms'],ALLStorms['Slower'])
-
-    ps.legend(loc='best',ncol=2,fancybox=True)  
-    title="Event Precipitation vs Event Sediment Yield from Fagaalu Stream"
-    ps.set_title(title)
-    ps.set_ylabel(ylabel)
-    ps.set_xlabel(xlabel)
-
-    fig.canvas.manager.set_window_title('Figure : '+'Psum vs. S')
-    
-    logaxes(log,fig)
-    ps.autoscale_view(True,True,True)
-    show_plot(show,fig)
-    savefig(save,title)
-    return
-#plotPsumS(show=True,log=False,save=True)
-#plotPsumS(show=True,log=True,save=True,norm=False)
-#plotPsumS(show=True,log=True,save=True,norm=True)
-
-
-def plotQS(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms,show=False,log=False): ### P vs. S and Q vs. S
-    fig, qs = plt.subplots(1)
-    xy=None
-    upperdotsize = scaleSeries(SedFluxStorms_DAM['Qmax'])
-    lowerdotsize = scaleSeries(SedFluxStorms_LBJ['Qmax'])
-   
-    qs.scatter(SedFluxStorms_DAM['Qsum'],SedFluxStorms_DAM['Ssum'],color='g',s=upperdotsize.values,label='Upper (DAM)')
-    qs.scatter(ALLStorms['Qsumlower'],ALLStorms['Slower'],color='y',s=lowerdotsize.values,label='Lower (LBJ-DAM)')
-    qs.scatter(SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'],color='r',s=lowerdotsize.values,label='Total(LBJ)')
-    ## Upper Watershed (=DAM)
-    QS_upper_power = powerfunction(ALLStorms['Qsumupper'],ALLStorms['Supper'])
-    PowerFit(ALLStorms['Qsumupper'],ALLStorms['Supper'],xy,qs,linestyle='-',color='g',label='QS_upper_power '+r'$r^2$'+'%.2f'%QS_upper_power['r2'].values)
-    QS_upper_linear = linearfunction(ALLStorms['Qsumupper'],ALLStorms['Supper'])
-    LinearFit(ALLStorms['Qsumupper'],ALLStorms['Supper'],xy,qs,linestyle='--',color='g',label='QS_upper_linear '+r'$r^2$'+'%.2f'%QS_upper_linear['r2'].values)  
-    ## Lower Watershed (=LBJ-DAM)
-    QS_lower_power = powerfunction(ALLStorms['Qsumlower'],ALLStorms['Slower'])
-    PowerFit(ALLStorms['Qsumlower'],ALLStorms['Slower'],xy,qs,linestyle='-',color='y',label='QS_lower_power '+r'$r^2$'+'%.2f'%QS_lower_power['r2'].values) 
-    QS_lower_linear = linearfunction(ALLStorms['Qsumlower'],ALLStorms['Slower'])
-    LinearFit(ALLStorms['Qsumlower'],ALLStorms['Slower'],xy,qs,linestyle='--',color='y',label='QS_lower_linear '+r'$r^2$'+'%.2f'%QS_lower_linear['r2'].values) 
-    ## Total Watershed (=LBJ)
-    QS_total_power = powerfunction(ALLStorms['Qsumtotal'],ALLStorms['Stotal'])
-    PowerFit(ALLStorms['Qsumtotal'],ALLStorms['Stotal'],xy,qs,linestyle='-',color='r',label='QS_total_power '+r'$r^2$'+'%.2f'%QS_total_power['r2'].values) 
-    QS_total_linear = linearfunction(ALLStorms['Qsumtotal'],ALLStorms['Stotal'])
-    LinearFit(ALLStorms['Qsumtotal'],ALLStorms['Stotal'],xy,qs,linestyle='--',color='r',label='QS_total_linear '+r'$r^2$'+'%.2f'%QS_total_linear['r2'].values) 
-    
-    labelindex(SedFluxStorms_LBJ.index,SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'])
-    labelindex(SedFluxStorms_DAM.index,SedFluxStorms_DAM['Qsum'],SedFluxStorms_DAM['Ssum'])
-    
-    qs.set_title("Event Discharge vs. Event Sediment Yield from Fagaalu Stream")
-    qs.set_ylabel('Sediment Yield (Mg)')
-    qs.set_xlabel('Discharge (L); DotSize= Qmax (L/sec)')
-    qs.grid(True)
-    
-    plt.legend(loc=4,fontsize=8)              
-    fig.canvas.manager.set_window_title('Figure : '+'Q vs. S')
-    if log==True:
-        qs.set_xscale('log'),qs.set_yscale('log')
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotQS(show=True)
-#plotQS(show=True,log=True)
     
 ### Qmax vs S    
 def plotQmaxS(show=False,log=False,save=True,norm=True): 
     fig, qs = plt.subplots(1)
-    xy=np.linspace(.001,20)
+    xy=np.linspace(.001,100)
     upperdotsize = 50#scaleSeries(SedFluxStorms_DAM['Qsum']/1000)
     lowerdotsize = 50#scaleSeries(SedFluxStorms_LBJ['Qsum']/1000)
     
@@ -2046,7 +1429,6 @@ def plotQmaxS(show=False,log=False,save=True,norm=True):
         labelindex(ALLStorms.index,ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'])
     
     if norm==True:
-        xy=np.linspace(.001,20)
         Duvert1 = 224.4*(xy**1.34)
         Duvert2 = 446.6*(xy**0.93)
         DuvertLAFR = 408*(xy**0.95)
@@ -2075,291 +1457,6 @@ def plotQmaxS(show=False,log=False,save=True,norm=True):
 #plotQmaxS(show=True,log=False,save=True)
 #plotQmaxS(show=True,log=True,save=True,norm=False)
 #plotQmaxS(show=True,log=True,save=True,norm=True)
-
-    ## Colormapped by time of occurence
-##    PS_LBJ = P_S.scatter(Pstorms['sum'],SedFluxStorms_YSI['sum'],c=dt.date2num(Pstorms['start']),marker='o',s=dotsize.values,cmap=plt.get_cmap('Reds'))
-##    PS_DAM = P_S.scatter(Pstorms['sum'],SedFluxStorms_TS3k['sum'],c=dt.date2num(Pstorms['start']),marker='o',s=dotsize.values,cmap=plt.get_cmap('Greens'))
-    ## Solid colors
-
-    #colorBar(S,Pstorms['start'])
-    #labelPoints(P_S,Pstorms['start'], Pstorms['sum'], SedFluxStorms_YSI['sum'])
-    #labelPoints(P_S,Pstorms['start'], Pstorms['sum'], SedFluxStorms_TS3k['sum']) 
-    #labelindex(Pstorms.index,Qstorms_LBJ['sum'],SedFluxStorms_LBJ['sum'])
-    #labelindex(Pstorms.index,Pstorms['sum'],Qstorms_DAM['sum'])
-
-def plotPsumSyears(show=False): ### P vs. S and Q vs. S
-    fig, (psLBJ,psDAM) = plt.subplots(1,2,sharex=True,sharey=True)
-    
-    lbjdotsize = scaleSeries(SedFluxStorms_LBJ['Pmax'])
-    damdotsize = scaleSeries(SedFluxStorms_DAM['Pmax'])
-
-    ## Psum vs. Ssum 
-    LBJ_Psum_Ssum = pd.ols(y=SedFluxStorms_LBJ['Ssum'],x=SedFluxStorms_LBJ['Psum'])
-    DAM_Psum_Ssum = pd.ols(y=SedFluxStorms_DAM['Ssum'],x=SedFluxStorms_DAM['Psum'])    
-    
-    psLBJ.scatter(SedFluxStorms_LBJ['Psum'][start2012:stop2012],SedFluxStorms_LBJ['Ssum'][start2012:stop2012],c='g',marker='o',s=lbjdotsize[start2012:stop2012].values,label='LBJ 2012')
-    psLBJ.scatter(SedFluxStorms_LBJ['Psum'][start2013:stop2013],SedFluxStorms_LBJ['Ssum'][start2013:stop2013],c='y',marker='o',s=lbjdotsize[start2013:stop2013].values,label='LBJ 2013')
-    psLBJ.scatter(SedFluxStorms_LBJ['Psum'][start2014:stop2014],SedFluxStorms_LBJ['Ssum'][start2014:stop2014],c='r',marker='o',s=lbjdotsize[start2014:stop2014].values,label='LBJ 2014')
-
-    psDAM.scatter(SedFluxStorms_DAM['Psum'][start2012:stop2012],SedFluxStorms_DAM['Ssum'][start2012:stop2012],c='g',marker='o',s=damdotsize[start2012:stop2012].values,label='DAM 2012')
-    psDAM.scatter(SedFluxStorms_DAM['Psum'][start2013:stop2013],SedFluxStorms_DAM['Ssum'][start2013:stop2013],c='y',marker='o',s=damdotsize[start2013:stop2013].values,label='DAM 2013')
-    #psDAM.scatter(SedFluxStorms_DAM['Psum'][start2014:stop2014],SedFluxStorms_DAM['Ssum'][start2014:stop2014],c='r',marker='o',s=damdotsize[start2014:stop2014].values,label='DAM 2014')
-  
-
-    Polyfit(SedFluxStorms_LBJ['Psum'][start2012:stop2012],SedFluxStorms_LBJ['Ssum'][start2012:stop2012],1,'g','LBJ 2012',100,psLBJ)
-    Polyfit(SedFluxStorms_LBJ['Psum'][start2013:stop2013],SedFluxStorms_LBJ['Ssum'][start2013:stop2013],1,'y','LBJ 2013',100,psLBJ)
-    Polyfit(SedFluxStorms_LBJ['Psum'][start2014:stop2014],SedFluxStorms_LBJ['Ssum'][start2014:stop2014],1,'r','LBJ 2014',100,psLBJ)
-    Polyfit(SedFluxStorms_LBJ['Psum'],SedFluxStorms_LBJ['Ssum'],1,'k','AllYears: '+r'$r^2$'+'%.2f'%LBJ_Psum_Ssum.r2,100,psLBJ)
-    
-    Polyfit(SedFluxStorms_DAM['Psum'][start2012:stop2012],SedFluxStorms_DAM['Ssum'][start2012:stop2012],1,'g','DAM 2012',100,psDAM) ### Won't work if na values in np.array->polyfit
-    Polyfit(SedFluxStorms_DAM['Psum'][start2013:stop2013],SedFluxStorms_DAM['Ssum'][start2013:stop2013],1,'y','DAM 2013',100,psDAM) 
-    Polyfit(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'],1,'k','AllYears: '+r'$r^2$'+'%.2f'%DAM_Psum_Ssum.r2,100,psDAM) 
-    
-    labelindex(SedFluxStorms_LBJ.index,SedFluxStorms_LBJ['Psum'],SedFluxStorms_LBJ['Ssum'])
-    labelindex(SedFluxStorms_DAM.index,SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])
-    
-    plt.suptitle("Event Precipitation vs. Event Sediment Flux from Fagaalu Stream",fontsize=14)
-    psLBJ.set_ylabel('Sediment Flux (Mg)')
-    psLBJ.set_xlabel('Precipitation (mm)')
-    psDAM.set_xlabel('Precipitation (mm)')
-    psLBJ.set_title('LBJ'),psDAM.set_title('DAM')
-    psLBJ.grid(True), psDAM.grid(True)
-    
-    psLBJ.legend(loc=4), psDAM.legend(loc=4)           
-    fig.canvas.manager.set_window_title('Figure : '+'P vs. S')
-
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotPsumSyears(True)
-    
-def QsumSyears(show=False): ### P vs. S and Q vs. S
-    fig, (lbj,dam) = plt.subplots(1,2,sharex=True,sharey=True)
-
-    lbjdotsize = scaleSeries(SedFluxStorms_LBJ['Qmax'])
-    damdotsize = scaleSeries(SedFluxStorms_DAM['Qmax'])
-    
-    
-    ## Qsum vs. Ssum 
-    LBJ_Qsum_Ssum = pd.ols(y=SedFluxStorms_LBJ['Ssum'],x=SedFluxStorms_LBJ['Qsum'])
-    DAM_Qsum_Ssum = pd.ols(y=SedFluxStorms_DAM['Ssum'],x=SedFluxStorms_DAM['Qsum'])   
-    
-    lbj.scatter(SedFluxStorms_LBJ['Qsum'][start2012:stop2012],SedFluxStorms_LBJ['Ssum'][start2012:stop2012],c='g',marker='o',s=lbjdotsize[start2012:stop2012].values,label='LBJ-2012')
-    lbj.scatter(SedFluxStorms_LBJ['Qsum'][start2013:stop2013],SedFluxStorms_LBJ['Ssum'][start2013:stop2013],c='y',marker='o',s=lbjdotsize[start2013:stop2013].values,label='LBJ-2013')
-    lbj.scatter(SedFluxStorms_LBJ['Qsum'][start2014:stop2014],SedFluxStorms_LBJ['Ssum'][start2014:stop2014],c='r',marker='o',s=lbjdotsize[start2014:stop2014].values,label='LBJ-2014')
-    
-    dam.scatter(SedFluxStorms_DAM['Qsum'][start2012:stop2012],SedFluxStorms_DAM['Ssum'][start2012:stop2012],c='g',marker='o',s=damdotsize[start2012:stop2012].values,label='DAM-2012')
-    dam.scatter(SedFluxStorms_DAM['Qsum'][start2013:stop2013],SedFluxStorms_DAM['Ssum'][start2013:stop2013],c='y',marker='o',s=damdotsize[start2013:stop2013].values,label='DAM-2013')
-    #dam.scatter(SedFluxStorms_DAM['Qsum'][start2014:stop2014],SedFluxStorms_DAM['Ssum'][start2014:stop2014],c='r',marker='o',s=damdotsize[start2014:stop2014].values,label='DAM-2014')
-
-    Polyfit(SedFluxStorms_LBJ['Qsum'][start2012:stop2012],SedFluxStorms_LBJ['Ssum'][start2012:stop2012],1,'g','LBJ 2012',100,lbj)
-    Polyfit(SedFluxStorms_LBJ['Qsum'][start2013:stop2013],SedFluxStorms_LBJ['Ssum'][start2013:stop2013],1,'y','LBJ 2013',100,lbj)
-    Polyfit(SedFluxStorms_LBJ['Qsum'][start2014:stop2014],SedFluxStorms_LBJ['Ssum'][start2014:stop2014],1,'r','LBJ 2014',100,lbj)
-    Polyfit(SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'],1,'k','AllYears: '+r'$r^2$'+'%.2f'%LBJ_Qsum_Ssum.r2,100,lbj)
-    
-    Polyfit(SedFluxStorms_DAM['Qsum'][start2012:stop2012],SedFluxStorms_DAM['Ssum'][start2012:stop2012],1,'g','DAM 2012',100,dam) ### Won't work if na values in np.array->polyfit
-    Polyfit(SedFluxStorms_DAM['Qsum'][start2013:stop2013],SedFluxStorms_DAM['Ssum'][start2013:stop2013],1,'y','DAM 2013',100,dam)
-    Polyfit(SedFluxStorms_DAM['Qsum'],SedFluxStorms_DAM['Ssum'],1,'k','AllYears: '+r'$r^2$'+'%.2f'%DAM_Qsum_Ssum.r2,100,dam)
-    
-    labelindex(SedFluxStorms_LBJ.index,SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'])
-    labelindex(SedFluxStorms_DAM.index,SedFluxStorms_DAM['Qsum'],SedFluxStorms_DAM['Ssum'])
-    
-    plt.suptitle("Event Discharge vs. Event Sediment Flux from Fagaalu Stream (dotsize=Qmax)",fontsize=16)
-    lbj.set_ylabel('Sediment Flux (Mg)'),dam.set_ylabel('Sediment Flux (Mg)')
-    lbj.set_xlabel('Discharge (L)'),dam.set_xlabel('Discharge (L)')
-    lbj.set_title('LBJ'), dam.set_title('DAM')
-    lbj.grid(True),dam.grid(True)
-    
-    lbj.legend(loc=4),dam.legend(loc=4)              
-    fig.canvas.manager.set_window_title('Figure : '+'Q vs. S')
-
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotQsumSyears(True)
-
-def QmaxSyears(show=False): ### P vs. S and Q vs. S
-    fig, (lbj,dam) = plt.subplots(1,2,sharex=True,sharey=True)
-
-    lbjdotsize = scaleSeries(SedFluxStorms_LBJ['Qmax']).values
-    damdotsize = scaleSeries(SedFluxStorms_DAM['Qmax']).values
-    
-    ## Qmax vs. Ssum 
-    LBJ_Qmax_Ssum = pd.ols(y=SedFluxStorms_LBJ['Ssum'],x=SedFluxStorms_LBJ['Qmax'])
-    DAM_Qmax_Ssum = pd.ols(y=SedFluxStorms_DAM['Ssum'],x=SedFluxStorms_DAM['Qmax'])   
-    
-    lbj.scatter(SedFluxStorms_LBJ['Qmax'][start2012:stop2012],SedFluxStorms_LBJ['Ssum'][start2012:stop2012],c='g',marker='o',s=lbjdotsize,label='LBJ-2012')
-    lbj.scatter(SedFluxStorms_LBJ['Qmax'][start2013:stop2013],SedFluxStorms_LBJ['Ssum'][start2013:stop2013],c='y',marker='o',s=lbjdotsize,label='LBJ-2013')
-    lbj.scatter(SedFluxStorms_LBJ['Qmax'][start2014:stop2014],SedFluxStorms_LBJ['Ssum'][start2014:stop2014],c='r',marker='o',s=lbjdotsize,label='LBJ-2014')
-
-    
-    dam.scatter(SedFluxStorms_DAM['Qmax'][start2012:stop2012],SedFluxStorms_DAM['Ssum'][start2012:stop2012],c='g',marker='o',s=damdotsize,label='DAM-2012')
-    dam.scatter(SedFluxStorms_DAM['Qmax'][start2013:stop2013],SedFluxStorms_DAM['Ssum'][start2013:stop2013],c='y',marker='o',s=damdotsize,label='DAM-2013')
-    dam.scatter(SedFluxStorms_DAM['Qmax'][start2014:stop2014],SedFluxStorms_DAM['Ssum'][start2014:stop2014],c='r',marker='o',s=damdotsize,label='DAM-2014')
-    
-    Polyfit(SedFluxStorms_LBJ['Qmax'][start2012:stop2012],SedFluxStorms_LBJ['Ssum'][start2012:stop2012],1,'g','LBJ 2012',100,lbj)
-    Polyfit(SedFluxStorms_LBJ['Qmax'][start2013:stop2013],SedFluxStorms_LBJ['Ssum'][start2013:stop2013],1,'y','LBJ 2013',100,lbj)
-    Polyfit(SedFluxStorms_LBJ['Qmax'][start2014:stop2014],SedFluxStorms_LBJ['Ssum'][start2014:stop2014],1,'r','LBJ 2014',100,lbj)
-    Polyfit(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'],1,'k','AllYears: '+r'$r^2$'+'%.2f'%LBJ_Qmax_Ssum.r2,100,lbj)
-    
-    Polyfit(SedFluxStorms_DAM['Qmax'][start2012:stop2012],SedFluxStorms_DAM['Ssum'][start2012:stop2012],1,'g','DAM 2012',100,dam) ### Won't work if na values in np.array->polyfit
-    Polyfit(SedFluxStorms_DAM['Qmax'][start2013:stop2013],SedFluxStorms_DAM['Ssum'][start2013:stop2013],1,'y','DAM 2013',100,dam)
-    Polyfit(SedFluxStorms_DAM['Qmax'],SedFluxStorms_DAM['Ssum'],1,'k','AllYears: '+r'$r^2$'+'%.2f'%DAM_Qmax_Ssum.r2,100,dam)
-   
-    labelindex(SedFluxStorms_LBJ.index,SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])
-    labelindex(SedFluxStorms_DAM.index,SedFluxStorms_DAM['Qmax'],SedFluxStorms_DAM['Ssum'])
-    
-    plt.suptitle("Max Event Discharge vs. Total Event Sediment Flux from Fagaalu Stream  (dotsize=Pmax)",fontsize=14)
-    lbj.set_ylabel('Sediment Flux (Mg)'),dam.set_ylabel('Sediment Flux (Mg)')
-    lbj.set_xlabel('Max Event Discharge (L/sec)'),dam.set_xlabel('Max Event Discharge (L/sec)')
-    lbj.set_title('LBJ'), dam.set_title('DAM')
-    lbj.grid(True),dam.grid(True)
-    
-    log=False
-    if log==True:
-        lbj.set_yscale('log'),lbj.set_xscale('log')
-        dam.set_yscale('log'),dam.set_xscale('log')
-    
-    lbj.legend(loc=4),dam.legend(loc=4)              
-    fig.canvas.manager.set_window_title('Figure : '+'Qmax vs. S')
-
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotQmaxSyears(True)
-    
-    
-    
-#        labelindex(Qstorms_LBJ.index,Qstorms_LBJ['sum'],SedFluxStorms_LBJ['sum'])
-#    labelindex(Qstorms_DAM.index,Qstorms_DAM['sum'],SedFluxStorms_DAM['sum'])
-#    Polyfit(Qstorms_LBJ['sum'],SedFluxStorms_LBJ['sum'],1,'r','SedimentFlux-LBJ',10000,Q_S)
-#    Polyfit(Qstorms_DAM['sum'],SedFluxStorms_DAM['sum'],1,'g','SedimentFlux-DAM',10000,Q_S) ### Won't work if na values in np.array->polyfit
-
-#QS(True)
-
-    ## Colormapped by time of occurence
-##    QS_LBJ = Q_S.scatter(QstormsLBJ['sum'],SedFluxStorms_YSI['sum'],c=dt.date2num(Qstorms_LBJ['start']),marker='o',s=dotsize.values,cmap=plt.get_cmap('Reds'))
-##    QS_DAM = Q_S.scatter(Qstorms_DAM['sum'],SedFluxStorms_TS3k['sum'],c=dt.date2num(Qstorms_DAM['start']),marker='o',s=dotsize.values,cmap=plt.get_cmap('Greens'))
-    ## Solid colors
-    #colorBar(S,Pstorms['start'])
-
-#    labelindex(Pstorms.index,Qstorms_LBJ['sum'],SedFluxStorms_LBJ['sum'])
-    #labelindex(Pstorms.index,Pstorms['sum'],Qstorms_DAM['sum'])
-
-#def Figure6(show=False):
-#    fig6 = plt.figure(6)
-#    NTU_TSS=fig6.add_subplot(111)
-#    ### YSI at LBJ
-#    NTU_TSS.scatter(NTU_TSSrating_YSI_LBJ[1],NTU_TSSrating_YSI_LBJ[2],marker='o',color='r')
-#    Polyfit(NTU_TSSrating_YSI_LBJ[1],NTU_TSSrating_YSI_LBJ[2],1,'r','YSI-LBJ',100,NTU_TSS)
-#    labelindex(NTU_TSSrating_YSI_LBJ[1].index,NTU_TSSrating_YSI_LBJ[1],NTU_TSSrating_YSI_LBJ[2])    
-#    
-#    ### OBS at LBJ
-#    NTU_TSS.scatter(NTU_TSSrating_OBS_LBJ[1],NTU_TSSrating_OBS_LBJ[2],marker='o',color='b')
-#    Polyfit(NTU_TSSrating_OBS_LBJ[1],NTU_TSSrating_OBS_LBJ[2],1,'b','OBS-LBJ',100,NTU_TSS)
-#    labelindex(NTU_TSSrating_OBS_LBJ[1].index,NTU_TSSrating_OBS_LBJ[1],NTU_TSSrating_OBS_LBJ[2])
-#    
-#    title="Turbidity vs. TSS for YSI turbidimeter in Faga'alu Stream"
-#    NTU_TSS.set_title(title)
-#    NTU_TSS.set_ylabel('Total Suspended Solids(TSS)(mg/L)')
-#    NTU_TSS.set_xlabel('Turbidity (NTU)')
-#    fig6.canvas.manager.set_window_title('Figure 6: '+title)
-#    NTU_TSS.grid(True)
-#    plt.draw()
-#    if show==True:
-#        plt.show()
-#    return
-
-
-#### Storm Data
-def stormdata(StormIntervals):
-    storm_data = pd.DataFrame(columns=['Precip','LBJq','DAMq','LBJtss','DAMtss','LBJ-Sed','DAM-Sed','LBJgrab','DTgrab','DAMgrab'],dtype=np.float64,index=pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))
-    for storm in StormIntervals.iterrows():
-        start = storm[1]['start']-dt.timedelta(minutes=60)
-        end =  storm[1]['end']
-        data = pd.DataFrame.from_dict({'Precip':PrecipFilled['Precip'][start:end].dropna(),'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],'LBJtss':LBJ['TSS-mg/L'][start:end],'DAMtss':DAM['TSS-mg/L'][start:end],'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab[start:end],'DTgrab':DTgrab[start:end],'DAMgrab':DAMgrab[start:end]},orient='columns') ## slice desired data by storm 
-        data['sEMC-DAM']=data['DAMgrab'].mean()
-        data['sEMC-LBJ']=data['LBJgrab'].mean()
-        storm_data = storm_data.combine_first(data) ## add each storm to each other
-        return storm_data
-storm_data_LBJ = stormdata(LBJ_StormIntervals)
-storm_data_DAM = stormdata(DAM_StormIntervals)
-
-
-def SedFlux(show=False):
-    title = 'Figure7:Storm Data'
-    fig, (QP,TSS) = plt.subplots(nrows=2,ncols=1,sharex=True)
-    
-    storm_data_LBJ['LBJq'].plot(ax=QP,color='r',label='LBJ-Q')
-    storm_data_DAM['DAMq'].plot(ax=QP,color='g',label='DAM-Q')
-    P = QP.twinx()
-    storm_data['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Timu1')
-    QP.set_ylabel('Q m^3/15min.')
-    P.set_ylabel('Precip mm/15min.')
-    
-    QP.legend(loc=0)
-    P.legend(loc=1)
-    
-    storm_data_LBJ['LBJtss'].plot(ax=TSS,color='r',label='LBJ-TSS')
-    storm_data_DAM['DAMtss'].plot(ax=TSS,color='g',label='DAM-TSS')
-    
-    storm_data_LBJ['LBJgrab'].plot(ax=TSS,color='r',marker='o',ls='None',label='LBJ-grab')
-    storm_data_LBJ['DTgrab'].plot(ax=TSS,color='y',marker='o',ls='None',label='DT-grab')
-    storm_data_DAM['DAMgrab'].plot(ax=TSS,color='g',marker='o',ls='None',label='DAM-grab')
-    
-    SED=TSS.twinx()
-    storm_data_LBJ['LBJ-Sed'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-.')
-    storm_data_LBJ['DAM-Sed'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-.')
-    
-    TSS.set_ylabel('TSS mg/L')
-    TSS.set_ylim(0,1400)
-    SED.set_ylabel('Sediment Flux (Mg/15minutes)')
-    SED.set_ylim(0,10)
-                 
-    TSS.legend(loc=0)
-    SED.legend(loc=1)
-    
-    #Shade Storms
-    showstormintervals(TSS)
-    
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#SedFlux(True)
-    
-def Q_EMC(show=False):
-    fig, qemc = plt.subplots(1,1)
-    
-    qemc.plot(storm_data['sEMC-LBJ'].drop_duplicates(),c='r',marker='o',ls='None')
-    qemc.plot(storm_data['sEMC-DAM'].drop_duplicates(),c='g',marker='o',ls='None')
-    plt.grid()
-    
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#Q_EMC(True)
-    
-
-
-plt.show()
-#fig=plt.figure()
-#plt.scatter(storm_data['sEMC-LBJ'].drop_duplicates().mean(),storm_data['LBJq'].max())
-#Stage(True)
-#PRECIP(True)
-#Ratings(True)
-#Q(True)
-#PQ(True)
-#NTU(True)
-#NTUratings(True)
-#LBJ_NTUratings(True)
-#PS(True)
-#SedFlux(True)
-
 
 
 plt.show()

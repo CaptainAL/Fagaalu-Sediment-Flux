@@ -88,7 +88,7 @@ Precip['FPdaily'].dropna().to_csv(datadir+'OUTPUT/FPdaily.csv',header=['FPdaily'
 Precip['FPmonthly'].dropna().to_csv(datadir+'OUTPUT/FPmonthly.csv',header=['FPmonthly'])
 
 ## Filled Precipitation record, priority = Timu1, fill with FPrain
-PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,7):dt.datetime(2013,2,8)],Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12)],Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24)],Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,3,3)]]),columns=['Precip']).dropna()
+PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,7):dt.datetime(2013,2,8)],Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12)],Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24)],Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,8,5)]]),columns=['Precip']).dropna()
 
 #### Import BAROMETRIC Data: NDBC,TULA,TAFUNA
 def Tula(datapath=datadir+'BARO/TulaStation/TulaMetData/'):
@@ -276,18 +276,23 @@ PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0,-10.5)
 PT3 = pd.concat([PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
 PT3 = PT3[PT3>0]
 
-fig, ax = plt.subplots()
-allbaro.plot(ax=ax)
-PT1list = [PT1a,PT1b,PT1c]
-PT3list = [PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g]
-for PT in PT3list:
-    try:
-        PT['Pressure'][PT['Pressure']>0].plot(ax=ax,c=np.random.rand(3,1))
-    except KeyError:
-        PT['LEVEL'][PT['LEVEL']>0].plot(ax=ax,c=np.random.rand(3,1))
-    plt.legend()
-    plt.draw()
-    plt.show()
+def plot_stage_data(show=False):
+    fig, ax = plt.subplots()
+    allbaro.plot(ax=ax)
+    PT1list = [PT1a,PT1b,PT1c]
+    PT3list = [PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g]
+    for PT in PT3list:
+        try:
+            PT['Pressure'][PT['Pressure']>0].plot(ax=ax,c=np.random.rand(3,1))
+        except KeyError:
+            PT['LEVEL'][PT['LEVEL']>0].plot(ax=ax,c=np.random.rand(3,1))
+        plt.legend()
+        ax.set_ylim(100,150)
+    if show==True:
+        plt.draw()
+        plt.show()
+    return
+#plot_stage_data(show=True)
     
 ## STAGE DATA FOR PT's
 Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT3['stage']})
