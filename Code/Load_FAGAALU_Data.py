@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import math
 import datetime as dt
+import pytz
 ## Set Pandas display options
 pd.set_option('display.large_repr', 'truncate')
 pd.set_option('display.max_rows', 15)
@@ -170,84 +171,40 @@ def Tula(datapath=datadir+'BARO/TulaStation/TulaMetData/'):
     baro_offset = (baro/10.0)+.92
     return baro_offset
 
-## To get more NSTP6 data either go to their website and copy and paste the historical data
-## or use wundergrabber_NSTP6-REALTIME.py and copy and paste frome the .csv
-def ndbc(datapath=datadir+'BARO/NSTP6/'):
-    print 'loading NDBC baro...'
-    ## Analyze data
-    path = datapath
-    barolist = []
-    #files = os.listdir(path) ## if multiple monthly files are needed uncomment this line and comment out the block below
-    ##data = open(path+'/'+f,'r')
-    ##for f in files:
-    ##    if f.endswith('.csv') == True:
-    ##        print f
-    f='NSTP6-2012-14.txt'
-    with open(path+'/'+f,'r') as lines:
-        first_press = lines.readlines()[2].split()[12]
-    data = open(path+'/'+f,'r')
-    
-    pressureprev=first_press ## get a first value to use
-    #print str(pressureprev)
-    misscount = 0
-    for line in data:
-        d = line.strip('\n').split()
-        #print d
-        if d[0].isdigit()==True:
-            year,month,day = d[0],d[1],d[2]
-            hour,minute = d[3],d[4]
-            time = datetime.datetime(int(year),int(month),int(day),int(hour),int(minute))
-            pressure = d[12]
-            if pressure != '9999.0':
-                pressureprev = pressure
-                misscount=0
-            ## Handle missing values: If 1 or 2 are missing, keep previous value
-            ## if more than 2 are missing then there is No Data
-            elif pressure == '9999.0' and misscount <= 2: ##if it's just 1 or 2 missing values, just keep the previous value
-                pressure = pressureprev ## fill in previous value
-                misscount+=1 ## count up one for the missing value
-            elif pressure == '9999.0' and misscount >2: ##if missing more than 2 values than it's 'NaN'
-                pressure = 'NaN' ## fill in None value
-                pressureprev = 'NaN' ## fill in None value
-                misscount+=1 ## count up one for the missing value
-            else:
-                print 'NDBC pressure cannot be determined for '+str(time)
-            #print time,pressure,pressureprev
-            barolist.append((time,pressure))
-              
-    NDBCbarometric = []
-    for line in barolist:
-        #print line
-        time = line[0]
-        pressure = float(line[1])/10 ## convert kPa to hPa
-        if time.minute == 12 or time.minute == 42:
-            time = time+datetime.timedelta(0,0,0,0,3) #add 3 minutes to round up
 
-        ## Date/Time offset to match Faga'alu weather station
-        ## Shift NDBC -11 hours (UTC to local time)
-        timedelta =-datetime.timedelta(hours=11) ### UTC to local time
-        time = time + timedelta ## time offset to get it to match Faga'alu
-        if time.minute == 0 or time.minute == 15 or time.minute == 30 or time.minute == 45:
-           #print time,pressure
-            NDBCbarometric.append((time,pressure))
-    datadict = dict(NDBCbarometric)
-    baro = pd.Series(datadict,name='NDBCbaro')
-    return baro
-    
 ##load data from Tafuna Intl ## To get more data from the Airport run wundergrabber_NSTU.py in the 'Maindir+Data/NSTU/' folder
 airport = pd.DataFrame.from_csv(datadir+'BARO/NSTU/NSTU-current.csv') ## download new data using wundergrabber
 airport['Wind Speed m/s']=airport['Wind SpeedMPH'] * 0.44704
-TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] * 3.3863881579}).resample('15Min',fill_method='ffill',limit=2)## inches to kPa
+#TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] * 3.3863881579}).resample('15Min',fill_method='ffill',limit=2)## inches to kPa
+TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] *.1}).resample('15Min')## inches to kPa
 TAFUNAbaro = TAFUNAbaro.reindex(pd.date_range(min(TAFUNAbaro.index),max(TAFUNAbaro.index),freq='15Min'))
 ##load data from NDBC NSTP6 station at DMWR, Pago Harbor
-NDBCbaro = pd.DataFrame(ndbc(datadir+'BARO/NSTP6/'),columns=['NDBCbaro'])
+## To get more NSTP6 data either go to their website and copy and paste the historical data
+## or use wundergrabber_NSTP6-REALTIME.py and copy and paste frome the .csv
+def ndbc(datafile = datadir+'BARO/NSTP6/NSTP6-2012-14.xlsx'):
+    ndbcXL = pd.ExcelFile(datafile)
+    ndbc_parse = lambda yr,mo,dy,hr,mn: datetime.datetime(yr,mo,dy,hr,mn)
+    ndbc_data = ndbcXL.parse('NSTP6-2012-14',header=0,skiprows=1,parse_dates=[['#yr','mo','dy','hr','mn']],index_col=0,date_parser=ndbc_parse,
+                             na_values=['9999','999','99','99.0'])
+    #local = pytz.timezone('US/Samoa')
+    #ndbc_data.index = ndbc_data.index.tz_localize(pytz.utc).tz_convert(local)
+    return ndbc_data
+
+NDBCbaro = ndbc(datafile = datadir+'BARO/NSTP6/NSTP6-2012-14.xlsx')
+NDBCbaro = NDBCbaro['hPa'].resample('15Min')
+NDBCbaro = NDBCbaro.interpolate(method='linear',limit=4)
+NDBCbaro.columns=['NDBCbaro']
+NDBCbaro=NDBCbaro.shift(-44) ## UTC to Samoa local  =11 hours =44x15min
+
+
+ 
 ##load data from NOAA Climate Observatory at Tula, East Tutuila
 TULAbaro= pd.DataFrame(Tula(datadir+'BARO/TulaStation/TulaMetData/'),columns=['TULAbaro']) ## add TULA barometer data
 
 ## Build data frame of barometric data: Make column 'baropress' with best available data
 allbaro = pd.DataFrame(TAFUNAbaro['TAFUNAbaro'])
 allbaro['FPbaro']=FP['Bar']/10
-allbaro['NDBCbaro']=NDBCbaro['NDBCbaro']
+allbaro['NDBCbaro']=NDBCbaro/10
 allbaro['TULAbaro']=TULAbaro['TULAbaro']
 
 ## Fill priority = FP,NDBC,TAFUNA,TULA
