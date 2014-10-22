@@ -383,7 +383,8 @@ def TSN(show=False):
     ntu.plot_date(LBJ_OBS['NTU'].index,LBJ_OBS['NTU'],ls='-',marker='None',c='r',label='OBS-Village')
     ntu.set_title('Turbidity')
     ntu.set_ylabel('NTU')
-    ntu.set_ylim(0,2000)
+    ntu.set_ylim(0,10000)
+    ntu.legend(loc='upper left')
     precip = ntu.twinx()
     precip.plot_date(Precip['Timu1daily'].index,Precip['Timu1daily'],ls='steps-post',marker='None',c='b',label='Precip (Quarry)')
     precip.set_ylabel('mm')
@@ -479,4 +480,4 @@ def Bars(show=False):
     if show==True:
         plt.show()
     return
-Bars(True)
+#Bars(True)

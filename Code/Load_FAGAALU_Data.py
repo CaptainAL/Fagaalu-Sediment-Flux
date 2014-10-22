@@ -249,7 +249,7 @@ def plot_stage_data(show=False):
         plt.draw()
         plt.show()
     return
-#plot_stage_data(show=True)
+plot_stage_data(show=True)
     
 ## STAGE DATA FOR PT's
 Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT3['stage']})
