@@ -178,6 +178,7 @@ airport['Wind Speed m/s']=airport['Wind SpeedMPH'] * 0.44704
 #TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] * 3.3863881579}).resample('15Min',fill_method='ffill',limit=2)## inches to kPa
 TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] *.1}).resample('15Min')## inches to kPa
 TAFUNAbaro = TAFUNAbaro.reindex(pd.date_range(min(TAFUNAbaro.index),max(TAFUNAbaro.index),freq='15Min'))
+TAFUNAbaro = TAFUNAbaro[TAFUNAbaro>=90.0]
 ##load data from NDBC NSTP6 station at DMWR, Pago Harbor
 ## To get more NSTP6 data either go to their website and copy and paste the historical data
 ## or use wundergrabber_NSTP6-REALTIME.py and copy and paste frome the .csv

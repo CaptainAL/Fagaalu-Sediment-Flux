@@ -19,7 +19,7 @@ if datagrab == True:
 #    mlist = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] ##months needed
 #    mdict = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
     
-    alldata = open('C:/Users/Alex/Desktop/samoa/WATERSHED_ANALYSIS/BarometricData/NSTU/NSTU-current.csv','w')
+    alldata = open('C:/Users/Alex/Desktop/samoa/WATERSHED_ANALYSIS/BarometricData/NSTU/NSTU-current_10_28.csv','w')
     columns = ['TimeSST','TemperatureF','Dew PointF','Humidity','Sea Level PressureIn','VisibilityMPH','Wind Direction','Wind SpeedMPH','Gust SpeedMPH','PrecipitationIn','Events','Conditions','WindDirDegrees','DateUTC']
     datalist = [] ## write header columns in empty DataFrame
     for date in daterange:
@@ -47,7 +47,7 @@ if datagrab == True:
     frame = DataFrame.from_items(datalist,orient='index',columns=columns)
     frame.columns = columns
     frame = frame.applymap(lambda x: np.nan if x=='-9999' else x)
-    datafile =  frame.to_csv('C:/Users/Alex/Desktop/samoa/WATERSHED_ANALYSIS/BarometricData/NSTU/NSTU-current.csv')
+    datafile =  frame.to_csv('C:/Users/Alex/Desktop/samoa/WATERSHED_ANALYSIS/BarometricData/NSTU/NSTU-current_10_28.csv')
    
 #### Append all
 ##files = os.listdir('C:/Users/Alex/Desktop/samoa/WATERSHED_ANALYSIS/BarometricData/NSTP6/')
