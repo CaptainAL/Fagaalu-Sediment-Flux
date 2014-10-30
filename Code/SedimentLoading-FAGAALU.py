@@ -376,6 +376,13 @@ from notebook import OrangePeel
 orangepeel = OrangePeel('OrangePeel',1,datadir+'Q/Fagaalu-StageDischarge.xlsx')
 orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT]))
 
+
+## LBJ: Mannings from Xsection
+from ManningsRatingCurve import Mannings, Mannings_Series
+LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n=0.08,stage_series=Fagaalu_stage_data['LBJ'])
+DAM_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n=0.08,stage_series=Fagaalu_stage_data['Dam'])
+
+
 ## DAM AV Measurements
 DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 DAMstageDischargeLog=DAMstageDischarge.apply(np.log10) #log-transformed version
@@ -460,6 +467,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     ## LBJ Nonlinear Model
     both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
     both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
+    both.plot(LBJ_Man['stage']*100,LBJ_Man['Q']*1000,ls='None',marker='o',markersize=4,color='b')
         
     ## DAM HEC-RAS Model 
     both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
@@ -483,7 +491,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     show_plot(show,fig)
     savefig(save,title)
     return
-#plotStageDischargeRatings(show=True,log=False,save=False)
+plotStageDischargeRatings(show=True,log=False,save=False)
 #plotStageDischargeRatings(show=True,log=False,save=True)
 #plotStageDischargeRatings(show=True,log=True,save=True)
 
@@ -515,10 +523,18 @@ DAM['Q-AVLog']=(a)*(DAM['stage']**b)
 DAM['Q-HEC']= HEC_piecewise(DAM['stage'])
 
 #### CHOOSE Q RATING CURVE
+
 LBJ['Q']=LBJ_AManningVnonLinear(LBJ['stage'])
 print 'LBJ Q from Area * Manning V (NonLinear fit)'
+
+
 DAM['Q']= HEC_piecewise(DAM['stage'])
 print 'DAM Q from HEC-RAS piecewise'
+
+
+LBJ['Q']= LBJ_Man['Q']*1000
+DAM['Q']= LBJ_Man['Q']*1000
+
 
 #### Calculate Q for QUARRY
 
@@ -1038,7 +1054,7 @@ def plotS_storm_table(show=False):
     if show==True:
         plt.show()
     return
-#plotS_storm_table(show=True)
+plotS_storm_table(show=True)
 
 ## Calculate the percent of total Q with raw vales, BEFORE NORMALIZING by area!
 def plotQ_storm_table(show=False):

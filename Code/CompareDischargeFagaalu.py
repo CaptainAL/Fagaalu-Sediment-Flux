@@ -280,6 +280,71 @@ orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT
 #LBJ['Q-ManningsRect']=LBJ['Q-ManningsRect']*1000 ##m3/s to L/s
 ###using rating curve from Mannings Rect
 #LBJ['Q-ManningsRect']=LBJ_AVratingcurve_ManningsRect(LBJ['stage']) ## Calculate Q from A-Mannings rating
+from ManningsRatingCurve import Mannings, Mannings_Series
+LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n=0.08,stage_series=Fagaalu_stage_data['LBJ'])
+Mannings_n_list = np.arange(.06,.24,.02)
+Mannings_n_list = np.array([.08])
+slope_list = np.array([.016])
+xy = np.arange(.01,1.5,.1)
+fig, ax = plt.subplots(1)
+for s in slope_list:
+    for n in Mannings_n_list:
+        Mannings_calc = Mannings(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=s,Manning_n=n,stage_start=.1,stage_end=1.5,display=False)
+        ax.plot(Mannings_calc['stage'],Mannings_calc['Q'],'-',color='r',label=str(n))
+        PowerFit(Mannings_calc['stage'],Mannings_calc['Q'],xy,ax,c='r',label='Mannings')
+        #ax.plot(Mannings_calc['stage'],Mannings_calc['vel'],'-',color=np.random.rand(3,1),label=str(n))
+ax.plot(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000,'o',color='r',label='AV')        
+        
+
+#ax.plot(orangepeel['PT reading(cm)']/100,orangepeel['m/s'],'o',color='DarkOrange',label='Float')    
+#ax.plot(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['V(m/s)'],'o',color='r',label='AV')
+ax.plot(DAM_HECstageDischarge['stage(cm)']/100,DAM_HECstageDischarge['Q_HEC(L/sec)']/1000,'-',color='b',label='DAM HEC-RAS Model')
+
+LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000,order=2,interceptZero=True)    
+LBJ_AVpower = powerfunction(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000)  
+
+NonlinearFit(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000,order=2,interceptZero=False,xspace=xy,Ax=ax,c='r',ls='-.',label='LBJ_AVnonLinear '+r'$r^2$')#+"%.2f"%LBJ_AVnonLinear['r2'])
+PowerFit(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000,xy,ax,c='y',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])
+plt.legend(loc='best')
+
+
+
+
+plt.plot(LBJ_Man['stage'],LBJ_Man['Q'],'o',color='b')
+
+
+
+def DAM_Mannings():
+
+DAM_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n=0.08,stage_series=Fagaalu_stage_data['Dam'])
+Mannings_n_list = np.arange(.03,.09,.01)
+slope_list = np.arange(.03,.044,.01)
+
+Mannings_n_list = np.array([.08])
+slope_list = np.array([.03])
+
+xy = np.arange(.01,1.5,.1)
+#fig, ax = plt.subplots(1)
+for s in slope_list:
+    for n in Mannings_n_list:
+        Mannings_calc = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=s,Manning_n=n,stage_start=.0,stage_end=1.3,display=False)
+        ax.plot(Mannings_calc['stage'],Mannings_calc['Q'],'-',color='g',label='Man_n'+str(n)+' S='+str(s))
+        #PowerFit(Mannings_calc['stage'],Mannings_calc['Q'],xy,ax,c='g',label='Mannings')
+        #ax.plot(Mannings_calc['stage'],Mannings_calc['vel'],'-',color=np.random.rand(3,1),label=str(n))
+ax.plot(DAMstageDischarge['stage(cm)']/100,DAMstageDischarge['Q-AV(L/sec)']/1000,'o',color='g',label='AV')  
+plt.legend(loc='best')      
+        
+
+#ax.plot(orangepeel['PT reading(cm)']/100,orangepeel['m/s'],'o',color='DarkOrange',label='Float')    
+#ax.plot(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['V(m/s)'],'o',color='r',label='AV')
+ax.plot(DAM_HECstageDischarge['stage(cm)']/100,DAM_HECstageDischarge['Q_HEC(L/sec)']/1000,'-',color='b',label='DAM HEC-RAS Model')
+
+LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000,order=2,interceptZero=True)    
+LBJ_AVpower = powerfunction(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000)  
+
+NonlinearFit(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000,order=2,interceptZero=False,xspace=xy,Ax=ax,c='r',ls='-.',label='LBJ_AVnonLinear '+r'$r^2$')#+"%.2f"%LBJ_AVnonLinear['r2'])
+PowerFit(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000,xy,ax,c='y',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])
+plt.legend(loc='best')
 
 #### DAM(3 rating curves: AV measurements, WinFlume, HEC-RAS
 DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data,printResults=False) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
