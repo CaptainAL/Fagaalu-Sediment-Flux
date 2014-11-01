@@ -281,17 +281,17 @@ orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT
 ###using rating curve from Mannings Rect
 #LBJ['Q-ManningsRect']=LBJ_AVratingcurve_ManningsRect(LBJ['stage']) ## Calculate Q from A-Mannings rating
 from ManningsRatingCurve import Mannings, Mannings_Series
-LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n=0.08,stage_series=Fagaalu_stage_data['LBJ'])
+LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['LBJ'])
 Mannings_n_list = np.arange(.06,.24,.02)
-Mannings_n_list = np.array([.08])
+Mannings_n_list = np.array(['Jarrett'])
 slope_list = np.array([.016])
 xy = np.arange(.01,1.5,.1)
-fig, ax = plt.subplots(1)
+#fig, ax = plt.subplots(1)
 for s in slope_list:
     for n in Mannings_n_list:
         Mannings_calc = Mannings(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=s,Manning_n=n,stage_start=.1,stage_end=1.5,display=False)
         ax.plot(Mannings_calc['stage'],Mannings_calc['Q'],'-',color='r',label=str(n))
-        PowerFit(Mannings_calc['stage'],Mannings_calc['Q'],xy,ax,c='r',label='Mannings')
+        #PowerFit(Mannings_calc['stage'],Mannings_calc['Q'],xy,ax,c='r',label='Mannings')
         #ax.plot(Mannings_calc['stage'],Mannings_calc['vel'],'-',color=np.random.rand(3,1),label=str(n))
 ax.plot(LBJstageDischarge['stage(cm)']/100,LBJstageDischarge['Q-AV(L/sec)']/1000,'o',color='r',label='AV')        
         

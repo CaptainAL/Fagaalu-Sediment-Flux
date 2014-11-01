@@ -339,7 +339,7 @@ from stage2discharge_ratingcurve import AV_RatingCurve, calcQ, Mannings_rect, We
 
 #### LBJ (3 rating curves: AV measurements, A measurment * Mannings V, Area of Rectangular section * Mannings V)
 Slope = 0.0161 # m/m
-n=0.050 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
+n=0.080 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
 ### Calculate Q from a single AV measurement
 #fileQ = calcQ(datadir+'Q/LBJ_4-18-13.txt','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True)
 ### and save to CSV
@@ -379,9 +379,19 @@ orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT
 
 ## LBJ: Mannings from Xsection
 from ManningsRatingCurve import Mannings, Mannings_Series
-LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n=0.08,stage_series=Fagaalu_stage_data['LBJ'])
-DAM_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n=0.08,stage_series=Fagaalu_stage_data['Dam'])
-
+if 'LBJ_Man' not in locals():
+    try:
+        LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/LBJ_Man.csv')
+    except:
+        LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['LBJ'])
+        LBJ_Man.to_csv(datadir+'Q/LBJ_Man.csv')
+        
+if 'DAM_Man' not in locals():
+    try:
+        DAM_Man = pd.DataFrame.from_csv(datadir+'Q/DAM_Man.csv')
+    except:
+        DAM_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['Dam'])
+        DAM_Man.to_csv(datadir+'Q/DAM_Man.csv')
 
 ## DAM AV Measurements
 DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
@@ -467,8 +477,9 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     ## LBJ Nonlinear Model
     both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
     both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
-    both.plot(LBJ_Man['stage']*100,LBJ_Man['Q']*1000,ls='None',marker='o',markersize=4,color='b')
-        
+    both.plot(LBJ_Man['stage']*100,LBJ_Man['Q']*1000,ls='None',marker='o',markersize=4,color='y')
+    both.plot(DAM_Man['stage']*100,DAM_Man['Q']*1000,ls='None',marker='o',markersize=4,color='g')   
+    
     ## DAM HEC-RAS Model 
     both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
 
@@ -533,7 +544,7 @@ print 'DAM Q from HEC-RAS piecewise'
 
 
 LBJ['Q']= LBJ_Man['Q']*1000
-DAM['Q']= LBJ_Man['Q']*1000
+DAM['Q']= DAM_Man['Q']*1000
 
 
 #### Calculate Q for QUARRY
