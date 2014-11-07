@@ -12,10 +12,7 @@ import datetime as dt
 #################################################################################################################
 def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True,printResults=False):
     Filelist = os.listdir(path)
-    
-    S = slope
-    n = Mannings_n
-    
+   
     ## iterate over files in directory to get Flow.txt file
     for f in Filelist:
         ## Select Flow.txt file
@@ -79,6 +76,13 @@ def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=
                         WP = df['WP'].sum()
                         R = (df['trapezoidal-area'].sum())/(df['WP'].sum()) ## m2/m = m
                         ## Mannings = (1R^2/3 * S^1/2)/n
+                        S = slope
+                        ## Jarrett (1990) equation for n
+                        ## n = 0.32*(S**0.30)*(R**-0.16)
+                        if Mannings_n == 'Jarrett':
+                            n = 0.32*(S**0.30)*(R**-0.16)
+                        else:
+                            n = Mannings_n
                         ManningV = (1*(R**(2.0/3.0))*(S**0.5))/n
                         ManningQ = ManningV * df['trapezoidal-area'].sum() * 1000 ## L/Sec
 

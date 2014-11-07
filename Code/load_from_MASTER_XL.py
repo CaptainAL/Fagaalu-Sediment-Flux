@@ -20,8 +20,10 @@ def PT_Hobo(allbaro,PTname,XL,sheet='',tshift=0,zshift=0): # tshift in 15Min(or 
     PT=PT.shift(tshift) ## shift by 3 hours (12 x 15minutes)
     PT['barodata']=allbaro['Baropress']
     PT['stage']=(PT['Pressure']-PT['barodata'])/9.81*100.0
-    PT['stage']=PT['stage'].where(PT['stage']>0,np.nan) ## filter negative values
+    #PT['stage']=PT['stage'].where(PT['stage']>0,PT['barodata']) ## filter negative values
+    PT['stage']=PT['stage'].round(1)  
     PT['stage']=PT['stage']+zshift
+    
     return PT
 
 def PT_Levelogger(allbaro,PTname,XL,sheet,tshift=0,zshift=0): # tshift in hours, zshift in cm
@@ -32,7 +34,8 @@ def PT_Levelogger(allbaro,PTname,XL,sheet,tshift=0,zshift=0): # tshift in hours,
     PT['barodata']=allbaro['Baropress']
     PT=PT.shift(tshift) ## shift by 3 hours (12 x 15minutes)
     PT['stage']=(PT['LEVEL']-PT['barodata'])/9.81*100.0
-    PT['stage']=PT['stage'].where(PT['stage']>0,np.nan) ## filter negative values
+    #PT['stage']=PT['stage'].where(PT['stage']>0,0) ## filter negative values
+    PT['stage']=PT['stage'].round(1)  
     PT['stage']=PT['stage']+zshift
     return PT
 

@@ -112,7 +112,7 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
     return DF
 #XSfile, sheetname, Slope, Manning_n =   datadir+'Q/LBJ_cross_section.xlsx', 'LBJ_m', .01, .05
 #max_LBJ = Fagaalu_stage_data['LBJ'].max()/100 #cm to m
-#Man_stages = Mannings(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_start=0.10,stage_end=1.5)
+#Man_stages = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n='Jarrett',stage_start=0.01,stage_end=1.3)
 
 def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):    
     ## Open and parse file; drop NA  
@@ -170,3 +170,75 @@ def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):
     DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r,'Man_n':Man_n,'vel':v,'Q':q},index=stage_series.index)
     return DF
 #Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['LBJ'])
+    
+def Man_plot(Man_Series,location=''):
+    
+    fig, ((wp,r,area),(vel,n,q)) = plt.subplots(2,3)
+    
+    wp.plot(Man_Series['stage'],Man_Series['wp'],'o')
+    wp.set_ylabel('Wetted Perimeter(m)')
+    
+    r.plot(Man_Series['stage'],Man_Series['r'],'o')
+    r.set_ylabel('Hydraulic Radius(m)')
+    
+    area.plot(Man_Series['stage'],Man_Series['area'],'o')
+    area.set_ylabel('Cross-sectional Area(m2)')
+    
+    vel.plot(Man_Series['stage'],Man_Series['vel'],'o')
+    vel.set_ylabel('Velocity (m/s)')
+    
+    n.plot(Man_Series['stage'],Man_Series['Man_n'],'o')
+    n.set_ylim(0,1.)
+    n.set_ylabel('Mannings n (Jarrett)')
+    n.set_xlabel('STREAM STAGE (m)')
+    
+    q.plot(Man_Series['stage'],Man_Series['Q'],'o')
+    q.set_ylabel('Discharge (m3/s)')
+    
+    plt.suptitle("DISCHARGE MODEL PARAMETERS FOR MANNING'S EQUATION: "+location)
+    plt.show()
+    
+    return
+#Man_plot(LBJ_Man,'LBJ')
+#Man_plot(DAM_Man,'DAM')
+
+def Man_plot_compare(Man_Series1,Man_Series2,locations=('','')):
+    
+    fig, ((wp,r,area),(vel,n,q)) = plt.subplots(2,3)
+    
+    wp.plot(Man_Series1['stage'],Man_Series1['wp'],'o',color='r')
+    wp.plot(Man_Series2['stage'],Man_Series2['wp'],'o',color='g')
+    wp.set_ylabel('Wetted Perimeter(m)')
+    
+    r.plot(Man_Series1['stage'],Man_Series1['r'],'o',color='r')
+    r.plot(Man_Series2['stage'],Man_Series2['r'],'o',color='g')
+    r.set_ylabel('Hydraulic Radius(m)')
+    
+    area.plot(Man_Series1['stage'],Man_Series1['area'],'o',color='r')
+    area.plot(Man_Series2['stage'],Man_Series2['area'],'o',color='g')    
+    area.set_ylabel('Cross-sectional Area(m2)')
+    
+    vel.plot(Man_Series1['stage'],Man_Series1['vel'],'o',color='r')
+    vel.plot(Man_Series2['stage'],Man_Series2['vel'],'o',color='g')
+    vel.set_ylabel('Velocity (m/s)')
+    
+    n.plot(Man_Series1['stage'],Man_Series1['Man_n'],'o',color='r')
+    n.plot(Man_Series2['stage'],Man_Series2['Man_n'],'o',color='g')
+    n.set_ylim(0,1.)
+    n.set_ylabel('Mannings n (Jarrett)')
+    n.set_xlabel('STREAM STAGE (m)')
+    
+    q.plot(Man_Series1['stage'],Man_Series1['Q'],'o',color='r',label=locations[0])
+    q.plot(Man_Series2['stage'],Man_Series2['Q'],'o',color='g',label=locations[1])
+    q.set_ylabel('Discharge (m3/s)')
+    
+    plt.legend(loc='best')
+    plt.suptitle("DISCHARGE MODEL PARAMETERS FOR MANNING'S EQUATION: "+locations[0]+' and '+locations[1])
+    plt.show()
+    
+    return
+#Man_plot_compare(LBJ_Man, DAM_Man,('LBJ','DAM'))
+
+
+
+

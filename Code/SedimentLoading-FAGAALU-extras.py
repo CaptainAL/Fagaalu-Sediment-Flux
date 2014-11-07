@@ -35,7 +35,7 @@ def plotSTAGE(show=False):
     
     #### Format X axis and Primary Y axis
     stage.set_title(title)
-    stage.set_ylabel('Stage height in cm')
+    stage.set_ylabel('Gage height (cm)')
     stage.set_ylim(0,145)
     stage.legend(loc=2)
     #### Add Precip data from Timu1
@@ -192,18 +192,21 @@ def plotStageYears(show=False):
     if show==True:
         plt.show()
     return
-#plotStageYears(True)
+plotStageYears(True)
 
 def plotdischargeintervals(fig,ax,start,stop):
     LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AVLog)')
+    ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='r')
     DAM['Q'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-D_Flume)')
-    AddTimu1(fig,ax,Precip['Timu1-15'][start:stop])
-    AddTimu1(fig,ax,Precip['FPrain'][start:stop])    
+    ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='g')
+    
+    #AddTimu1(fig,ax,Precip['Timu1-15'][start:stop]) 
     showstormintervals(ax,show=True)
     ax.set_ylim(0,2600)
     return
     
 def QYears(show=False):
+    mpl.rc('lines',markersize=8)
     fig, (Q2012,Q2013,Q2014)=plt.subplots(3)
     plotdischargeintervals(fig,Q2012,start2012,stop2012)
     plotdischargeintervals(fig,Q2013,start2013,stop2013)
@@ -216,7 +219,7 @@ def QYears(show=False):
     if show==True:
         plt.show()
     return
-#QYears(True)
+QYears(True)
 
 #P_Q.scatter(PQdaily['Timu1daily'],PQdaily['Qdaily'],marker='o',s=dotsize,color='r')
 def PQ(show=False): ## "Event Rainfall(mm) vs. Event Discharge (L) Fagaalu Stream"

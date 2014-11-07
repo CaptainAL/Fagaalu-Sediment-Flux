@@ -17,8 +17,8 @@ def my_parser(x,y):
     return parsed
 
 def FieldNotes(sheet,headerrow,Book):
+    print 'Opening field notes...'
     notebook_file = pd.ExcelFile(Book)
-
     notebook = notebook_file.parse(sheet,header=headerrow,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
     return notebook
     

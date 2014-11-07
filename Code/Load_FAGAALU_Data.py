@@ -7,6 +7,7 @@ Created on Wed Aug 13 07:40:01 2014
 
 #### Import modules
 ## Data Processing
+import os
 import numpy as np
 import pandas as pd
 import math
@@ -175,7 +176,7 @@ def Tula(datapath=datadir+'BARO/TulaStation/TulaMetData/'):
 ##load data from Tafuna Intl ## To get more data from the Airport run wundergrabber_NSTU.py in the 'Maindir+Data/NSTU/' folder
 airport = pd.DataFrame.from_csv(datadir+'BARO/NSTU/NSTU-current.csv') ## download new data using wundergrabber
 airport['Wind Speed m/s']=airport['Wind SpeedMPH'] * 0.44704
-#TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] * 3.3863881579}).resample('15Min',fill_method='ffill',limit=2)## inches to kPa
+#TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea LevTim Bodellel PressureIn'] * 3.3863881579}).resample('15Min',fill_method='ffill',limit=2)## inches to kPa
 TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] *.1}).resample('15Min')## inches to kPa
 TAFUNAbaro = TAFUNAbaro.reindex(pd.date_range(min(TAFUNAbaro.index),max(TAFUNAbaro.index),freq='15Min'))
 TAFUNAbaro = TAFUNAbaro[TAFUNAbaro>=90.0] ## filter erroneous values
@@ -196,6 +197,7 @@ NDBCbaro = NDBCbaro['hPa'].resample('15Min')
 NDBCbaro = NDBCbaro.interpolate(method='linear',limit=4)
 NDBCbaro.columns=['NDBCbaro']
 NDBCbaro=NDBCbaro.shift(-44) ## UTC to Samoa local  =11 hours =44x15min
+NDBCbaro = NDBCbaro-.025
 
 
  
@@ -203,7 +205,7 @@ NDBCbaro=NDBCbaro.shift(-44) ## UTC to Samoa local  =11 hours =44x15min
 TULAbaro= pd.DataFrame(Tula(datadir+'BARO/TulaStation/TulaMetData/'),columns=['TULAbaro']) ## add TULA barometer data
 
 ## Build data frame of barometric data: Make column 'baropress' with best available data
-allbaro = pd.DataFrame(TAFUNAbaro['TAFUNAbaro'])
+allbaro = pd.DataFrame(NDBCbaro/10)
 allbaro['FPbaro']=FP['Bar']/10
 allbaro['NDBCbaro']=NDBCbaro/10
 allbaro['TULAbaro']=TULAbaro['TULAbaro']
@@ -216,6 +218,9 @@ allbaro['Baropress']=allbaro['FPbaro'].where(allbaro['FPbaro']>0,allbaro['NDBCba
 #### Import PT Data
 # ex. PT_Levelogger(allbaro,PTname,datapath,tshift=0,zshift=0): 
 from load_from_MASTER_XL import PT_Hobo,PT_Levelogger
+import scipy.signal
+
+
 
 PT1a = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1a',12) #12 x 15min = 3hours
 PT1b = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1b',3)
@@ -238,21 +243,54 @@ def plot_stage_data(show=False):
     fig, ax = plt.subplots()
     allbaro.plot(ax=ax)
     PT1list = [PT1a,PT1b,PT1c]
-    PT3list = [PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g]
-    for PT in PT3list:
+    
+    for PT in PT1list:
         try:
             PT['Pressure'][PT['Pressure']>0].plot(ax=ax,c=np.random.rand(3,1))
         except KeyError:
             PT['LEVEL'][PT['LEVEL']>0].plot(ax=ax,c=np.random.rand(3,1))
         plt.legend()
-        ax.set_ylim(100,150)
+        ax.set_ylim(100,120)
     if show==True:
         plt.draw()
         plt.show()
     return
-plot_stage_data(show=True)
+#plot_stage_data(show=True)
     
+
+
+#### Import FIELD NOTEBOOK Data
+from notebook import FieldNotes
+fieldbookdata = datadir+'FieldNotebook-dataonly.xlsx'
+Timu1fieldnotes = FieldNotes('Timu-F1notes',3,fieldbookdata)
+
+Timu1mmcheck = Timu1fieldnotes.ix[:,'mm':'to 0.1'] ##take the records from the mannual gage and if it was emptied to zero
+Timu1mmcheck['mm true'] = Timu1mmcheck['mm']-Timu1mmcheck['to 0.1'].shift(1)
+
+Timu1mmcheck['end']=Timu1mmcheck.index## add a column for time
+Timu1mmcheck['start']=Timu1mmcheck['end'].shift(1) ## take the time and shift it down so you have a start and stop time: When the gauge was emptied to zero, it was the start of the next interval
+Timu1mmcheck=Timu1mmcheck.truncate(before = Timu1mmcheck.index[5])
+from HydrographTools import StormSums
+Timu1mmcheck['Timu1 mm sum']=StormSums(Timu1mmcheck,Precip['Timu1'])['sum'] ## from 1/20/12 onward. Timu1 QC data begins 1/21/12
+Timu1mmcheck['WorldsBest - Timu1'] = Timu1mmcheck['Timu1 mm sum']-Timu1mmcheck['mm']
+
+LBJfieldnotes = FieldNotes('LBJstage',1,fieldbookdata)
+LBJfieldnotesStage = pd.DataFrame(LBJfieldnotes['RefGageHeight(cm)'].resample('15Min',how='first').dropna(),columns=['RefGageHeight(cm)'])
+LBJfieldnotesStage['PT1']=PT1['stage']
+LBJfieldnotesStage['GH-PT']=LBJfieldnotesStage['RefGageHeight(cm)']-PT1['stage']
+
+PT1['GH Correction']=LBJfieldnotesStage['GH-PT']
+PT1['GH Correction Int']= PT1['GH Correction'].interpolate()
+PT1['stage corrected'] = PT1['stage']+PT1['GH Correction Int']
+
+## Plot Stage Correction
+PT1['stage'].plot=('y')
+LBJfieldnotesStage['RefGageHeight(cm)'].plot(ls='None',marker='o',markersize=6,c='g')
+PT1['stage corrected'].plot(color='k')
+
+
 ## STAGE DATA FOR PT's
+#### FINAL STAGE DATA with CORRECTIONS
 Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT3['stage']})
 
 ## Year Interval Times
@@ -262,7 +300,6 @@ start2014, stop2014 = datetime.datetime(2014,1,1,0,0), datetime.datetime(2014,12
 PT1 = PT1.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 PT3 = PT3.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 Fagaalu_stage_data = Fagaalu_stage_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
-
 
 #### Import T and SSC Data
 from load_from_MASTER_XL import TS3000,YSI,OBS,loadTSS
@@ -298,22 +335,4 @@ NUTES2and3 = loadNUTES2and3(NUTES2XL,NUTES2infoXL)
 NUTES = NUTES1.append(NUTES2and3)
 #NUTES.to_excel(datadir+'samoa/WATERSHED_ANALYSIS/NUTRIENTS/NUTES_ALL.xlsx')
 
-#### Import FIELD NOTEBOOK Data
-from notebook import FieldNotes
-fieldbookdata = datadir+'FieldNotebook-dataonly.xlsx'
-Timu1fieldnotes = FieldNotes('Timu-F1notes',3,fieldbookdata)
 
-Timu1mmcheck = Timu1fieldnotes.ix[:,'mm':'to 0.1'] ##take the records from the mannual gage and if it was emptied to zero
-Timu1mmcheck['mm true'] = Timu1mmcheck['mm']-Timu1mmcheck['to 0.1'].shift(1)
-
-Timu1mmcheck['end']=Timu1mmcheck.index## add a column for time
-Timu1mmcheck['start']=Timu1mmcheck['end'].shift(1) ## take the time and shift it down so you have a start and stop time: When the gauge was emptied to zero, it was the start of the next interval
-Timu1mmcheck=Timu1mmcheck.truncate(before = Timu1mmcheck.index[5])
-from HydrographTools import StormSums
-Timu1mmcheck['Timu1 mm sum']=StormSums(Timu1mmcheck,Precip['Timu1'])['sum'] ## from 1/20/12 onward. Timu1 QC data begins 1/21/12
-Timu1mmcheck['WorldsBest - Timu1'] = Timu1mmcheck['Timu1 mm sum']-Timu1mmcheck['mm']
-
-LBJfieldnotes = FieldNotes('LBJstage',1,fieldbookdata)
-LBJfieldnotesStage = pd.DataFrame(LBJfieldnotes['Stage (cm)'].resample('5Min',how='first').dropna(),columns=['Stage (cm)'])
-LBJfieldnotesStage['PT1']=PT1['stage']
-LBJfieldnotesStage['SG-PT']=LBJfieldnotesStage['Stage (cm)']-PT1['stage']

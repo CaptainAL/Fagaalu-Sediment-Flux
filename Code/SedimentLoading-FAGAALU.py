@@ -244,7 +244,8 @@ from HydrographTools import SeparateHydrograph, StormSums
 LBJ_storm_threshold = PT1['stage'].describe()[1]+PT1['stage'].describe()[2] 
 DAM_storm_threshold = PT3['stage'].describe()[1]+PT3['stage'].describe()[2]
 
-if StormIntervalDef=='LBJ' or StormIntervalDef=='BOTH':
+## Take just one definition of Storm Intervals....
+if StormIntervalDef=='LBJ':
     ## Define Storm Intervals at LBJ
     LBJ_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT1['stage']))
     ## Combine Storm Events where the storm end is the storm start for the next storm
@@ -255,8 +256,33 @@ if StormIntervalDef=='LBJ' or StormIntervalDef=='BOTH':
     LBJ_StormIntervals=LBJ_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
     LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
     LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) #drop the second storm that was combined
+    DAM_StormIntervals=LBJ_StormIntervals
 
-if StormIntervalDef == 'DAM'or StormIntervalDef=='BOTH':  
+elif StormIntervalDef == 'DAM':  
+    ## Define Storm Intervals at DAM
+    DAM_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT3['stage']))
+    ## Combine Storm Events where the storm end is the storm start for the next storm
+    DAM_StormIntervals['next storm start']=DAM_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
+    DAM_StormIntervals['next storm end']=DAM_StormIntervals['end'].shift(-1)
+    need_to_combine =DAM_StormIntervals[DAM_StormIntervals['end']==DAM_StormIntervals['next storm start']] #storms need to be combined if their end is the same time as the next storm's start
+    need_to_combine['end']=need_to_combine['next storm end'] # change the end of the storm to the end of the next storm to combine them
+    DAM_StormIntervals=DAM_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
+    DAM_StormIntervals=DAM_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
+    DAM_StormIntervals=DAM_StormIntervals.drop_duplicates(cols=['end']) 
+    LBJ_StormIntervals=DAM_StormIntervals
+
+elif StormIntervalDef=='BOTH':
+    ## Define Storm Intervals at LBJ
+    LBJ_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT1['stage']))
+    ## Combine Storm Events where the storm end is the storm start for the next storm
+    LBJ_StormIntervals['next storm start']=LBJ_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
+    LBJ_StormIntervals['next storm end']=LBJ_StormIntervals['end'].shift(-1)
+    need_to_combine =LBJ_StormIntervals[LBJ_StormIntervals['end']==LBJ_StormIntervals['next storm start']] #storms need to be combined if their end is the same time as the next storm's start
+    need_to_combine['end']=need_to_combine['next storm end'] # change the end of the storm to the end of the next storm to combine them
+    LBJ_StormIntervals=LBJ_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
+    LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
+    LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) #drop the second storm that was combined
+    
     ## Define Storm Intervals at DAM
     DAM_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT3['stage']))
     ## Combine Storm Events where the storm end is the storm start for the next storm
@@ -268,21 +294,14 @@ if StormIntervalDef == 'DAM'or StormIntervalDef=='BOTH':
     DAM_StormIntervals=DAM_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
     DAM_StormIntervals=DAM_StormIntervals.drop_duplicates(cols=['end']) 
 
-## Take just one definition of Storm Intervals....
-if StormIntervalDef=='DAM':    
-    LBJ_StormIntervals=DAM_StormIntervals 
-    StormIntervals=LBJ_StormIntervals    
-if StormIntervalDef=='LBJ':    
-    DAM_StormIntervals=LBJ_StormIntervals     
-    StormIntervals=LBJ_StormIntervals    
 ## Use User-defined storm intervals
-if StormIntervalDef=='User':
+elif StormIntervalDef=='User':
     stormintervalsXL = pd.ExcelFile(datadir+'StormIntervals.xlsx')
     StormIntervals = stormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
     LBJ_StormIntervals, DAM_StormIntervals = StormIntervals, StormIntervals
 
     
-def showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=StormIntervals,shade_color='grey',show=True):
+def showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='grey',show=True):
     ## Storms
     if show==True:
         if storm_threshold==True:
@@ -294,8 +313,8 @@ def showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=StormIn
 
 
 #### Analyze Storm Precip Characteristics: Intensity, Erosivity Index etc. ####
-def StormPrecipAnalysis(storms=StormIntervals):
-    storms=StormIntervals
+def StormPrecipAnalysis(storms=LBJ_StormIntervals):
+    storms=LBJ_StormIntervals
     #### EROSIVITY INDEX for storms (ENGLISH UNITS)
     Stormdf = pd.DataFrame()
     for storm in storms.iterrows():
@@ -346,7 +365,7 @@ n=0.080 # Mountain stream rocky bed and rivers with variable sections and veg al
 #pd.concat(fileQ).to_csv(datadir+'Q/LBJ_4-18-13.csv')
 
 ## LBJ AV measurements
-LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
+LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n='Jarrett',trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
 LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
 LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
 
@@ -381,20 +400,25 @@ orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT
 from ManningsRatingCurve import Mannings, Mannings_Series
 if 'LBJ_Man' not in locals():
     try:
+        print 'Calculate Mannings Q for LBJ'
         LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/LBJ_Man.csv')
     except:
         LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['LBJ'])
         LBJ_Man.to_csv(datadir+'Q/LBJ_Man.csv')
+        pass
         
 if 'DAM_Man' not in locals():
     try:
+        print 'Calculate Mannings Q for DAM'
         DAM_Man = pd.DataFrame.from_csv(datadir+'Q/DAM_Man.csv')
     except:
         DAM_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['Dam'])
         DAM_Man.to_csv(datadir+'Q/DAM_Man.csv')
-
+        pass 
+    
 ## DAM AV Measurements
-DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data) ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
+DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data).dropna() ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
+DAMstageDischarge = DAMstageDischarge[10:]# throw out measurements when I didn't know how to use the flow meter very well
 DAMstageDischargeLog=DAMstageDischarge.apply(np.log10) #log-transformed version
 
 ## DAM: Q Models
@@ -431,65 +455,68 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     both = plt.subplot2grid((2,2),(0,1),rowspan=2)
     mpl.rc('lines',markersize=15)
     
-    title="Stage-Discharge Relationships for LBJ and DAM"
-    xy = np.linspace(0,150,150)
+    title="Discharge Ratings for LBJ and DAM"
+    xy = np.linspace(0,10000,10000)
     
     #LBJ AV Measurements and Rating Curve
-    site_lbj.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],'.',color='r',markeredgecolor='k',label='LBJ_AV')   
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='r',markeredgecolor='k',label='LBJ_AV')   
     #LBJ A*ManningV Measurements and Rating Curves
-    site_lbj.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')
+    site_lbj.plot(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')
 
     ## LBJ MODELS
     ## LBJ Linear    
-    LBJ_AVlinear= linearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])    
-    LinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,site_lbj,c='r',ls='--',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
+    LBJ_AVlinear= linearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
+    LinearFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='r',ls='--',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
     ## LBJ Power
-    LBJ_AVpower = powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'])    
-    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],xy,site_lbj,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    LBJ_AVpower = powerfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
     ## LBJ NonLinear
+    LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)  
     site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='-',label='LBJ_AVnonLinear')    
     ## LBJ Mannings Linear    
-    LBJ_MANlinear=linearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])
-    LinearFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,site_lbj,c='grey',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
+    LBJ_MANlinear=linearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])
+    LinearFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
     ## LBJ Manning Power    
-    LBJ_MANpower =powerfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'])    
-    PowerFit(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],xy,site_lbj,c='grey',ls='-.',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
-    ## LBJ Manning NonLinear    
+    LBJ_MANpower =powerfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])    
+    PowerFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='-.',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
+    ## LBJ Manning NonLinear   
+    LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)
     site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
     
     #DAM AV Measurements and Rating Curve
-    site_dam.plot(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],'.',color='g',markeredgecolor='k',label='DAM_AV')
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],'.',color='g',markeredgecolor='k',label='DAM_AV')
     ## DAM Linear
-    DAM_AVlinear=linearfunction(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'])    
-    LinearFit(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],xy,site_dam,c='g',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
+    DAM_AVlinear=linearfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
+    LinearFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
     ## DAM Power    
-    DAM_AVpower=powerfunction(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'])    
-    PowerFit(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],xy,site_dam,c='g',ls='-.', label='DAM AV '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='-.', label='DAM AV '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
     #DAM HEC-RAS Model and Rating Curve
-    #LinearFit(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
-    #PowerFit(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
-    site_dam.plot(DAM_HECstageDischarge['stage(cm)'],DAM_HECstageDischarge['Q_HEC(L/sec)'],'-',color='b',label='DAM HEC-RAS Model')
+    #LinearFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
+    #PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
+    #site_dam.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS Model')
     
     ## Plot selected rating curves for LBJ and DAM
     ## AV measurements
-    both.plot(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],'.',color='r',markeredgecolor='k',label='VILLAGE A-V')  
-    both.plot(DAMstageDischarge['stage(cm)'],DAMstageDischarge['Q-AV(L/sec)'],'.',color='g',markeredgecolor='k',label='FOREST A-V')    
+    both.plot(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='r',markeredgecolor='k',label='VILLAGE A-V')  
+    both.plot(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],'.',color='g',markeredgecolor='k',label='FOREST A-V')    
     ## LBJ Nonlinear Model
     both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
     both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
-    both.plot(LBJ_Man['stage']*100,LBJ_Man['Q']*1000,ls='None',marker='o',markersize=4,color='y')
-    both.plot(DAM_Man['stage']*100,DAM_Man['Q']*1000,ls='None',marker='o',markersize=4,color='g')   
+    both.plot(LBJ_Man['Q']*1000,LBJ_Man['stage']*100,'.',markersize=2,color='y',label='Mannings LBJ')
+    both.plot(DAM_Man['Q']*1000,DAM_Man['stage']*100,'.',markersize=2,color='g',label='Mannings DAM')   
     
     ## DAM HEC-RAS Model 
-    both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
+    #both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
 
     ## Label subplots    
-    site_lbj.set_title('VILLLAGE'),site_lbj.set_xlabel('Stage(cm)'),site_lbj.set_ylabel('Q(L/sec)')
-    site_dam.set_title('FOREST'),site_dam.set_xlabel('Stage(cm)'),site_dam.set_ylabel('Q(L/sec)')
-    both.set_title('Selected Ratings'),both.set_xlabel('Stage(cm)'),both.set_ylabel('Q(L/sec)'),both.yaxis.tick_right(),both.yaxis.set_label_position('right')
+    site_lbj.set_title('VILLLAGE'),site_lbj.set_ylabel('Stage(cm)'),site_lbj.set_xlabel('Q(L/sec)')
+    site_dam.set_title('FOREST'),site_dam.set_ylabel('Stage(cm)'),site_dam.set_xlabel('Q(L/sec)')
+    both.set_title('Selected Ratings'),both.set_ylabel('Stage(cm)'),both.set_xlabel('Q(L/sec)'),both.yaxis.tick_right(),both.yaxis.set_label_position('right')
     ## Format subplots
-    site_lbj.set_xlim(0,PT1['stage'].max()+10),site_lbj.set_ylim(0,LBJ_AVnonLinear(PT1['stage'].max()+10))
-    site_dam.set_xlim(0,PT3['stage'].max()+10),site_dam.set_ylim(0,HEC_piecewise(PT3['stage'].max()+10).values)
+    site_lbj.set_ylim(0,PT1['stage'].max()+10)#,site_lbj.set_xlim(0,LBJ_AVnonLinear(PT1['stage'].max()+10))
+    site_dam.set_ylim(0,PT3['stage'].max()+10)#,site_dam.set_xlim(0,HEC_piecewise(PT3['stage'].max()+10).values)
+    both.set_ylim(0,PT1['stage'].max()+10)
     ## Legends
     site_lbj.legend(loc='best',ncol=2,fancybox=True),site_dam.legend(loc='best',ncol=2,fancybox=True),both.legend(loc='best',ncol=2,fancybox=True)
     plt.legend(loc='best')    
@@ -505,6 +532,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
 plotStageDischargeRatings(show=True,log=False,save=False)
 #plotStageDischargeRatings(show=True,log=False,save=True)
 #plotStageDischargeRatings(show=True,log=True,save=True)
+#plotStageDischargeRatings(show=True,log=True,save=False)
 
 #### CALCULATE DISCHARGE
 ## Calculate Q for LBJ
@@ -995,7 +1023,7 @@ def SedFlux(show=False):
     if show==True:
         plt.show()
     return
-SedFlux(True)
+#SedFlux(True)
     
 def Q_EMC(show=False):
     fig, qemc = plt.subplots(1,1)
@@ -1065,7 +1093,7 @@ def plotS_storm_table(show=False):
     if show==True:
         plt.show()
     return
-plotS_storm_table(show=True)
+#plotS_storm_table(show=True)
 
 ## Calculate the percent of total Q with raw vales, BEFORE NORMALIZING by area!
 def plotQ_storm_table(show=False):
