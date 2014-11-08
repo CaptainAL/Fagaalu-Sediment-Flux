@@ -472,7 +472,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
     ## LBJ NonLinear
     LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)  
-    site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='-',label='LBJ_AVnonLinear')    
+    #site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='-',label='LBJ_AVnonLinear')    
     ## LBJ Mannings Linear    
     LBJ_MANlinear=linearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])
     LinearFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
@@ -481,7 +481,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     PowerFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='-.',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
     ## LBJ Manning NonLinear   
     LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)
-    site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
+    #site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
     
     #DAM AV Measurements and Rating Curve
     site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],'.',color='g',markeredgecolor='k',label='DAM_AV')
@@ -490,7 +490,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     LinearFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
     ## DAM Power    
     DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
-    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='-.', label='DAM AV '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
     #DAM HEC-RAS Model and Rating Curve
     #LinearFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
     #PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
@@ -500,12 +500,17 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     ## AV measurements
     both.plot(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='r',markeredgecolor='k',label='VILLAGE A-V')  
     both.plot(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],'.',color='g',markeredgecolor='k',label='FOREST A-V')    
+    
+    ##LBJ Power
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,both,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
     ## LBJ Nonlinear Model
-    both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
-    both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
+    #both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
+    #both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
     both.plot(LBJ_Man['Q']*1000,LBJ_Man['stage']*100,'.',markersize=2,color='y',label='Mannings LBJ')
     both.plot(DAM_Man['Q']*1000,DAM_Man['stage']*100,'.',markersize=2,color='g',label='Mannings DAM')   
-    
+    ## DAM Power    
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,both,c='g',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+
     ## DAM HEC-RAS Model 
     #both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
 
@@ -567,11 +572,8 @@ LBJ['Q']=LBJ_AManningVnonLinear(LBJ['stage'])
 print 'LBJ Q from Area * Manning V (NonLinear fit)'
 
 
-DAM['Q']= HEC_piecewise(DAM['stage'])
-print 'DAM Q from HEC-RAS piecewise'
 
-
-LBJ['Q']= LBJ_Man['Q']*1000
+LBJ['Q']= LBJ['Q-AVLog']
 DAM['Q']= DAM_Man['Q']*1000
 
 

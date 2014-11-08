@@ -218,14 +218,12 @@ allbaro['Baropress']=allbaro['FPbaro'].where(allbaro['FPbaro']>0,allbaro['NDBCba
 #### Import PT Data
 # ex. PT_Levelogger(allbaro,PTname,datapath,tshift=0,zshift=0): 
 from load_from_MASTER_XL import PT_Hobo,PT_Levelogger
-import scipy.signal
-
-
 
 PT1a = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1a',12) #12 x 15min = 3hours
-PT1b = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1b',3)
+PT1ba = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ba',3)
+PT1bb = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1bb',3,zshift=-1.5)
 PT1c = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1c',0)
-PT1 = pd.concat([PT1a,PT1b,PT1c])
+PT1 = pd.concat([PT1a,PT1ba,PT1bb,PT1c])
 
 PT2 = PT_Levelogger(allbaro,'PT2 Drive Thru',XL,'PT-Fagaalu2',0,-22)
 # tshift in 15Min(or whatever the timestep is), zshift in cm
@@ -238,6 +236,15 @@ PT3f = PT_Levelogger(allbaro,'PT3f Dam',XL,'PT-Fagaalu3f',0,-17)
 PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0,-10.5)
 PT3 = pd.concat([PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
 PT3 = PT3[PT3>0]
+
+
+## Year Interval Times
+start2012, stop2012 = datetime.datetime(2012,1,7,0,0), datetime.datetime(2012,12,31,11,59)    
+start2013, stop2013 = datetime.datetime(2013,1,1,0,0), datetime.datetime(2013,12,31,11,59)
+start2014, stop2014 = datetime.datetime(2014,1,1,0,0), datetime.datetime(2014,12,31,11,59)   
+
+PT1 = PT1.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+PT3 = PT3.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 
 def plot_stage_data(show=False):
     fig, ax = plt.subplots()
@@ -289,16 +296,24 @@ LBJfieldnotesStage['RefGageHeight(cm)'].plot(ls='None',marker='o',markersize=6,c
 PT1['stage corrected'].plot(color='k')
 
 
+StageCorrXL = pd.ExcelFile(datadir+'Q/StageCorrection.xlsx')
+StageCorr = StageCorrXL.parse('LBJ')
+Correction=pd.DataFrame()
+for correction in StageCorr.iterrows():
+    t1 = correction[1]['T1_date']
+    t2 = correction[1]['T2_date']
+    z = correction[1]['z']    
+    print t1,t2, z
+    Correction = Correction.append(pd.DataFrame({'z':z},index=pd.date_range(t1,t2,freq='15Min')))
+Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+PT1['stage_Correction'] = Correction['z']
+PT1['stage_Corrected'] = PT1['stage']+PT1['stage_Correction']
+PT1['stage']=PT1['stage_Corrected'].where(PT1['stage_Corrected']>0,PT1['stage'])
+
 ## STAGE DATA FOR PT's
 #### FINAL STAGE DATA with CORRECTIONS
 Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT3['stage']})
 
-## Year Interval Times
-start2012, stop2012 = datetime.datetime(2012,1,7,0,0), datetime.datetime(2012,12,31,11,59)    
-start2013, stop2013 = datetime.datetime(2013,1,1,0,0), datetime.datetime(2013,12,31,11,59)
-start2014, stop2014 = datetime.datetime(2014,1,1,0,0), datetime.datetime(2014,12,31,11,59)   
-PT1 = PT1.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
-PT3 = PT3.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 Fagaalu_stage_data = Fagaalu_stage_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 
 #### Import T and SSC Data
