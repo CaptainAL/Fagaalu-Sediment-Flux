@@ -314,7 +314,7 @@ plt.plot(LBJ_Man['stage'],LBJ_Man['Q'],'o',color='b')
 
 
 
-def DAM_Mannings():
+
 
 DAM_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n=0.08,stage_series=Fagaalu_stage_data['Dam'])
 Mannings_n_list = np.arange(.03,.09,.01)

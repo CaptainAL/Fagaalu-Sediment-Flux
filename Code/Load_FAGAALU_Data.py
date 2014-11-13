@@ -198,8 +198,6 @@ NDBCbaro = NDBCbaro.interpolate(method='linear',limit=4)
 NDBCbaro.columns=['NDBCbaro']
 NDBCbaro=NDBCbaro.shift(-44) ## UTC to Samoa local  =11 hours =44x15min
 NDBCbaro = NDBCbaro-.025
-
-
  
 ##load data from NOAA Climate Observatory at Tula, East Tutuila
 TULAbaro= pd.DataFrame(Tula(datadir+'BARO/TulaStation/TulaMetData/'),columns=['TULAbaro']) ## add TULA barometer data
@@ -227,11 +225,12 @@ PT1 = pd.concat([PT1a,PT1ba,PT1bb,PT1c])
 
 PT2 = PT_Levelogger(allbaro,'PT2 Drive Thru',XL,'PT-Fagaalu2',0,-22)
 # tshift in 15Min(or whatever the timestep is), zshift in cm
-PT3a = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3a',12,-3)
+PT3a = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3a',12,-3.75)
 PT3b = PT_Levelogger(allbaro,'PT3b Dam',XL,'PT-Fagaalu3b',0,-23)
-PT3c = PT_Levelogger(allbaro,'PT3c Dam',XL,'PT-Fagaalu3c',0,-18.5)
-PT3d = PT_Levelogger(allbaro,'PT3d Dam',XL,'PT-Fagaalu3d',0,-16)
-PT3e = PT_Levelogger(allbaro,'PT3e Dam',XL,'PT-Fagaalu3e',0,-17.4)
+PT3c = PT_Levelogger(allbaro,'PT3c Dam',XL,'PT-Fagaalu3c',0,-19.5)
+PT3d = PT_Levelogger(allbaro,'PT3d Dam',XL,'PT-Fagaalu3d',0,-17.1)
+
+PT3e = PT_Levelogger(allbaro,'PT3e Dam',XL,'PT-Fagaalu3e',0,-18.4)
 PT3f = PT_Levelogger(allbaro,'PT3f Dam',XL,'PT-Fagaalu3f',0,-17)
 PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0,-10.5)
 PT3 = pd.concat([PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
@@ -291,24 +290,30 @@ PT1['GH Correction Int']= PT1['GH Correction'].interpolate()
 PT1['stage corrected'] = PT1['stage']+PT1['GH Correction Int']
 
 ## Plot Stage Correction
-PT1['stage'].plot=('y')
-LBJfieldnotesStage['RefGageHeight(cm)'].plot(ls='None',marker='o',markersize=6,c='g')
-PT1['stage corrected'].plot(color='k')
+#PT1['stage'].plot=('y')
+#LBJfieldnotesStage['RefGageHeight(cm)'].plot(ls='None',marker='o',markersize=6,c='g')
+#PT1['stage corrected'].plot(color='k')
 
 
 StageCorrXL = pd.ExcelFile(datadir+'Q/StageCorrection.xlsx')
-StageCorr = StageCorrXL.parse('LBJ')
-Correction=pd.DataFrame()
-for correction in StageCorr.iterrows():
-    t1 = correction[1]['T1_date']
-    t2 = correction[1]['T2_date']
-    z = correction[1]['z']    
-    print t1,t2, z
-    Correction = Correction.append(pd.DataFrame({'z':z},index=pd.date_range(t1,t2,freq='15Min')))
-Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
-PT1['stage_Correction'] = Correction['z']
-PT1['stage_Corrected'] = PT1['stage']+PT1['stage_Correction']
-PT1['stage']=PT1['stage_Corrected'].where(PT1['stage_Corrected']>0,PT1['stage'])
+def correct_Stage(StageCorrXL,location,PTdata):
+    print 'Correcting stage for '+location
+    StageCorr = StageCorrXL.parse(location)
+    Correction=pd.DataFrame()
+    for correction in StageCorr.iterrows():
+        t1 = correction[1]['T1_date']
+        t2 = correction[1]['T2_date']
+        z = correction[1]['z']    
+        print t1,t2, z
+        Correction = Correction.append(pd.DataFrame({'z':z},index=pd.date_range(t1,t2,freq='15Min')))
+    Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    PTdata['stage_Correction'] = Correction['z']
+    PTdata['stage_Corrected'] = PTdata['stage']+PTdata['stage_Correction']
+    PTdata['stage']=PTdata['stage_Corrected'].where(PTdata['stage_Corrected']>0,PTdata['stage'])
+    return PTdata
+    
+PT1 = correct_Stage(StageCorrXL,'LBJ',PT1)
+PT3 = correct_Stage(StageCorrXL,'DAM',PT3)
 
 ## STAGE DATA FOR PT's
 #### FINAL STAGE DATA with CORRECTIONS

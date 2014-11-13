@@ -74,10 +74,12 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
         z= np.where(z>=0,z,0)
         Area = np.trapz(z,x)
         
-        ## Wetted Perimeter0.01
-        df['dx'] =df['Dist'].sub(df['Dist'].shift(1),fill_value=0)
+        ## Wetted Perimeter
+        df['dx'] = df['Dist'].sub(df['Dist'].shift(1),fill_value=0)
         df['dy'] = df['z'].sub(df['z'].shift(1),fill_value=0)
         df['wp'] = (df['dx']**2 + df['dy']**2)**0.5
+        print df        
+        
         WP = df['wp'].sum()
         R = (Area/WP) ## m2/m = m
         ## Jarrett (1990) equation for n
@@ -92,6 +94,9 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
             fig, ax1 = plt.subplots(1)
             ax1.plot(df['Dist'],df['y1'],'-o',c='k')
             ax1.fill_between(df['Dist'], df['y1'], stage,where = df['y1']<=stage,alpha=.5, interpolate=True)
+            
+            
+            
             ax1.annotate('stage: '+'%.2f'%stage+'m',xy=(df['Dist'].min(),stage+.45))
             ax1.annotate('Mannings n: '+'%.3f'%n,xy=(df['Dist'].min(),stage+.03))
             ax1.annotate('Area: '+'%.3f'%Area+'m2',xy=(df['Dist'].min(),stage+.25))
@@ -109,10 +114,10 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
         q.append(ManningQ)
         
     DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r, 'Man_n':Man_n,'vel':v,'Q':q})
-    return DF
+    return DF,df
 #XSfile, sheetname, Slope, Manning_n =   datadir+'Q/LBJ_cross_section.xlsx', 'LBJ_m', .01, .05
 #max_LBJ = Fagaalu_stage_data['LBJ'].max()/100 #cm to m
-#Man_stages = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n='Jarrett',stage_start=0.01,stage_end=1.3)
+Man_stages, df = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n='Jarrett',stage_start=1.3)
 
 def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):    
     ## Open and parse file; drop NA  
