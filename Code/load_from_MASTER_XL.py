@@ -73,8 +73,8 @@ def OBS(XL,sheet='LBJ-OBS'):
     OBS=XL.parse(sheet,header=4,parse_cols='A:L',parse_dates=True,index_col=0)
     return OBS
 
-def loadTSS(TSSXL,sheet='ALL_MASTER'):
-    print 'loading TSS...'
+def loadSSC(SSCXL,sheet='ALL_MASTER'):
+    print 'loading SSC...'
     def my_parser(x,y):
         try:
             y = str(int(y))
@@ -89,16 +89,16 @@ def loadTSS(TSSXL,sheet='ALL_MASTER'):
             parsed = pd.to_datetime(np.nan)
         return parsed
             
-    TSS= TSSXL.parse(sheet,header=0,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
-    return TSS
+    SSC= SSCXL.parse(sheet,header=0,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
+    return SSC
 
-#TSS = loadTSS()
+#SSC = loadSSC()
 #datadir = 'C:/Users/Alex/Desktop/'### samoa/
-#TSS = loadTSS(datadir+'samoa/WATERSHED_ANALYSIS/TSS/TSS_grab_samples.xls','ALL_MASTER')
+#SSC = loadSSC(datadir+'samoa/WATERSHED_ANALYSIS/SSC/SSC_grab_samples.xls','ALL_MASTER')
 
-def loadTSS2(TSS,sheet='ALL_MASTER'):
-    print 'loading TSS...'
-    #col_names = ['Date','Time','Location','Sample#','Date Analyzed','Time Analyzed','NTU','Filter Wt mg','mL sample filtered','Wet Filter wt (mg)','Dry Start','Dry Finish','Dry Time','Dried Filter wt (mg)','mg sample','L sample','TSS (mg/L)']
+def loadSSC2(SSC,sheet='ALL_MASTER'):
+    print 'loading SSC...'
+    #col_names = ['Date','Time','Location','Sample#','Date Analyzed','Time Analyzed','NTU','Filter Wt mg','mL sample filtered','Wet Filter wt (mg)','Dry Start','Dry Finish','Dry Time','Dried Filter wt (mg)','mg sample','L sample','SSC (mg/L)']
     #my_parser= lambda x,y: dt.datetime.strptime(x+y,"%m/%d/%Y%H%M")
     def my_parser(x,y):
         y = str(int(y))
@@ -110,9 +110,9 @@ def loadTSS2(TSS,sheet='ALL_MASTER'):
         parsed=dt.datetime.combine(x,time)
         #print parsed
         return parsed
-    TSS = pd.ExcelFile(path).parse(sheet,header=0,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'],na_values=['9999'])
-    TSS=TSS.drop(TSS.columns[15:],1)
-    return TSS
+    SSC = pd.ExcelFile(path).parse(sheet,header=0,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'],na_values=['9999'])
+    SSC=SSC.drop(SSC.columns[15:],1)
+    return SSC
 
 def loadNUTES1(NUTESXL,sheet='by Date'):
     print 'loading NUTES...'

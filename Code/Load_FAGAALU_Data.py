@@ -322,7 +322,7 @@ Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT
 Fagaalu_stage_data = Fagaalu_stage_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 
 #### Import T and SSC Data
-from load_from_MASTER_XL import TS3000,YSI,OBS,loadTSS
+from load_from_MASTER_XL import TS3000,YSI,OBS,loadSSC
 ## Turbidimeter Data DAM
 DAM_TS3K = TS3000(XL,'DAM-TS3K')
 DAM_YSI = YSI(XL,'DAM-YSI')
@@ -335,10 +335,10 @@ LBJ_OBSa=LBJ_OBSa.rename(columns={'Turb_SS_Avg':'NTU'})
 LBJ_OBSb=LBJ_OBSb.rename(columns={'Turb_SS_Mean':'NTU'})
 LBJ_OBS=LBJ_OBSa.append(LBJ_OBSb)
 
-## TSS Data, equivalent to SSC but I don't want to change all the code and file names
-TSSXL = pd.ExcelFile(datadir+'SSC/TSS_grab_samples.xlsx')
-TSS = loadTSS(TSSXL,'ALL_MASTER')
-TSS= TSS[TSS['TSS (mg/L)']>0]
+## SSC Data, equivalent to SSC but I don't want to change all the code and file names
+SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
+SSC = loadSSC(SSCXL,'ALL_MASTER')
+SSC= SSC[SSC['SSC (mg/L)']>0]
 
 
 #### Import NUTRIENT Data

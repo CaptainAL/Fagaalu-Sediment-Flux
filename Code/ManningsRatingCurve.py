@@ -117,7 +117,7 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
     return DF,df
 #XSfile, sheetname, Slope, Manning_n =   datadir+'Q/LBJ_cross_section.xlsx', 'LBJ_m', .01, .05
 #max_LBJ = Fagaalu_stage_data['LBJ'].max()/100 #cm to m
-Man_stages, df = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n='Jarrett',stage_start=1.3)
+#Man_stages, df = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n='Jarrett',stage_start=1.3)
 
 def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):    
     ## Open and parse file; drop NA  
