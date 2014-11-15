@@ -15,7 +15,7 @@ def SeparateHydrograph(hydrodata='stage',minimum_length=8):
     maximum = params[7]
     quartiles= params[4:8]
     stormthresh = mean+std
-    print 'Storm threshold= '+'%.2f'%stormthresh
+    print 'Storm threshold= '+'%.1f'%stormthresh
     StormFlow = hydrodata.where(hydrodata>stormthresh) ##returns list of data points that meet the condition, the rest are NaN (same shape as original array)
 ## or
 #PT1storm = PT1[PT1>stormthresh] ## NaN values are filtered out
@@ -45,10 +45,13 @@ def SeparateHydrograph(hydrodata='stage',minimum_length=8):
         end= t[1]
         event = hydrodata.ix[start:end]
         eventduration = end-start
+        seconds = eventduration.total_seconds()
+        hours = seconds / 3600
+        eventduration = round(hours,2)
         if event.count() >= minimum_length:
             eventlist.append([start,end,eventduration])
 
-    Events=DataFrame(eventlist,columns=['start','end','duration (min)'])
+    Events=DataFrame(eventlist,columns=['start','end','duration (hrs)'])
     #drop_rows = Events[Events['duration (min)'] <= timedelta(minutes=120)] ## Filters events that are too short
     #Events = Events.drop(drop_rows.index) ## Filtered DataFrame of storm start,stop,count,sum
     return Events

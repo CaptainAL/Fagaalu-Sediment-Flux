@@ -233,6 +233,16 @@ def plotregressionline(data,ols_object,ax,color):
     y = intercept + slope * x
     ax.plot(x, y,color)
     return
+    
+def showstormintervals(ax,storm_threshold,StormsList,shade_color='grey',show=True):
+    ## Storms
+    if show==True:
+        if storm_threshold==True:
+            print 'Storm threshold stage= '+ '%.'%storm_threshold   
+            ax.axhline(y=storm_threshold,ls='--',color=shade_color)    
+        for storm in StormsList.iterrows(): ## shade over storm intervals
+            ax.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    return
 
 #### Define Storm Periods #####
 ## Define Storm Intervals at LBJ
@@ -247,7 +257,7 @@ DAM_storm_threshold = PT3['stage'].describe()[1]+PT3['stage'].describe()[2]
 ## Take just one definition of Storm Intervals....
 if StormIntervalDef=='LBJ':
     ## Define Storm Intervals at LBJ
-    LBJ_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT1['stage']))
+    LBJ_StormIntervals=SeparateHydrograph(hydrodata=PT1['stage'])
     ## Combine Storm Events where the storm end is the storm start for the next storm
     LBJ_StormIntervals['next storm start']=LBJ_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
     LBJ_StormIntervals['next storm end']=LBJ_StormIntervals['end'].shift(-1)
@@ -256,11 +266,12 @@ if StormIntervalDef=='LBJ':
     LBJ_StormIntervals=LBJ_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
     LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
     LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) #drop the second storm that was combined
+    ## Set Storm Intervals for DAM, same as LBJ    
     DAM_StormIntervals=LBJ_StormIntervals
 
 elif StormIntervalDef == 'DAM':  
     ## Define Storm Intervals at DAM
-    DAM_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT3['stage']))
+    DAM_StormIntervals=SeparateHydrograph(hydrodata=PT3['stage'])
     ## Combine Storm Events where the storm end is the storm start for the next storm
     DAM_StormIntervals['next storm start']=DAM_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
     DAM_StormIntervals['next storm end']=DAM_StormIntervals['end'].shift(-1)
@@ -269,11 +280,12 @@ elif StormIntervalDef == 'DAM':
     DAM_StormIntervals=DAM_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
     DAM_StormIntervals=DAM_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
     DAM_StormIntervals=DAM_StormIntervals.drop_duplicates(cols=['end']) 
+    ## Set Storm Intervals for LBJ, same as DAM       
     LBJ_StormIntervals=DAM_StormIntervals
 
 elif StormIntervalDef=='BOTH':
     ## Define Storm Intervals at LBJ
-    LBJ_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT1['stage']))
+    LBJ_StormIntervals=SeparateHydrograph(hydrodata=PT1['stage'])
     ## Combine Storm Events where the storm end is the storm start for the next storm
     LBJ_StormIntervals['next storm start']=LBJ_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
     LBJ_StormIntervals['next storm end']=LBJ_StormIntervals['end'].shift(-1)
@@ -282,9 +294,10 @@ elif StormIntervalDef=='BOTH':
     LBJ_StormIntervals=LBJ_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
     LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
     LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) #drop the second storm that was combined
+
     
     ## Define Storm Intervals at DAM
-    DAM_StormIntervals=DataFrame(SeparateHydrograph(hydrodata=PT3['stage']))
+    DAM_StormIntervals=SeparateHydrograph(hydrodata=PT3['stage'])
     ## Combine Storm Events where the storm end is the storm start for the next storm
     DAM_StormIntervals['next storm start']=DAM_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
     DAM_StormIntervals['next storm end']=DAM_StormIntervals['end'].shift(-1)
@@ -294,29 +307,23 @@ elif StormIntervalDef=='BOTH':
     DAM_StormIntervals=DAM_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
     DAM_StormIntervals=DAM_StormIntervals.drop_duplicates(cols=['end']) 
 
+    
 ## Use User-defined storm intervals
 elif StormIntervalDef=='User':
     stormintervalsXL = pd.ExcelFile(datadir+'StormIntervals.xlsx')
     StormIntervals = stormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
+    ## SET BOTH LBJ and DAM Storm intervals
     LBJ_StormIntervals, DAM_StormIntervals = StormIntervals, StormIntervals
 
+### SAVE Storm Intervals for LATER
 LBJ_StormIntervals.to_excel(datadir+'Q/LBJ_StormIntervals.xlsx')
 DAM_StormIntervals.to_excel(datadir+'Q/DAM_StormIntervals.xlsx')
     
-def showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='grey',show=True):
-    ## Storms
-    if show==True:
-        if storm_threshold==True:
-            print 'Storm threshold stage= '+ '%.'%storm_threshold   
-            ax.axhline(y=storm_threshold,ls='--',color=shade_color)    
-        for storm in showStorms.iterrows(): ## shade over storm intervals
-            ax.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-    return
+
 
 
 #### Analyze Storm Precip Characteristics: Intensity, Erosivity Index etc. ####
 def StormPrecipAnalysis(storms=LBJ_StormIntervals):
-    storms=LBJ_StormIntervals
     #### EROSIVITY INDEX for storms (ENGLISH UNITS)
     Stormdf = pd.DataFrame()
     for storm in storms.iterrows():
@@ -354,31 +361,59 @@ DAM_Stormdf = StormPrecipAnalysis(storms=DAM_StormIntervals)
 
 #### STAGE TO DISCHARGE ####
 from stage2discharge_ratingcurve import AV_RatingCurve, calcQ, Mannings_rect, Weir_rect, Weir_vnotch, Flume
+
 ### Area Velocity and Mannings from in situ measurments
 ## stage2discharge_ratingcurve.AV_rating_curve(datadir,location,Fagaalu_stage_data,trapezoid=False,Slope=0.01,Mannings_n=0.03,width=4.9276)
 ## Returns DataFrame of Stage (cm) and Discharge (L/sec) calc. from AV measurements with time index
 
-#### LBJ (3 rating curves: AV measurements, A measurment * Mannings V, Area of Rectangular section * Mannings V)
-Slope = 0.0161 # m/m
-n=0.080 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
 ### Calculate Q from a single AV measurement
 #fileQ = calcQ(datadir+'Q/LBJ_4-18-13.txt','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True)
-### and save to CSV
+
+## and save to CSV
 #pd.concat(fileQ).to_csv(datadir+'Q/LBJ_4-18-13.csv')
 
+
+### Discharge using Mannings and Surveyed Cros-section
+from ManningsRatingCurve import Mannings, Mannings_Series
+## Read LBJ_Man Discharge from .csv, or calculate new if needed
+if 'LBJ_Man' not in locals():
+    try:
+        print 'Calculate Mannings Q for LBJ'
+        LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/LBJ_Man.csv')
+    except:
+        LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['LBJ'])
+        LBJ_Man.to_csv(datadir+'Q/LBJ_Man.csv')
+        pass
+## Read DAM_Man Discharge from .csv, or calculate new if needed
+if 'DAM_Man' not in locals():
+    try:
+        print 'Calculate Mannings Q for DAM'
+        DAM_Man = pd.DataFrame.from_csv(datadir+'Q/DAM_Man.csv')
+    except:
+        DAM_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['Dam'])
+        DAM_Man.to_csv(datadir+'Q/DAM_Man.csv')
+        pass 
+
+#### LBJ 
+# (3 rating curves: AV measurements, A measurment * Mannings V, Surveyed Cross-Section and Manning's equation)
+
 ## LBJ AV measurements
+## Mannings parameters for A-ManningV
+Slope = 0.0161 # m/m
+n=0.080 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
+##
 LBJstageDischarge = AV_RatingCurve(datadir+'Q/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n='Jarrett',trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
 LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
 LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
 
-## LBJ: Q Models 
+## LBJ: Discharge Ratings
 ## Linear
 LBJ_AV= pd.ols(y=LBJstageDischarge['Q-AV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) 
 ## Power
 LBJ_AVLog= pd.ols(y=LBJstageDischargeLog['Q-AV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) #linear fit to log-transformed stage and Q
-## Linear with Mannings
+## Linear with Mannings and measured Area
 LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True)
-## Power with Mannings
+## Power with Mannings and measured Area
 LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
 
 ## Fit nonlinear wiht intercept zero
@@ -398,38 +433,19 @@ orangepeel = OrangePeel('OrangePeel',1,datadir+'Q/Fagaalu-StageDischarge.xlsx')
 orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT]))
 
 
-## LBJ: Mannings from Xsection
-from ManningsRatingCurve import Mannings, Mannings_Series
-if 'LBJ_Man' not in locals():
-    try:
-        print 'Calculate Mannings Q for LBJ'
-        LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/LBJ_Man.csv')
-    except:
-        LBJ_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['LBJ'])
-        LBJ_Man.to_csv(datadir+'Q/LBJ_Man.csv')
-        pass
-        
-if 'DAM_Man' not in locals():
-    try:
-        print 'Calculate Mannings Q for DAM'
-        DAM_Man = pd.DataFrame.from_csv(datadir+'Q/DAM_Man.csv')
-    except:
-        DAM_Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['Dam'])
-        DAM_Man.to_csv(datadir+'Q/DAM_Man.csv')
-        pass 
-    
+#### DAM  
 ## DAM AV Measurements
 DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data).dropna() ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 DAMstageDischarge = DAMstageDischarge[10:]# throw out measurements when I didn't know how to use the flow meter very well
 DAMstageDischargeLog=DAMstageDischarge.apply(np.log10) #log-transformed version
 
-## DAM: Q Models
+## DAM: Discharge Ratings
 ## Linear
 DAM_AV = pd.ols(y=DAMstageDischarge['Q-AV(L/sec)'],x=DAMstageDischarge['stage(cm)'],intercept=True) 
 ## Power
 DAM_AVLog = pd.ols(y=DAMstageDischargeLog['Q-AV(L/sec)'],x=DAMstageDischargeLog['stage(cm)'],intercept=True) 
 
-## HEC-RAS Model of the DAM structure: Documents/HEC/FagaaluDam.prj
+### HEC-RAS Model of the DAM structure: Documents/HEC/FagaaluDam.prj
 def HEC_piecewise(PTdata):
     if type(PTdata)!=pd.Series:
         PTdata = pd.Series(data=PTdata)
@@ -449,6 +465,7 @@ DAMstageDischarge['Q_HEC(L/sec)']= HEC_piecewise(DAMstageDischarge['stage(cm)'])
 
 DAM_HEC = pd.ols(y=DAMstageDischarge['Q_HEC(L/sec)'],x=DAMstageDischarge['stage(cm)'],intercept=True) 
 
+### Compare Discharg Ratings
 def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     fig =plt.figure()
     ax = plt.subplot(2,2,1)
@@ -545,6 +562,8 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
 ## Calculate Q for LBJ
 ## Stage
 LBJ = DataFrame(PT1,columns=['stage']) ## Build DataFrame with all stage records for location (cm)
+## Mannings
+LBJ['Q-Mannings'] = LBJ_Man['Q']*1000
 ## Linear Models
 LBJ['Q-AV']=(LBJ['stage']*LBJ_AV.beta[0]) + LBJ_AV.beta[1] ## Calculate Q from AV rating (L/sec)
 LBJ['Q-AManningV']= (LBJ['stage']*LBJ_AManningV.beta[0]) + LBJ_AManningV.beta[1] ## Calculate Q from A-Mannings rating (L/sec)
@@ -560,6 +579,8 @@ LBJ['Q-AManningVnonLinear']= LBJ_AManningVnonLinear(LBJ['stage'])
 ## Calculate Q for DAM
 ## Stage
 DAM = DataFrame(PT3,columns=['stage']) ## Build DataFrame with all stage records for location
+## Mannings
+DAM['Q-Mannings']=DAM_Man['Q']*1000 ## m3/s to L/sec
 ## Linear Model
 DAM['Q-AV']=(DAM['stage']*DAM_AV.beta[0]) + DAM_AV.beta[1] ## Calculate Q from AV rating=
 ## Power Model
@@ -569,17 +590,12 @@ DAM['Q-AVLog']=(a)*(DAM['stage']**b)
 DAM['Q-HEC']= HEC_piecewise(DAM['stage'])
 
 #### CHOOSE Q RATING CURVE
-
-LBJ['Q']=LBJ_AManningVnonLinear(LBJ['stage'])
-print 'LBJ Q from Area * Manning V (NonLinear fit)'
-
-
-
 LBJ['Q']= LBJ['Q-AVLog']
-DAM['Q']= DAM_Man['Q']*1000
+print 'LBJ Q from AV Power Law'
+DAM['Q']= DAM['Q-Mannings']
+print 'DAM Q from Mannings and Surveyed Cross Section'
 
-
-#### Calculate Q for QUARRY
+#### Calculate Q for QUARRY TODO
 
 
 ## Convert to 15min interval LBJ
@@ -589,34 +605,6 @@ LBJq['stage']=PT1['stage'] ## put unaltered stage back in
 ## Convert to 15min interval DAM
 DAMq= (DAM*900)## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
 DAMq['stage']=PT3['stage'] ## put unaltered stage back in
-
-
-#### Integrate over P and Q over Storm Event
-from HydrographTools import StormSums
-## LBJ
-Pstorms_LBJ = StormSums(LBJ_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
-Pstorms_LBJ.columns=['Pstart','Pend','Pcount','Psum','Pmax']
-Pstorms_LBJ['EI'] = LBJ_Stormdf['EI']
-Qstorms_LBJ=StormSums(LBJ_StormIntervals,LBJq['Q']) 
-Qstorms_LBJ.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
-Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900 ## Have to divide by 900 to get instantaneous 
-## DAM
-Pstorms_DAM = StormSums(DAM_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
-Pstorms_DAM.columns=['Pstart','Pend','Pcount','Psum','Pmax']
-Pstorms_DAM['EI'] = DAM_Stormdf['EI']
-Qstorms_DAM= StormSums(DAM_StormIntervals,DAMq['Q']) 
-Qstorms_DAM.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
-Qstorms_DAM['Qmax']=Qstorms_DAM['Qmax']/900 ## Have to divide by 900 to get instantaneous 
-
-## Event Runoff Coefficient
-StormsLBJ = Pstorms_LBJ[Pstorms_LBJ['Psum']>0].join(Qstorms_LBJ)
-## Event precip x Area = Event Precip Volume: Psum/1000 (mm to m) * 1.78*1000000 (km2 to m2) *1000 (m3 to L)
-StormsLBJ['PsumVol'] = (StormsLBJ['Psum']/1000)*(1.78*1000000)*1000  
-StormsLBJ['RunoffCoeff']=StormsLBJ['Qsum']/StormsLBJ['PsumVol']
-
-StormsDAM=Pstorms_DAM[Pstorms_DAM['Psum']>0].join(Qstorms_DAM)
-StormsDAM['PsumVol'] = (StormsDAM['Psum']/1000)*(0.9*1000000)*1000  
-StormsDAM['RunoffCoeff']=StormsDAM['Qsum']/StormsDAM['PsumVol']
 
 
 #### SSC ANALYSIS
@@ -632,14 +620,14 @@ SampleCounts= SampleCounts.drop(SampleCounts[SampleCounts['Location'].str.starts
 SampleCounts.index=range(1,len(SampleCounts)+1)
 
 ## SSC Boxplots and Discharge Concentration
-LBJgrab = SSC['SSC (mg/L)'][SSC['Location'].isin(['LBJ'])].resample('15Min',fill_method='pad',limit=0)
-DTgrab =SSC['SSC (mg/L)'][SSC['Location'].isin(['DT','R2'])].resample('15Min',fill_method='pad',limit=0)
-DAMgrab = SSC['SSC (mg/L)'][SSC['Location'].isin(['DAM'])].resample('15Min',fill_method='pad',limit=0)
-GrabSamples = pd.concat([DAMgrab,DTgrab,LBJgrab],axis=1)
-GrabSamples.columns = ['DAM','DT','LBJ']
-GrabSampleMeans = [DAMgrab.mean(),DTgrab.mean(),LBJgrab.mean()]
-GrabSampleVals = np.concatenate([DAMgrab.values.tolist(),DTgrab.values.tolist(),LBJgrab.values.tolist()])
-GrabSampleCategories = np.concatenate([[1]*len(DAMgrab),[2]*len(DTgrab),[3]*len(LBJgrab)])
+LBJgrab = SSC[SSC['Location'].isin(['LBJ'])].resample('15Min',fill_method='pad',limit=0)
+QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])].resample('15Min',fill_method='pad',limit=0)
+DAMgrab = SSC[SSC['Location'].isin(['DAM'])].resample('15Min',fill_method='pad',limit=0)
+GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'],LBJgrab['SSC (mg/L)']],axis=1)
+GrabSamples.columns = ['DAM','QUARRY','LBJ']
+GrabSampleMeans = [DAMgrab.mean(),QUARRYgrab.mean(),LBJgrab.mean()]
+GrabSampleVals = np.concatenate([DAMgrab.values.tolist(),QUARRYgrab.values.tolist(),LBJgrab.values.tolist()])
+GrabSampleCategories = np.concatenate([[1]*len(DAMgrab),[2]*len(QUARRYgrab),[3]*len(LBJgrab)])
 
 def plotSSCboxplots(show=False):
     mpl.rc('lines',markersize=100)
@@ -666,10 +654,10 @@ dam_ssc['Q']=DAM['Q']
 dam_ssc = dam_ssc.dropna()
 dam_ssc2012,dam_ssc2013,dam_ssc2014 = dam_ssc[start2012:stop2012],dam_ssc[start2013:stop2013],dam_ssc[start2014:stop2014]
 
-dt_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])]['SSC (mg/L)']).resample('15Min')
-dt_ssc['Q']=DAM['Q']
-dt_ssc =dt_ssc.dropna()
-dt2012,dt2013,dt2014 = dt_ssc[start2012:stop2012],dt_ssc[start2013:stop2013],dt_ssc[start2014:stop2014]
+quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])]['SSC (mg/L)']).resample('15Min')
+quarry_ssc['Q']=DAM['Q']
+quarry_ssc =quarry_ssc.dropna()
+quarry2012,quarry2013,quarry2014 = quarry_ssc[start2012:stop2012],quarry_ssc[start2013:stop2013],quarry_ssc[start2014:stop2014]
 
 lbj_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ']['SSC (mg/L)']).resample('15Min')
 lbj_ssc['Q']=LBJ['Q']
@@ -693,13 +681,13 @@ def plotQvsC(ms=6,show=False,log=False,save=True):
     down_ex.plot(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'.',c='g',label='VILLAGE 2012')
     down_ex.plot(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'.',c='y',label='VILLAGE 2013')    
     down_ex.plot(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'.',c='r',label='VILLAGE 2014')
-    ## plot DT samples
-    down.plot(dt2012['Q'],dt2012['SSC (mg/L)'],'^',markersize=ms/2,c='g',label='QUARRY 2012')
-    down.plot(dt2013['Q'],dt2013['SSC (mg/L)'],'^',markersize=ms/2,c='y',label='QUARRY 2013')
-    down.plot(dt2014['Q'],dt2014['SSC (mg/L)'],'^',markersize=ms/2,c='r',label='QUARRY 2014')
-    down_ex.plot(dt2012['Q'],dt2012['SSC (mg/L)'],'^',markersize=ms/2,c='g',label='QUARRY 2012')
-    down_ex.plot(dt2013['Q'],dt2013['SSC (mg/L)'],'^',markersize=ms/2,c='y',label='QUARRY 2013')    
-    down_ex.plot(dt2014['Q'],dt2014['SSC (mg/L)'],'^',markersize=ms/2,c='r',label='QUARRY 2014')
+    ## plot quarry samples
+    down.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'^',markersize=ms/2,c='g',label='QUARRY 2012')
+    down.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',markersize=ms/2,c='y',label='QUARRY 2013')
+    down.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'^',markersize=ms/2,c='r',label='QUARRY 2014')
+    down_ex.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'^',markersize=ms/2,c='g',label='QUARRY 2012')
+    down_ex.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',markersize=ms/2,c='y',label='QUARRY 2013')    
+    down_ex.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'^',markersize=ms/2,c='r',label='QUARRY 2014')
     ## plot DAM samples
     up.plot(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'.',c='g',label='DAM 2012')
     up.plot(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'.',c='y',label='DAM 2013')
@@ -757,7 +745,7 @@ def InterpolateGrabSamples(Stormslist,Data,offset=0):
             Event['GrabInterpolated']=Event['Grab'].interpolate('linear')
         Events = Events.append(Event)
     return Events
-QuarryGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, DTgrab,0)
+QuarryGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, QUARRYgrab,0)
 #plt.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['Grab'],marker='o',ls='None',color='y')
 #plt.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['GrabInterpolated'],marker='None',ls='-',color='y')
 
@@ -825,19 +813,16 @@ def plotNTU_BOTH(show=False,lwidth=0.5):
     ntu.plot_date(DAMntu15minute.index,DAMntu15minute,ls='-',marker='None',c='g',label='FOREST 15min NTU')
     ##plot all Grab samples at location 
     ssc = fig.add_axes(ntu.get_position(), frameon=False, sharex=ntu,sharey=ntu)
-    LBJssc = SSC[SSC['Location']=='LBJ']
-    ssc.plot_date(LBJssc.index,LBJssc['SSC (mg/L)'],'.',markeredgecolor='grey',color='r',label='VILLAGE SSC grab')
-    QUARRYssc = SSC[SSC['Location'].isin(['DT','R2'])]
-    ssc.plot_date(QUARRYssc.index,QUARRYssc['SSC (mg/L)'],'.',markeredgecolor='grey',color='y',label='QUARRY SSC grab')
-    DAMssc = SSC[SSC['Location']=='DAM']
-    ssc.plot_date(DAMssc.index,DAMssc['SSC (mg/L)'],'.',markeredgecolor='grey',color='g',label='FOREST SSC grab')    
+    ssc.plot_date(LBJgrab.index,LBJgrab['SSC (mg/L)'],'.',markeredgecolor='grey',color='r',label='VILLAGE SSC grab')
+    ssc.plot_date(QUARRYgrab.index,QUARRYgrab['SSC (mg/L)'],'.',markeredgecolor='grey',color='y',label='QUARRY SSC grab')
+    ssc.plot_date(DAMgrab.index,DAMgrab['SSC (mg/L)'],'.',markeredgecolor='grey',color='g',label='FOREST SSC grab')    
     ##plot Grab samples used for rating
     ssc.yaxis.set_ticks_position('right'),ssc.yaxis.set_label_position('right')
     ssc.set_ylabel('SSC (mg/L)'),ssc.legend(loc='upper right')
     ## Shade storm intervals
-    showstormintervals(precip)
-    showstormintervals(Q,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='r')
-    showstormintervals(ntu,storm_threshold=DAM_storm_threshold,showStorms=DAM_StormIntervals,shade_color='g')
+    showstormintervals(precip,LBJ_storm_threshold, LBJ_StormIntervals)
+    showstormintervals(Q, LBJ_storm_threshold, LBJ_StormIntervals,shade_color='r')
+    showstormintervals(ntu,DAM_storm_threshold, DAM_StormIntervals,shade_color='g')
 
     precip.set_ylabel('Precip (mm/15min)'),precip.legend()
     Q.set_ylabel('Discharge (L/sec)'),Q.set_ylim(0,LBJ['Q'].max()+100),Q.legend()
@@ -847,7 +832,7 @@ def plotNTU_BOTH(show=False,lwidth=0.5):
     if show==True:
         plt.show()
     return
-#plotNTU_BOTH(True,lwidth=0.5)
+plotNTU_BOTH(True,lwidth=0.5)
 
 def plotNTUratingstable(show=False,save=False):
     
@@ -941,6 +926,35 @@ T_SSC_RMSE['SSC_diff'] = T_SSC_RMSE['SSCmeasured']-T_SSC_RMSE['SSC_LBJ_YSIpredic
 T_SSC_RMSE['SSC_diffsquared'] = (T_SSC_RMSE['SSC_diff'])**2
 T_SSC_RMSE['SSC_RMSE'] = T_SSC_RMSE['SSC_diffsquared']**0.5
 T_SSC_RMSE_Value = (T_SSC_RMSE['SSC_RMSE'].mean())
+
+#### EVENT-WISE ANALYSES
+
+#### Integrate over P and Q over Storm Event
+from HydrographTools import StormSums
+## LBJ
+Pstorms_LBJ = StormSums(LBJ_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
+Pstorms_LBJ.columns=['Pstart','Pend','Pcount','Psum','Pmax']
+Pstorms_LBJ['EI'] = LBJ_Stormdf['EI']
+Qstorms_LBJ=StormSums(LBJ_StormIntervals,LBJq['Q']) 
+Qstorms_LBJ.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
+Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900 ## Have to divide by 900 to get instantaneous 
+## DAM
+Pstorms_DAM = StormSums(DAM_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
+Pstorms_DAM.columns=['Pstart','Pend','Pcount','Psum','Pmax']
+Pstorms_DAM['EI'] = DAM_Stormdf['EI']
+Qstorms_DAM= StormSums(DAM_StormIntervals,DAMq['Q']) 
+Qstorms_DAM.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
+Qstorms_DAM['Qmax']=Qstorms_DAM['Qmax']/900 ## Have to divide by 900 to get instantaneous 
+
+## Event Runoff Coefficient
+StormsLBJ = Pstorms_LBJ[Pstorms_LBJ['Psum']>0].join(Qstorms_LBJ)
+## Event precip x Area = Event Precip Volume: Psum/1000 (mm to m) * 1.78*1000000 (km2 to m2) *1000 (m3 to L)
+StormsLBJ['PsumVol'] = (StormsLBJ['Psum']/1000)*(1.78*1000000)*1000  
+StormsLBJ['RunoffCoeff']=StormsLBJ['Qsum']/StormsLBJ['PsumVol']
+
+StormsDAM=Pstorms_DAM[Pstorms_DAM['Psum']>0].join(Qstorms_DAM)
+StormsDAM['PsumVol'] = (StormsDAM['Psum']/1000)*(0.9*1000000)*1000  
+StormsDAM['RunoffCoeff']=StormsDAM['Qsum']/StormsDAM['PsumVol']
  
 #### DAM Event-wise Sediment Flux DataFrame
 DAM['TS3k-NTU']=DAM_TS3K15minute['NTU']
@@ -975,61 +989,63 @@ SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
 
 
+
 #### Storm Data
 def stormdata(StormIntervals):
-    storm_data = pd.DataFrame(columns=['Precip','LBJq','DAMq','LBJssc','DAMssc','LBJ-Sed','DAM-Sed','LBJgrab','DTgrab','DAMgrab'],dtype=np.float64,index=pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))
+    storm_data = pd.DataFrame(columns=['Precip','LBJq','DAMq','LBJssc','DAMssc','LBJ-Sed','DAM-Sed','LBJgrab','QUARRYgrab','DAMgrab'],dtype=np.float64,index=pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))   
+    storm_data=pd.DataFrame()
     for storm in StormIntervals.iterrows():
         start = storm[1]['start']-dt.timedelta(minutes=60)
         end =  storm[1]['end']
-        data = pd.DataFrame.from_dict({'Precip':PrecipFilled['Precip'][start:end].dropna(),'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab[start:end],'DTgrab':DTgrab[start:end],'DAMgrab':DAMgrab[start:end]},orient='columns') ## slice desired data by storm 
+        #print start, end
+        data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end].dropna(),'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},index=pd.date_range(start,end,freq='15Min')) ## slice desired data by storm 
         data['sEMC-DAM']=data['DAMgrab'].mean()
         data['sEMC-LBJ']=data['LBJgrab'].mean()
-        storm_data = storm_data.combine_first(data) ## add each storm to each other
-        return storm_data
+        storm_data = storm_data.append(data) ## add each storm to each other
+    storm_data = storm_data.drop_duplicates().reindex(pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))
+    return storm_data
 storm_data_LBJ = stormdata(LBJ_StormIntervals)
 storm_data_DAM = stormdata(DAM_StormIntervals)
 
-def SedFlux(show=False):
+def Storm_SedFlux(show=False):
     title = 'Figure7:Storm Data'
-    fig, (QP,SSC) = plt.subplots(nrows=2,ncols=1,sharex=True)
-    
-    storm_data_LBJ['LBJq'].plot(ax=QP,color='r',label='LBJ-Q')
-    storm_data_DAM['DAMq'].plot(ax=QP,color='g',label='DAM-Q')
-    P = QP.twinx()
+    fig, (P,Q,SSC,SED) = plt.subplots(nrows=4,ncols=1,sharex=True)
+    ## Precip
     storm_data_LBJ['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Timu1')
-    QP.set_ylabel('Q m^3/15min.')
     P.set_ylabel('Precip mm/15min.')
+    ## Discharge
+    storm_data_LBJ['LBJq'].plot(ax=Q,color='r',label='LBJ-Q')
+    storm_data_LBJ['DAMq'].plot(ax=Q,color='g',label='DAM-Q')
+    Q.set_ylabel('Q m^3/15min.')#, Q.set_yscale('log')
     
-    QP.legend(loc=0)
-    P.legend(loc=1)
-    
+    ## SSC and grab samples
     storm_data_LBJ['LBJssc'].plot(ax=SSC,color='r',label='LBJ-SSC')
-    storm_data_DAM['DAMssc'].plot(ax=SSC,color='g',label='DAM-SSC')
+    storm_data_LBJ['DAMssc'].plot(ax=SSC,color='g',label='DAM-SSC')
     
-    storm_data_LBJ['LBJgrab'].plot(ax=SSC,color='r',marker='o',ls='None',label='LBJ-grab')
-    storm_data_LBJ['DTgrab'].plot(ax=SSC,color='y',marker='o',ls='None',label='DT-grab')
-    storm_data_DAM['DAMgrab'].plot(ax=SSC,color='g',marker='o',ls='None',label='DAM-grab')
+    storm_data_LBJ['LBJgrab'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
+    storm_data_LBJ['QUARRYgrab'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
+    storm_data_LBJ['DAMgrab'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
+    SSC.set_ylabel('SSC mg/L')#, SSC.set_ylim(0,1400)
+    ## Sediment discharge
+    storm_data_LBJ['LBJ-Sed'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
+    storm_data_LBJ['DAM-Sed'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
     
-    SED=SSC.twinx()
-    storm_data_LBJ['LBJ-Sed'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-.')
-    storm_data_LBJ['DAM-Sed'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-.')
+    SED.set_ylabel('Sediment Flux (Mg/15minutes)')#, SED.set_yscale('log')#, SED.set_ylim(0,10)
     
-    SSC.set_ylabel('SSC mg/L')
-    SSC.set_ylim(0,1400)
-    SED.set_ylabel('Sediment Flux (Mg/15minutes)')
-    SED.set_ylim(0,10)
-                 
-    SSC.legend(loc=0)
-    SED.legend(loc=1)
+    #QP.legend(loc=0), P.legend(loc=1)             
+    #SSC.legend(loc=0),SED.legend(loc=1)
     
     #Shade Storms
-    showstormintervals(SSC)
+    showstormintervals(Q,LBJ_storm_threshold,LBJ_StormIntervals)
+    showstormintervals(P,LBJ_storm_threshold,LBJ_StormIntervals)
+    showstormintervals(SSC,LBJ_storm_threshold,LBJ_StormIntervals)
+    showstormintervals(SED,LBJ_storm_threshold,LBJ_StormIntervals)
     
     plt.draw()
     if show==True:
         plt.show()
     return
-#SedFlux(True)
+Storm_SedFlux(True)
     
 def Q_EMC(show=False):
     fig, qemc = plt.subplots(1,1)
