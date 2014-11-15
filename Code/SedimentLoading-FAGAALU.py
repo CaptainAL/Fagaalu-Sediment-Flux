@@ -1,5 +1,4 @@
-#### LOAD DATA FIRST
-## OPEN AND RUN "StartHere-LoadDataForSession.py"
+
 
 
 # -*- coding: utf-8 -*-
@@ -14,9 +13,13 @@ to calculate the sediment loading at stream gauging locations in Faga'alu waters
 """
 #### Import modules
 import sys
-if 'XL' not in locals(): ## XL is the Master_Data.xlsx file
+import os
+
+#### LOAD DATA FIRST
+## OPEN AND RUN Load_FAGAA
+## XL is the Master_Data.xlsx fileLU_Data.py
+if 'XL' not in locals(): 
     sys.exit("Need to load data first. Run 'StartHere-LoadData....'")
-    
 
 ##custom modules
 from misc_time import * 
@@ -29,6 +32,7 @@ from scipy.stats import pearsonr as pearson_r
 from scipy.stats import spearmanr as spearman_r
 
 #timer
+import datetime as dt
 start_time = dt.datetime.now()
 print 'Start time: '+start_time.strftime('%H:%M:%S')
 
@@ -249,7 +253,7 @@ def showstormintervals(ax,storm_threshold,StormsList,shade_color='grey',show=Tru
 DefineStormIntervalsBy = {'User':'User','Separately':'BOTH','DAM':'DAM','LBJ':'LBJ'}
 StormIntervalDef = DefineStormIntervalsBy['LBJ']
 
-from HydrographTools import SeparateHydrograph, StormSums
+from HydrographTools import SeparateHydrograph
 ## Define by Threshold = Mean Stage+ 1 Std Stage
 LBJ_storm_threshold = PT1['stage'].describe()[1]+PT1['stage'].describe()[2] 
 DAM_storm_threshold = PT3['stage'].describe()[1]+PT3['stage'].describe()[2]
@@ -648,7 +652,8 @@ def plotSSCboxplots(show=False):
         plt.show()
     return
 #plotSSCboxplots(True)
-    
+
+### Build data for Sediment Rating Curve    
 dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM']['SSC (mg/L)']).resample('15Min')
 dam_ssc['Q']=DAM['Q']
 dam_ssc = dam_ssc.dropna()
@@ -988,17 +993,31 @@ SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
 
-
-
 #### Storm Data
 def stormdata(StormIntervals):
     storm_data = pd.DataFrame(columns=['Precip','LBJq','DAMq','LBJssc','DAMssc','LBJ-Sed','DAM-Sed','LBJgrab','QUARRYgrab','DAMgrab'],dtype=np.float64,index=pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))   
     storm_data=pd.DataFrame()
+    count = 0
     for storm in StormIntervals.iterrows():
+        count+=1
         start = storm[1]['start']-dt.timedelta(minutes=60)
         end =  storm[1]['end']
         #print start, end
+        ## Slice data from storm start to start end
         data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end].dropna(),'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},index=pd.date_range(start,end,freq='15Min')) ## slice desired data by storm 
+        total_storm = len(data[start:end])
+        percent_P = len(data['Precip'].dropna())/total *100.
+        percent_Q_LBJ = len(data['LBJq'].dropna())/total * 100.
+        percent_Q_DAM = len(data['DAMq'].dropna())/total * 100.
+        percent_SSC_LBJ = len(data['LBJssc'].dropna())/total * 100.
+        percent_SSC_DAM = len(data['DAMssc'].dropna())/total * 100.
+        count_LBJgrab = len(LBJgrab.dropna().dropna())
+        count_QUARRYgrab = len(QUARRYgrab.dropna().dropna())
+        count_DAMgrab = len(DAMgrab.dropna().dropna())
+        print 'Storm#:'+str(count)
+        print '%P:'+str(percent_P)+' %Q_LBJ:'+str(percent_Q_LBJ)+' %Q_DAM:'+str(percent_Q_DAM)+' %SSC_LBJ:'+str(percent_SSC_LBJ)+' %SSC_DAM:'+str(percent_SSC_DAM)
+        print '#LBJgrab:'+str(count_LBJgrab)+' #QUARRYgrab:'+str(count_QUARRY_grab)+' #DAMgrab:'+str(count_DAM_grab)        
+        
         data['sEMC-DAM']=data['DAMgrab'].mean()
         data['sEMC-LBJ']=data['LBJgrab'].mean()
         storm_data = storm_data.append(data) ## add each storm to each other

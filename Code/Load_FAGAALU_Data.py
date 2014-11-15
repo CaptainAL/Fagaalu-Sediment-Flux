@@ -10,9 +10,10 @@ Created on Wed Aug 13 07:40:01 2014
 import os
 import numpy as np
 import pandas as pd
-import math
+#import math
 import datetime as dt
-import pytz
+import matplotlib.pyplot as plt
+#import pytz
 ## Set Pandas display options
 pd.set_option('display.large_repr', 'truncate')
 pd.set_option('display.max_rows', 15)
@@ -33,7 +34,7 @@ elif git!=True: ## Local folders
     figdir = datadir+'samoa/WATERSHED_ANALYSIS/GoodFigures/rawfigoutput/'
     
 #### Import PRECIP Data
-from precip_data import raingauge, AddTimu1, AddTimu1Hourly, AddTimu1Daily, AddTimu1Monthly
+from precip_data import raingauge#, AddTimu1, AddTimu1Hourly, AddTimu1Daily, AddTimu1Monthly
 
 print 'opening MASTER_DATA excel file...'+dt.datetime.now().strftime('%H:%M:%S')
 if 'XL' not in locals():
@@ -156,9 +157,9 @@ def Tula(datapath=datadir+'BARO/TulaStation/TulaMetData/'):
                                 dailyprecip = dailyprecip+float(precip) ## Aggregate daily rainfall
                                 #print month+'/'+day+'/'+year+'\t'+hour+':'+str(minute)+'\t'+str(pressure15)+'\t'+str(precip15) 
                                 #print month+'/'+day+'/'+year+'\t'+hour+':'+str(minute)+'\t'+str(pressure15) ## tab-separated output
-                                Time = datetime.datetime(int(year),int(month),int(day),int(hour),int(minute)) ## -10 so it lines up with other times
+                                Time = dt.datetime(int(year),int(month),int(day),int(hour),int(minute)) ## -10 so it lines up with other times
                                 #print Time
-                                timedelta =-datetime.timedelta(hours=11)
+                                timedelta =-dt.timedelta(hours=11)
                                 Time = Time + timedelta ## time offset to get it to match Faga'alu
                                 #print Time
                                 TulaPressureList.append((Time,float(pressure15))) ## make list of 15 minute averaged atmospheric pressure
@@ -185,7 +186,7 @@ TAFUNAbaro = TAFUNAbaro[TAFUNAbaro>=90.0] ## filter erroneous values
 ## or use wundergrabber_NSTP6-REALTIME.py and copy and paste frome the .csv
 def ndbc(datafile = datadir+'BARO/NSTP6/NSTP6-2012-14.xlsx'):
     ndbcXL = pd.ExcelFile(datafile)
-    ndbc_parse = lambda yr,mo,dy,hr,mn: datetime.datetime(yr,mo,dy,hr,mn)
+    ndbc_parse = lambda yr,mo,dy,hr,mn: dt.datetime(yr,mo,dy,hr,mn)
     ndbc_data = ndbcXL.parse('NSTP6-2012-14',header=0,skiprows=1,parse_dates=[['#yr','mo','dy','hr','mn']],index_col=0,date_parser=ndbc_parse,
                              na_values=['9999','999','99','99.0'])
     #local = pytz.timezone('US/Samoa')
@@ -238,9 +239,9 @@ PT3 = PT3[PT3>0]
 
 
 ## Year Interval Times
-start2012, stop2012 = datetime.datetime(2012,1,7,0,0), datetime.datetime(2012,12,31,11,59)    
-start2013, stop2013 = datetime.datetime(2013,1,1,0,0), datetime.datetime(2013,12,31,11,59)
-start2014, stop2014 = datetime.datetime(2014,1,1,0,0), datetime.datetime(2014,12,31,11,59)   
+start2012, stop2012 = dt.datetime(2012,1,7,0,0), dt.datetime(2012,12,31,11,59)    
+start2013, stop2013 = dt.datetime(2013,1,1,0,0), dt.datetime(2013,12,31,11,59)
+start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2014,12,31,11,59)   
 
 PT1 = PT1.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 PT3 = PT3.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
