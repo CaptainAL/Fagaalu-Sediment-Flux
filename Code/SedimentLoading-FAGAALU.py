@@ -766,12 +766,18 @@ def T_SSCrating(TurbidimeterData,SSCdata,TurbidimeterName,location='LBJ',log=Fal
     return T_SSCrating,SSCsamples## Rating, Turbidity and Grab Sample SSC data
 
 #### NTU to SSC rating curve from LAB ANALYSIS
-T_SSC_Lab= pd.ols(y=SSC[SSC['Location']=='LBJ']['SSC (mg/L)'],x=SSC[SSC['Location']=='LBJ']['NTU'])
+#T_SSC_Lab= pd.ols(y=SSC[SSC['Location']=='LBJ']['SSC (mg/L)'],x=SSC[SSC['Location']=='LBJ']['NTU'])
 T_SSC_Lab= pd.ols(y=SSC['SSC (mg/L)'],x=SSC['NTU'])
 
-## LBJ YSI and OBS
+## LBJ and DAM YSI
 T_SSC_LBJ_YSI=T_SSCrating(LBJ_YSI,SSC,'LBJ-YSI','LBJ',log=False)
 LBJ_YSIrating = T_SSC_LBJ_YSI[0]
+T_SSC_DAM_TS3K=T_SSCrating(DAM_TS3K,SSC,'DAM-TS3K','DAM',log=False) ## Use 5minute data for NTU/SSC relationship
+DAM_TS3Krating = T_SSC_DAM_TS3K[0]
+T_SSC_DAM_YSI=T_SSCrating(DAM_YSI,SSC,'DAM-YSI','DAM',log=False) ## Won't work until there are some overlapping grab samples
+DAM_YSIrating= T_SSC_DAM_YSI[0]
+
+
  ## label=right because you want to average the values ahead of the interval and record the data at that instant.
 T_SSC_LBJ_OBS=T_SSCrating(LBJ_OBS,SSC,'LBJ-OBS','LBJ',log=False)
 LBJ_OBSrating = T_SSC_LBJ_OBS[0]
@@ -782,10 +788,7 @@ LBJntu15minute = pd.DataFrame(pd.concat([LBJ_YSI15minute['NTU'],LBJ_OBS15minute[
 #LBJntu = m.rolling_mean(LBJntu,window=3) ## Smooth out over 3 observations (45min) after already averaged to 5Min
 
 ## Dam TS3000 and YSI
-T_SSC_DAM_TS3K=T_SSCrating(DAM_TS3K,SSC,'DAM-TS3K','DAM',log=False) ## Use 5minute data for NTU/SSC relationship
-DAM_TS3Krating = T_SSC_DAM_TS3K[0]
-T_SSC_DAM_YSI=T_SSCrating(DAM_YSI,SSC,'DAM-YSI','DAM',log=False) ## Won't work until there are some overlapping grab samples
-DAM_YSIrating= T_SSC_DAM_YSI[0]
+
 ## resample to 15min to match Q records
 DAM_TS3K15minute = DAM_TS3K.resample('15Min',how='mean',label='right') ## Resample to 15 minutes for the SedFlux calc
 DAM_YSI15minute = DAM_YSI.resample('15Min',how='mean',label='right')
@@ -872,42 +875,34 @@ def plotNTUratingstable(show=False,save=False):
 #plotNTUratingstable(show=True,save=False)
 
 def plotNTUratings(ms=10,show=False,log=False,save=False,lwidth=0.3):
-    fig, (ysi, obs, ts3k) = plt.subplots(1,3,sharex=True,sharey=True) 
+    fig, (ntu, fnu) = plt.subplots(1,2,sharex=True,sharey=True) 
     title = 'Rating curves: Turbidity (NTU) vs SSC (mg/L)'
-    xy = np.linspace(0,1000)
+    xy = np.linspace(0,2000)
     mpl.rc('lines',markersize=ms,linewidth=lwidth)
     dotsize=50
     
     ## All Samples LAB
-    ysi.scatter(SSC['NTU'],SSC['SSC (mg/L)'],s=dotsize,color='b',marker='v',label='LAB',edgecolors='grey')
-    ysi.plot(xy,xy*T_SSC_Lab.beta[0]+T_SSC_Lab.beta[1],ls='-',c='b',label='LAB')
-    ## LBJ YSI samples
-    ysi.scatter(T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],T_SSC_LBJ_YSI[1]['SSC (mg/L)'],s=dotsize,color='r',marker='o',label='VILLAGE-YSI',edgecolors='grey')
-    ysi.plot(xy,xy*LBJ_YSIrating.beta[0]+LBJ_YSIrating.beta[1],ls='-',c='r',label='VILLAGE-YSI rating')
+    ntu.scatter(SSC['NTU'],SSC['SSC (mg/L)'],s=dotsize,color='b',marker='v',label='LAB',edgecolors='grey')
+    ntu.plot(xy,xy*T_SSC_Lab.beta[0]+T_SSC_Lab.beta[1],ls='-',c='b',label='LAB')
+    
+    ## Grab Samples: LBJ-YSI, DAM-TS3k, DAM-YSI
+    ntu.scatter(T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],T_SSC_LBJ_YSI[1]['SSC (mg/L)'],s=dotsize,color='r',marker='o',label='VILLAGE-YSI',edgecolors='grey')
+    ntu.scatter(T_SSC_DAM_TS3K[1]['DAM-TS3K-NTU'],T_SSC_DAM_TS3K[1]['SSC (mg/L)'],s=dotsize,color='g',marker='o',label='FOREST-TS3K',edgecolors='grey')
+    ntu.scatter(T_SSC_DAM_YSI[1]['DAM-YSI-NTU'],T_SSC_DAM_YSI[1]['SSC (mg/L)'],s=dotsize,color='g',marker='v',label='FOREST-YSI',edgecolors='grey')
+    
+    ## NTU ratings LBJ-YSI, DAM-YSI, DAM-TS3K  
+    ntu.plot(xy,xy*LBJ_YSIrating.beta[0]+LBJ_YSIrating.beta[1],ls='-',c='r',label='VILLAGE-YSI rating')
+    ntu.plot(xy,xy*DAM_TS3Krating.beta[0]+DAM_TS3Krating.beta[1],ls='-',c='g',label='FOREST-TS3K rating')
+    ntu.plot(xy,xy*DAM_YSIrating.beta[0]+DAM_YSIrating.beta[1],ls='--',c='g',label='FOREST-YSI rating')
     ## Format
-    ysi.grid(), ysi.set_xlim(0,1000), ysi.set_ylim(0,1000),ysi.set_ylabel('SSC (mg/L)')
+    ntu.grid(), ntu.set_ylabel('SSC (mg/L)'),ntu.set_xlabel('Turbidity (NTU)')
 
-    ## LBJ OBS
-    obs.scatter(T_SSC_LBJ_OBS[1]['LBJ-OBS-NTU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'],s=dotsize,color='y',marker='v',label='VILLAGE-OBS',edgecolors='grey')
-    obs.plot(xy,xy*LBJ_OBSrating.beta[0]+LBJ_OBSrating.beta[1],ls='-',c='y',label='VILLAGE-OBS rating')
-    ## LBJ YSI
-    obs.plot(xy,xy*LBJ_YSIrating.beta[0]+LBJ_YSIrating.beta[1],ls='-',c='r',label='VILLAGE-YSI rating')
+    ## FNU LBJ-OBS, QUARRY-OBS
+    fnu.scatter(T_SSC_LBJ_OBS[1]['LBJ-OBS-NTU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'],s=dotsize,color='y',marker='v',label='VILLAGE-OBS',edgecolors='grey')
+    fnu.plot(xy,xy*LBJ_OBSrating.beta[0]+LBJ_OBSrating.beta[1],ls='-',c='y',label='VILLAGE-OBS rating')
+    
     ## Format
-    obs.grid(), obs.set_xlim(0,2000),obs.set_xlabel('Turbidity (NTU)')
-
-    ## Samples: LBJ-YSI,LBJ-OBS, DAM-TS3k, DAM-YSI
-    ts3k.scatter(T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],T_SSC_LBJ_YSI[1]['SSC (mg/L)'],s=dotsize,color='r',marker='o',label='VILLAGE-YSI',edgecolors='grey')
-    ts3k.scatter(T_SSC_LBJ_OBS[1]['LBJ-OBS-NTU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'],s=dotsize,color='y',marker='v',label='VILLAGE-OBS',edgecolors='grey')
-    ts3k.scatter(T_SSC_DAM_TS3K[1]['DAM-TS3K-NTU'],T_SSC_DAM_TS3K[1]['SSC (mg/L)'],s=dotsize,color='g',marker='o',label='FOREST-TS3K',edgecolors='grey')
-    ts3k.scatter(T_SSC_DAM_YSI[1]['DAM-YSI-NTU'],T_SSC_DAM_YSI[1]['SSC (mg/L)'],s=dotsize,color='g',marker='v',label='FOREST-YSI',edgecolors='grey')
-    ## LBJ YSI, OBS    
-    ts3k.plot(xy,xy*LBJ_YSIrating.beta[0]+LBJ_YSIrating.beta[1],ls='-',c='r',label='VILLAGE-YSI rating')
-    ts3k.plot(xy,xy*LBJ_OBSrating.beta[0]+LBJ_OBSrating.beta[1],ls='-',c='y',label='VILLAGE-OBS rating')
-    ## DAM TS3k, YSI
-    ts3k.plot(xy,xy*DAM_TS3Krating.beta[0]+DAM_TS3Krating.beta[1],ls='-',c='g',label='FOREST-TS3K rating')
-    ts3k.plot(xy,xy*DAM_YSIrating.beta[0]+DAM_YSIrating.beta[1],ls='--',c='g',label='FOREST-YSI rating')
-    ## Format
-    ts3k.grid(),ts3k.legend(fancybox=True,ncol=2),ts3k.set_xlim(0,1100)
+    fnu.grid(), fnu.set_xlabel('Turbidity (FNU)')
 
     #labelindex_subplot(ts3k,T_SSC_LBJ_OBS[1].index,T_SSC_LBJ_OBS[1]['LBJ-OBS-NTU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'])    
     #labelindex_subplot(ts3k,T_SSC_LBJ_YSI[1].index,T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'])
@@ -918,7 +913,7 @@ def plotNTUratings(ms=10,show=False,log=False,save=False,lwidth=0.3):
     if show==True:
         plt.show()
     return
-#plotNTUratings(show=True,log=False,save=True,lwidth=0.5,ms=20)
+plotNTUratings(show=True,log=False,save=True,lwidth=0.5,ms=20)
     
 ## Overall RMSE for LBJ-YSI rating and all DAM and LBJ samples
 ## make DataFrame of all measured NTU and SSC at LBJ and DAM
