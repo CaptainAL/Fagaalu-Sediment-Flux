@@ -1004,19 +1004,20 @@ def stormdata(StormIntervals):
         end =  storm[1]['end']
         #print start, end
         ## Slice data from storm start to start end
-        data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end].dropna(),'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},index=pd.date_range(start,end,freq='15Min')) ## slice desired data by storm 
+        data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end],'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},index=pd.date_range(start,end,freq='15Min')) ## slice desired data by storm 
         total_storm = len(data[start:end])
-        percent_P = len(data['Precip'].dropna())/total *100.
-        percent_Q_LBJ = len(data['LBJq'].dropna())/total * 100.
-        percent_Q_DAM = len(data['DAMq'].dropna())/total * 100.
-        percent_SSC_LBJ = len(data['LBJssc'].dropna())/total * 100.
-        percent_SSC_DAM = len(data['DAMssc'].dropna())/total * 100.
-        count_LBJgrab = len(LBJgrab.dropna().dropna())
-        count_QUARRYgrab = len(QUARRYgrab.dropna().dropna())
-        count_DAMgrab = len(DAMgrab.dropna().dropna())
-        print 'Storm#:'+str(count)
-        print '%P:'+str(percent_P)+' %Q_LBJ:'+str(percent_Q_LBJ)+' %Q_DAM:'+str(percent_Q_DAM)+' %SSC_LBJ:'+str(percent_SSC_LBJ)+' %SSC_DAM:'+str(percent_SSC_DAM)
-        print '#LBJgrab:'+str(count_LBJgrab)+' #QUARRYgrab:'+str(count_QUARRY_grab)+' #DAMgrab:'+str(count_DAM_grab)        
+        percent_P = len(data['Precip'].dropna())/total_storm *100.
+        percent_Q_LBJ = len(data['LBJq'].dropna())/total_storm * 100.
+        percent_Q_DAM = len(data['DAMq'].dropna())/total_storm * 100.
+        percent_SSC_LBJ = len(data['LBJssc'].dropna())/total_storm * 100.
+        percent_SSC_DAM = len(data['DAMssc'].dropna())/total_storm * 100.
+        count_LBJgrab = len(LBJgrab.dropna())
+        count_QUARRYgrab = len(QUARRYgrab.dropna())
+        count_DAMgrab = len(DAMgrab.dropna())
+        print str(start)+' '+str(end)+' Storm#:'+str(count)
+        print '%P:'+str(percent_P)+' %Q_LBJ:'+str(percent_Q_LBJ)+' %Q_DAM:'+str(percent_Q_DAM)
+        print '%SSC_LBJ:'+str(percent_SSC_LBJ)+' %SSC_DAM:'+str(percent_SSC_DAM)
+        print '#LBJgrab:'+str(count_LBJgrab)+' #QUARRYgrab:'+str(count_QUARRYgrab)+' #DAMgrab:'+str(count_DAMgrab)        
         
         data['sEMC-DAM']=data['DAMgrab'].mean()
         data['sEMC-LBJ']=data['LBJgrab'].mean()
