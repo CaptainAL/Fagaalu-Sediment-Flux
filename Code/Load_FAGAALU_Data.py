@@ -332,8 +332,8 @@ DAM_YSI = YSI(XL,'DAM-YSI')
 LBJ_YSI = YSI(XL,'LBJ-YSI')
 LBJ_OBSa = OBS(XL,'LBJ-OBSa').truncate(after=dt.datetime(2013,4,1))
 LBJ_OBSb = OBS(XL,'LBJ-OBSb')
-LBJ_OBSa=LBJ_OBSa.rename(columns={'Turb_SS_Avg':'NTU'})
-LBJ_OBSb=LBJ_OBSb.rename(columns={'Turb_SS_Mean':'NTU'})
+LBJ_OBSa=LBJ_OBSa.rename(columns={'Turb_SS_Avg':'FNU'})
+LBJ_OBSb=LBJ_OBSb.rename(columns={'Turb_SS_Mean':'FNU'})
 LBJ_OBS=LBJ_OBSa.append(LBJ_OBSb)
 
 ## SSC Data, equivalent to SSC but I don't want to change all the code and file names

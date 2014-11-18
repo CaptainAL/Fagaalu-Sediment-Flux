@@ -363,6 +363,8 @@ def StormPrecipAnalysis(storms=LBJ_StormIntervals):
 LBJ_Stormdf = StormPrecipAnalysis(storms=LBJ_StormIntervals)
 DAM_Stormdf = StormPrecipAnalysis(storms=DAM_StormIntervals)
 
+
+#### ..
 #### STAGE TO DISCHARGE ####
 from stage2discharge_ratingcurve import AV_RatingCurve, calcQ, Mannings_rect, Weir_rect, Weir_vnotch, Flume
 
@@ -398,7 +400,7 @@ if 'DAM_Man' not in locals():
         DAM_Man.to_csv(datadir+'Q/DAM_Man.csv')
         pass 
 
-#### LBJ 
+#### LBJ Stage-Discharge
 # (3 rating curves: AV measurements, A measurment * Mannings V, Surveyed Cross-Section and Manning's equation)
 
 ## LBJ AV measurements
@@ -437,7 +439,7 @@ orangepeel = OrangePeel('OrangePeel',1,datadir+'Q/Fagaalu-StageDischarge.xlsx')
 orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT]))
 
 
-#### DAM  
+#### DAM Stage-Discharge
 ## DAM AV Measurements
 DAMstageDischarge = AV_RatingCurve(datadir+'Q/','Dam',Fagaalu_stage_data).dropna() ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 DAMstageDischarge = DAMstageDischarge[10:]# throw out measurements when I didn't know how to use the flow meter very well
@@ -610,8 +612,8 @@ LBJq['stage']=PT1['stage'] ## put unaltered stage back in
 DAMq= (DAM*900)## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
 DAMq['stage']=PT3['stage'] ## put unaltered stage back in
 
-
-#### SSC ANALYSIS
+### ..
+#### SSC Grab sample ANALYSIS
 SampleCounts = DataFrame(data=[str(val) for val in pd.unique(SSC['Location'])],columns=['Location'])
 SampleCounts['#ofSSCsamples']=pd.Series([len(SSC[SSC['Location']==str(val)]) for val in pd.unique(SSC['Location'])]) ##add column of Locations
 
@@ -754,47 +756,9 @@ QuarryGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, QUARRYgrab,0)
 #plt.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['Grab'],marker='o',ls='None',color='y')
 #plt.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['GrabInterpolated'],marker='None',ls='-',color='y')
 
-
-#### T to SSC rating curve for FIELD INSTRUMENTS
-def T_SSCrating(TurbidimeterData,SSCdata,TurbidimeterName,location='LBJ',log=False):
-    T_name = TurbidimeterName+'-NTU'
-    SSCsamples = SSCdata[SSCdata['Location'].isin([location])].resample('5Min',fill_method = 'pad',limit=0) ## pulls just the samples matching the location name and roll to 5Min.
-    SSCsamples = SSCsamples[pd.notnull(SSCsamples['SSC (mg/L)'])] ## gets rid of ones that mg/L is null
-    SSCsamples[T_name]=TurbidimeterData['NTU']## grabs turbidimeter NTU data 
-    SSCsamples = SSCsamples[pd.notnull(SSCsamples[T_name])]
-    T_SSCrating = pd.ols(y=SSCsamples['SSC (mg/L)'],x=SSCsamples[T_name],intercept=True)
-    return T_SSCrating,SSCsamples## Rating, Turbidity and Grab Sample SSC data
-
-#### NTU to SSC rating curve from LAB ANALYSIS
-#T_SSC_Lab= pd.ols(y=SSC[SSC['Location']=='LBJ']['SSC (mg/L)'],x=SSC[SSC['Location']=='LBJ']['NTU'])
-T_SSC_Lab= pd.ols(y=SSC['SSC (mg/L)'],x=SSC['NTU'])
-
-## LBJ and DAM YSI
-T_SSC_LBJ_YSI=T_SSCrating(LBJ_YSI,SSC,'LBJ-YSI','LBJ',log=False)
-LBJ_YSIrating = T_SSC_LBJ_YSI[0]
-T_SSC_DAM_TS3K=T_SSCrating(DAM_TS3K,SSC,'DAM-TS3K','DAM',log=False) ## Use 5minute data for NTU/SSC relationship
-DAM_TS3Krating = T_SSC_DAM_TS3K[0]
-T_SSC_DAM_YSI=T_SSCrating(DAM_YSI,SSC,'DAM-YSI','DAM',log=False) ## Won't work until there are some overlapping grab samples
-DAM_YSIrating= T_SSC_DAM_YSI[0]
-
-
- ## label=right because you want to average the values ahead of the interval and record the data at that instant.
-T_SSC_LBJ_OBS=T_SSCrating(LBJ_OBS,SSC,'LBJ-OBS','LBJ',log=False)
-LBJ_OBSrating = T_SSC_LBJ_OBS[0]
-## resample to 15min to match Q records
-LBJ_YSI15minute = LBJ_YSI.resample('15Min',how='mean',label='right')
-LBJ_OBS15minute = LBJ_OBS.resample('15Min',how='mean',label='right')
-LBJntu15minute = pd.DataFrame(pd.concat([LBJ_YSI15minute['NTU'],LBJ_OBS15minute['NTU']])).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
-#LBJntu = m.rolling_mean(LBJntu,window=3) ## Smooth out over 3 observations (45min) after already averaged to 5Min
-
-## Dam TS3000 and YSI
-
-## resample to 15min to match Q records
-DAM_TS3K15minute = DAM_TS3K.resample('15Min',how='mean',label='right') ## Resample to 15 minutes for the SedFlux calc
-DAM_YSI15minute = DAM_YSI.resample('15Min',how='mean',label='right')
-DAMntu15minute =  pd.DataFrame(pd.concat([DAM_TS3K15minute['NTU'],DAM_YSI15minute['NTU']])).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
-
-def plotNTU_BOTH(show=False,lwidth=0.5):
+#### ..
+#### TURBIDITY
+def plot_T_BOTH(show=False,lwidth=0.5):
     fig, (precip, Q, ntu) = plt.subplots(3,1,sharex=True)
     mpl.rc('lines',markersize=10,linewidth=lwidth)
     ##Precip
@@ -840,7 +804,46 @@ def plotNTU_BOTH(show=False,lwidth=0.5):
     if show==True:
         plt.show()
     return
-plotNTU_BOTH(True,lwidth=0.5)
+plot_T_BOTH(True,lwidth=0.5)
+
+#### T to SSC rating curve for FIELD INSTRUMENTS
+def NTU_SSCrating(TurbidimeterData,SSCdata,TurbidimeterName,location='LBJ',log=False):
+    T_name = TurbidimeterName+'-NTU'
+    SSCsamples = SSCdata[SSCdata['Location'].isin([location])].resample('5Min',fill_method = 'pad',limit=0) ## pulls just the samples matching the location name and roll to 5Min.
+    SSCsamples = SSCsamples[pd.notnull(SSCsamples['SSC (mg/L)'])] ## gets rid of ones that mg/L is null
+    SSCsamples[T_name]=TurbidimeterData['NTU']## grabs turbidimeter NTU data 
+    SSCsamples = SSCsamples[pd.notnull(SSCsamples[T_name])]
+    T_SSCrating = pd.ols(y=SSCsamples['SSC (mg/L)'],x=SSCsamples[T_name],intercept=True)
+    return T_SSCrating,SSCsamples## Rating, Turbidity and Grab Sample SSC data
+    
+def FNU_SSCrating(TurbidimeterData,SSCdata,TurbidimeterName,location='LBJ',log=False):
+    T_name = TurbidimeterName+'-FNU'
+    SSCsamples = SSCdata[SSCdata['Location'].isin([location])].resample('5Min',fill_method = 'pad',limit=0) ## pulls just the samples matching the location name and roll to 5Min.
+    SSCsamples = SSCsamples[pd.notnull(SSCsamples['SSC (mg/L)'])] ## gets rid of ones that mg/L is null
+    SSCsamples[T_name]=TurbidimeterData['FNU']## grabs turbidimeter NTU data 
+    SSCsamples = SSCsamples[pd.notnull(SSCsamples[T_name])]
+    T_SSCrating = pd.ols(y=SSCsamples['SSC (mg/L)'],x=SSCsamples[T_name],intercept=True)
+    return T_SSCrating,SSCsamples## Rating, Turbidity and Grab Sample SSC data
+
+#### NTU to SSC rating curve from LAB ANALYSIS
+#T_SSC_Lab= pd.ols(y=SSC[SSC['Location']=='LBJ']['SSC (mg/L)'],x=SSC[SSC['Location']=='LBJ']['NTU'])
+NTU_SSC_Lab= pd.ols(y=SSC['SSC (mg/L)'],x=SSC['NTU'])
+
+## NTU ratings
+## LBJ
+T_SSC_LBJ_YSI=NTU_SSCrating(LBJ_YSI,SSC,'LBJ-YSI','LBJ',log=False)
+LBJ_YSIrating = T_SSC_LBJ_YSI[0]
+## DAM
+T_SSC_DAM_TS3K=NTU_SSCrating(DAM_TS3K,SSC,'DAM-TS3K','DAM',log=False) ## Use 5minute data for NTU/SSC relationship
+DAM_TS3Krating = T_SSC_DAM_TS3K[0]
+T_SSC_DAM_YSI=NTU_SSCrating(DAM_YSI,SSC,'DAM-YSI','DAM',log=False) ## Won't work until there are some overlapping grab samples
+DAM_YSIrating= T_SSC_DAM_YSI[0]
+
+### FNU ratings
+## LBJ
+T_SSC_LBJ_OBS=FNU_SSCrating(LBJ_OBS,SSC,'LBJ-OBS','LBJ',log=False)
+LBJ_OBSrating = T_SSC_LBJ_OBS[0]
+
 
 def plotNTUratingstable(show=False,save=False):
     
@@ -895,14 +898,14 @@ def plotNTUratings(ms=10,show=False,log=False,save=False,lwidth=0.3):
     ntu.plot(xy,xy*DAM_TS3Krating.beta[0]+DAM_TS3Krating.beta[1],ls='-',c='g',label='FOREST-TS3K rating')
     ntu.plot(xy,xy*DAM_YSIrating.beta[0]+DAM_YSIrating.beta[1],ls='--',c='g',label='FOREST-YSI rating')
     ## Format
-    ntu.grid(), ntu.set_ylabel('SSC (mg/L)'),ntu.set_xlabel('Turbidity (NTU)')
+    ntu.grid(True), ntu.set_xlim(-5,2000), ntu.set_ylim(0,2000), ntu.set_ylabel('SSC (mg/L)'),ntu.set_xlabel('Turbidity (NTU)'),ntu.legend(fancybox=True,ncol=2)
 
     ## FNU LBJ-OBS, QUARRY-OBS
-    fnu.scatter(T_SSC_LBJ_OBS[1]['LBJ-OBS-NTU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'],s=dotsize,color='y',marker='v',label='VILLAGE-OBS',edgecolors='grey')
+    fnu.scatter(T_SSC_LBJ_OBS[1]['LBJ-OBS-FNU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'],s=dotsize,color='y',marker='v',label='VILLAGE-OBS',edgecolors='grey')
     fnu.plot(xy,xy*LBJ_OBSrating.beta[0]+LBJ_OBSrating.beta[1],ls='-',c='y',label='VILLAGE-OBS rating')
     
     ## Format
-    fnu.grid(), fnu.set_xlabel('Turbidity (FNU)')
+    fnu.grid(True), fnu.set_xlabel('Turbidity (FNU)'), fnu.legend(fancybox=True,ncol=2)
 
     #labelindex_subplot(ts3k,T_SSC_LBJ_OBS[1].index,T_SSC_LBJ_OBS[1]['LBJ-OBS-NTU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'])    
     #labelindex_subplot(ts3k,T_SSC_LBJ_YSI[1].index,T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'])
@@ -917,7 +920,7 @@ plotNTUratings(show=True,log=False,save=True,lwidth=0.5,ms=20)
     
 ## Overall RMSE for LBJ-YSI rating and all DAM and LBJ samples
 ## make DataFrame of all measured NTU and SSC at LBJ and DAM
-T_SSC_NTU = pd.concat([T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],T_SSC_LBJ_OBS[1]['LBJ-OBS-NTU'],T_SSC_DAM_TS3K[1]['DAM-TS3K-NTU'],T_SSC_DAM_YSI[1]['DAM-YSI-NTU']])
+T_SSC_NTU = pd.concat([T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],T_SSC_DAM_TS3K[1]['DAM-TS3K-NTU'],T_SSC_DAM_YSI[1]['DAM-YSI-NTU']])
 T_SSC_SSC= pd.concat([T_SSC_LBJ_YSI[1]['SSC (mg/L)'],T_SSC_LBJ_OBS[1]['SSC (mg/L)'],T_SSC_DAM_TS3K[1]['SSC (mg/L)'],T_SSC_DAM_YSI[1]['SSC (mg/L)']])
 T_SSC_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_NTU,'SSCmeasured':T_SSC_SSC})
 ## Calculate RMSE
@@ -927,18 +930,65 @@ T_SSC_RMSE['SSC_diffsquared'] = (T_SSC_RMSE['SSC_diff'])**2
 T_SSC_RMSE['SSC_RMSE'] = T_SSC_RMSE['SSC_diffsquared']**0.5
 T_SSC_RMSE_Value = (T_SSC_RMSE['SSC_RMSE'].mean())
 
+#### ..
+#### TURBIDITY TO SSC to SEDFLUX
+### LBJ Turbidity
+## resample to 15min to match Q records
+LBJ_YSI15minute = LBJ_YSI.resample('15Min',how='mean',label='right')
+LBJ_OBS15minute = LBJ_OBS.resample('15Min',how='mean',label='right')
+LBJntu15minute = pd.DataFrame(pd.concat([LBJ_YSI15minute['NTU']])).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+LBJntu15minute = LBJntu15minute.join(LBJ_OBS15minute['FNU'])
+#LBJntu = m.rolling_mean(LBJntu,window=3) ## Smooth out over 3 observations (45min) after already averaged to 5Min
+
+
+
+LBJ['YSI-NTU']=LBJ_YSI15minute['NTU']
+LBJ['NTU-SSC']=T_SSC_LBJ_YSI[0].beta[0] * LBJ_YSI15minute['NTU'] + T_SSC_LBJ_YSI[0].beta[1]
+LBJ['OBS-FNU']=LBJ_OBS15minute['FNU']
+LBJ['FNU-SSC']=T_SSC_LBJ_OBS[0].beta[0] * LBJ_OBS15minute['FNU'] + T_SSC_LBJ_OBS[0].beta[1]
+## Both YSI and OBS data resampled to 15minutes
+LBJ['NTU'] = LBJntu15minute['NTU']
+LBJ['FNU']= LBJntu15minute['FNU']
+
+
+### LBJ SedFlux
+LBJ['SSC-mg/L'] = pd.concat([LBJ['NTU-SSC'],LBJ['FNU-SSC']])
+LBJ['SedFlux-mg/sec']=LBJ['Q'] * LBJ['SSC-mg/L']# Q(L/sec) * C (mg/L) = mg/sec
+LBJ['SedFlux-tons/sec']=LBJ['SedFlux-mg/sec']*(10**-6) ## mg x 10**-6 = tons
+LBJ['SedFlux-tons/15min']=LBJ['SedFlux-tons/sec']*900 ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
+
+
+### DAM Turbidity
+## resample to 15min to match Q records
+DAM_TS3K15minute = DAM_TS3K.resample('15Min',how='mean',label='right') ## Resample to 15 minutes for the SedFlux calc
+DAM_YSI15minute = DAM_YSI.resample('15Min',how='mean',label='right')
+DAMntu15minute =  pd.DataFrame(pd.concat([DAM_TS3K15minute['NTU'],DAM_YSI15minute['NTU']])).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+
+DAM['TS3k-NTU']=DAM_TS3K15minute['NTU']
+DAM['YSI-NTU']=DAM_YSI15minute['NTU']
+## Both TS3K and YSI data resampled to 15minutes
+DAM['NTU']=DAMntu15minute['NTU']
+
+## DAM SedFlux
+DAM['SSC-mg/L']=T_SSC_LBJ_YSI[0].beta[0] * DAM['NTU'] + T_SSC_LBJ_YSI[0].beta[1]
+DAM['SedFlux-mg/sec']=DAM['Q'] * DAM['SSC-mg/L']# Q(L/sec) * C (mg/L)
+DAM['SedFlux-tons/sec']=DAM['SedFlux-mg/sec']*(10**-6) ## mg x 10**-6 = tons
+DAM['SedFlux-tons/15min']=DAM['SedFlux-tons/sec']*900 ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
+
+
+#### ..
 #### EVENT-WISE ANALYSES
 
 #### Integrate over P and Q over Storm Event
 from HydrographTools import StormSums
-## LBJ
+## LBJ P and Q
 Pstorms_LBJ = StormSums(LBJ_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
 Pstorms_LBJ.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_LBJ['EI'] = LBJ_Stormdf['EI']
 Qstorms_LBJ=StormSums(LBJ_StormIntervals,LBJq['Q']) 
 Qstorms_LBJ.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
 Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900 ## Have to divide by 900 to get instantaneous 
-## DAM
+## DAM P and Q
 Pstorms_DAM = StormSums(DAM_StormIntervals,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
 Pstorms_DAM.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_DAM['EI'] = DAM_Stormdf['EI']
@@ -946,47 +996,30 @@ Qstorms_DAM= StormSums(DAM_StormIntervals,DAMq['Q'])
 Qstorms_DAM.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
 Qstorms_DAM['Qmax']=Qstorms_DAM['Qmax']/900 ## Have to divide by 900 to get instantaneous 
 
-## Event Runoff Coefficient
+#### Event Runoff Coefficient
+### LBJ Runoff Coeff
 StormsLBJ = Pstorms_LBJ[Pstorms_LBJ['Psum']>0].join(Qstorms_LBJ)
 ## Event precip x Area = Event Precip Volume: Psum/1000 (mm to m) * 1.78*1000000 (km2 to m2) *1000 (m3 to L)
 StormsLBJ['PsumVol'] = (StormsLBJ['Psum']/1000)*(1.78*1000000)*1000  
 StormsLBJ['RunoffCoeff']=StormsLBJ['Qsum']/StormsLBJ['PsumVol']
-
+### DAM Runoff Coeff
 StormsDAM=Pstorms_DAM[Pstorms_DAM['Psum']>0].join(Qstorms_DAM)
+## Event precip x Area = Event Precip Volume: Psum/1000 (mm to m) * 1.78*1000000 (km2 to m2) *1000 (m3 to L)
 StormsDAM['PsumVol'] = (StormsDAM['Psum']/1000)*(0.9*1000000)*1000  
 StormsDAM['RunoffCoeff']=StormsDAM['Qsum']/StormsDAM['PsumVol']
  
-#### DAM Event-wise Sediment Flux DataFrame
-DAM['TS3k-NTU']=DAM_TS3K15minute['NTU']
-DAM['YSI-NTU']=DAM_YSI15minute['NTU']
-## Both TS3K and YSI data resampled to 15minutes
-DAM['NTU']=DAMntu15minute['NTU']
 
-DAM['SSC-mg/L']=T_SSC_LBJ_YSI[0].beta[0] * DAM['NTU'] + T_SSC_LBJ_YSI[0].beta[1]
-DAM['SedFlux-mg/sec']=DAM['Q'] * DAM['SSC-mg/L']# Q(L/sec) * C (mg/L)
-DAM['SedFlux-tons/sec']=DAM['SedFlux-mg/sec']*(10**-6) ## mg x 10**-6 = tons
-DAM['SedFlux-tons/15min']=DAM['SedFlux-tons/sec']*900 ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
-SedFluxStorms_DAM = StormSums(DAM_StormIntervals,DAM['SedFlux-tons/15min'])
-SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
-SedFluxStorms_DAM=Pstorms_DAM.join(SedFluxStorms_DAM)#Add Event S (which will be fewer events than Event Precip)
-SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
-
+#### Event Sediment Flux
 #### LBJ Event-wise Sediment Flux DataFrame
-LBJ['YSI-NTU']=LBJ_YSI15minute['NTU']
-LBJ['YSI-SSC']=T_SSC_LBJ_YSI[0].beta[0] * LBJ_YSI15minute['NTU'] + T_SSC_LBJ_YSI[0].beta[1]
-LBJ['OBS-NTU']=LBJ_OBS15minute['NTU']
-LBJ['OBS-SSC']=T_SSC_LBJ_YSI[0].beta[0] * LBJ_OBS15minute['NTU'] + T_SSC_LBJ_YSI[0].beta[1]
-## Both YSI and OBS data resampled to 15minutes
-LBJ['NTU'] = LBJntu15minute
-
-LBJ['SSC-mg/L'] = T_SSC_LBJ_YSI[0].beta[0] * LBJ['NTU'] + T_SSC_LBJ_YSI[0].beta[1]
-LBJ['SedFlux-mg/sec']=LBJ['Q'] * LBJ['SSC-mg/L']# Q(L/sec) * C (mg/L) = mg/sec
-LBJ['SedFlux-tons/sec']=LBJ['SedFlux-mg/sec']*(10**-6) ## mg x 10**-6 = tons
-LBJ['SedFlux-tons/15min']=LBJ['SedFlux-tons/sec']*900 ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
 SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,LBJ['SedFlux-tons/15min'])
 SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
+#### DAM Event-wise Sediment Flux DataFrame
+SedFluxStorms_DAM = StormSums(DAM_StormIntervals,DAM['SedFlux-tons/15min'])
+SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
+SedFluxStorms_DAM=Pstorms_DAM.join(SedFluxStorms_DAM)#Add Event S (which will be fewer events than Event Precip)
+SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
 
 #### Storm Data
 def stormdata(StormIntervals):
