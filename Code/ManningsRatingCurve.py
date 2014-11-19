@@ -91,15 +91,14 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
         ManningQ = ManningV * Area ## M3/s
         
         if display == True:
+            
             fig, ax1 = plt.subplots(1)
             ax1.plot(df['Dist'],df['y1'],'-o',c='k')
             ax1.fill_between(df['Dist'], df['y1'], stage,where = df['y1']<=stage,alpha=.5, interpolate=True)
             
-            
-            
-            ax1.annotate('stage: '+'%.2f'%stage+'m',xy=(df['Dist'].min(),stage+.45))
-            ax1.annotate('Mannings n: '+'%.3f'%n,xy=(df['Dist'].min(),stage+.03))
-            ax1.annotate('Area: '+'%.3f'%Area+'m2',xy=(df['Dist'].min(),stage+.25))
+            ax1.annotate('stage: '+'%.2f'%stage+'m',xy=(2,stage+.45))
+            ax1.annotate('Mannings n: '+'%.3f'%n,xy=(2,stage+.03))
+            ax1.annotate('Area: '+'%.3f'%Area+'m2',xy=(2,stage+.25))
             ax1.annotate('WP: '+'%.2f'%WP+'m',xy=(df['Dist'].mean(),stage+.03))
             ax1.annotate('Manning V: '+'%.2f'%ManningV+'m/s ',xy=(df['Dist'].mean(),stage+.25))
             ax1.annotate('Manning Q: '+'%.3f'%ManningQ+'m3/s',xy=(df['Dist'].mean(),stage+.45))
@@ -117,7 +116,9 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
     return DF,df
 #XSfile, sheetname, Slope, Manning_n =   datadir+'Q/LBJ_cross_section.xlsx', 'LBJ_m', .01, .05
 #max_LBJ = Fagaalu_stage_data['LBJ'].max()/100 #cm to m
-#Man_stages, df = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n='Jarrett',stage_start=1.3)
+#max_DAM = Fagaalu_stage_data['Dam'].max()/100 #cm to m
+#min_DAM = Fagaalu_stage_data['Dam'].min()/100 #cm to m
+#Man_stages, df = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n='Jarrett',stage_start=min_DAM)
 
 def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):    
     ## Open and parse file; drop NA  
