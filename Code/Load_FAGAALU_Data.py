@@ -327,6 +327,8 @@ from load_from_MASTER_XL import TS3000,YSI,OBS,loadSSC
 ## Turbidimeter Data DAM
 DAM_TS3K = TS3000(XL,'DAM-TS3K')
 DAM_YSI = YSI(XL,'DAM-YSI')
+## Correct negative NTU values
+DAM_YSI['NTU'][dt.datetime(2013,6,1):dt.datetime(2013,12,31)]=DAM_YSI['NTU'][dt.datetime(2013,6,1):dt.datetime(2013,12,31)]+6
 
 ## Turbidimeter Data LBJ
 LBJ_YSI = YSI(XL,'LBJ-YSI')
