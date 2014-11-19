@@ -81,16 +81,21 @@ def labelxy(i,x,y):
     pylab.connect('button_press_event', af)
     return
 
-def labelindex(i,x,y): 
+def labelindex(i,x,y,ax,display=False): 
+    if ax==None:
+        ax=plt.gca()
     indexstrings = [str(ind) for ind in i]
-    af = AnnoteFinder(x,y,indexstrings)
+    if display ==True:
+        for i in zip(indexstrings,x,y):
+            print i
+    af = AnnoteFinder(x,y,indexstrings,axis=ax)
     pylab.connect('button_press_event', af)
     return
     
 def labelindex_subplot(ax,i,x,y): 
     indexstrings = [str(ind) for ind in i]
-    af = AnnoteFinder(x,y,indexstrings)
-    pylab.connect('button_press_event', af)
+    af = AnnoteFinder(x,y,indexstrings,axis=ax)
+    connect('button_press_event', af)
     return
 
 def annotate_plot(frame,plot_col,label_col):
@@ -257,6 +262,7 @@ DAM_storm_threshold = PT3['stage'].describe()[1]+PT3['stage'].describe()[2]
 
 ## Take just one definition of Storm Intervals....
 if StormIntervalDef=='LBJ':
+    print 'Storm intervals defined at LBJ'
     ## Define Storm Intervals at LBJ
     LBJ_StormIntervals=SeparateHydrograph(hydrodata=PT1['stage'])
     ## Combine Storm Events where the storm end is the storm start for the next storm
@@ -271,6 +277,7 @@ if StormIntervalDef=='LBJ':
     DAM_StormIntervals=LBJ_StormIntervals
 
 elif StormIntervalDef == 'DAM':  
+    print 'Storm intervals defined at DAM'
     ## Define Storm Intervals at DAM
     DAM_StormIntervals=SeparateHydrograph(hydrodata=PT3['stage'])
     ## Combine Storm Events where the storm end is the storm start for the next storm
@@ -285,6 +292,7 @@ elif StormIntervalDef == 'DAM':
     LBJ_StormIntervals=DAM_StormIntervals
 
 elif StormIntervalDef=='BOTH':
+    print 'Storm intervals defined separately at LBJ and DAM'
     ## Define Storm Intervals at LBJ
     LBJ_StormIntervals=SeparateHydrograph(hydrodata=PT1['stage'])
     ## Combine Storm Events where the storm end is the storm start for the next storm
@@ -296,7 +304,6 @@ elif StormIntervalDef=='BOTH':
     LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
     LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) #drop the second storm that was combined
 
-    
     ## Define Storm Intervals at DAM
     DAM_StormIntervals=SeparateHydrograph(hydrodata=PT3['stage'])
     ## Combine Storm Events where the storm end is the storm start for the next storm
@@ -311,6 +318,7 @@ elif StormIntervalDef=='BOTH':
     
 ## Use User-defined storm intervals
 elif StormIntervalDef=='User':
+    print 'Storm intervals defined by user'
     stormintervalsXL = pd.ExcelFile(datadir+'StormIntervals.xlsx')
     StormIntervals = stormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
     ## SET BOTH LBJ and DAM Storm intervals
@@ -1012,7 +1020,7 @@ def plotNTUratings(plot_param_table=True,show=False,log=False,save=False,lwidth=
     if show==True:
         plt.show()
     return
-plotNTUratings(plot_param_table=True,show=True,log=False,save=True,lwidth=0.5,ms=20)
+#plotNTUratings(plot_param_table=True,show=True,log=False,save=True,lwidth=0.5,ms=20)
     
 
 #### ..
@@ -1084,18 +1092,6 @@ def plotQ_storm_table(show=False):
 
 #### Event Sediment Flux Data
 
-def Q_EMC(show=False):
-    fig, qemc = plt.subplots(1,1)
-    
-    qemc.plot(storm_data['sEMC-LBJ'].drop_duplicates(),c='r',marker='o',ls='None')
-    qemc.plot(storm_data['sEMC-DAM'].drop_duplicates(),c='g',marker='o',ls='None')
-    plt.grid()
-    
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#Q_EMC(True)
 
 def stormdata(StormIntervals):
     storm_data = pd.DataFrame(columns=['Precip','LBJq','DAMq','LBJssc','DAMssc','LBJ-Sed','DAM-Sed','LBJgrab','QUARRYgrab','DAMgrab'],dtype=np.float64,index=pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))   
@@ -1107,7 +1103,12 @@ def stormdata(StormIntervals):
         end =  storm[1]['end']
         #print start, end
         ## Slice data from storm start to start end
-        data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end],'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},index=pd.date_range(start,end,freq='15Min')) ## slice desired data by storm 
+        data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end],'LBJq':LBJ['Q'][start:end],
+        'DAMq':DAM['Q'][start:end],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],
+        'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],
+        'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],
+        'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},index=pd.date_range(start,end,freq='15Min')) ## slice desired data by storm 
+        ## Summary stats
         total_storm = len(data[start:end])
         percent_P = len(data['Precip'].dropna())/total_storm *100.
         percent_Q_LBJ = len(data['LBJq'].dropna())/total_storm * 100.
@@ -1117,18 +1118,58 @@ def stormdata(StormIntervals):
         count_LBJgrab = len(LBJgrab.dropna())
         count_QUARRYgrab = len(QUARRYgrab.dropna())
         count_DAMgrab = len(DAMgrab.dropna())
-        print str(start)+' '+str(end)+' Storm#:'+str(count)
-        print '%P:'+str(percent_P)+' %Q_LBJ:'+str(percent_Q_LBJ)+' %Q_DAM:'+str(percent_Q_DAM)
-        print '%SSC_LBJ:'+str(percent_SSC_LBJ)+' %SSC_DAM:'+str(percent_SSC_DAM)
-        print '#LBJgrab:'+str(count_LBJgrab)+' #QUARRYgrab:'+str(count_QUARRYgrab)+' #DAMgrab:'+str(count_DAMgrab)        
-        
-        data['sEMC-DAM']=data['DAMgrab'].mean()
-        data['sEMC-LBJ']=data['LBJgrab'].mean()
+        #print str(start)+' '+str(end)+' Storm#:'+str(count)
+        #print '%P:'+str(percent_P)+' %Q_LBJ:'+str(percent_Q_LBJ)+' %Q_DAM:'+str(percent_Q_DAM)
+        #print '%SSC_LBJ:'+str(percent_SSC_LBJ)+' %SSC_DAM:'+str(percent_SSC_DAM)
+        #print '#LBJgrab:'+str(count_LBJgrab)+' #QUARRYgrab:'+str(count_QUARRYgrab)+' #DAMgrab:'+str(count_DAMgrab)        
+        ## Calculate Event Mean Concentration
+        if len(data['DAMgrab'])>=3:
+            data['sEMC-DAM']=data['DAMgrab'].mean()
+        if len(data['QUARRYgrab'])>=3:
+            data['sEMC-QUARRY']=data['QUARRYgrab'].mean()
+        if len(data['QUARRYgrab'])>=3:
+            data['sEMC-LBJ']=data['LBJgrab'].mean()
+        ## Make sure data is complete for storms
+        if percent_Q_LBJ <= 95:
+            data['LBJq'] = np.nan
+        if percent_Q_DAM <= 95:
+            data['DAMq'] = np.nan
+        if percent_SSC_LBJ <= 95:
+            data['LBJssc'] = np.nan
+        if percent_SSC_LBJ <= 95:
+            data['LBJssc'] = np.nan
+        if percent_SSC_DAM <= 95:
+            data['DAMssc'] = np.nan
+        if data['LBJ-Sed'].sum() < 0:
+            data['LBJ-Sed'] = np.nan
+        if data['LBJ-Sed'].sum() < 0:
+            data['LBJ-Sed'] = np.nan
         storm_data = storm_data.append(data) ## add each storm to each other
     storm_data = storm_data.drop_duplicates().reindex(pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))
     return storm_data
 storm_data_LBJ = stormdata(LBJ_StormIntervals)
 storm_data_DAM = stormdata(DAM_StormIntervals)
+
+
+def Q_EMC(storm_data, show=False):
+    fig, qemc = plt.subplots(1,1)
+    #Plot event mean concentration
+    storm_data['sEMC-LBJ'].dropna().plot(ax=qemc,c='r',marker='o',ls='None')
+    storm_data['sEMC-QUARRY'].dropna().plot(ax=qemc,c='y',marker='o',ls='None')
+    storm_data['sEMC-DAM'].dropna().plot(ax=qemc,c='g',marker='o',ls='None')
+    #Plot grab samples
+    storm_data['LBJgrab'].plot(ax=qemc,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
+    storm_data['QUARRYgrab'].plot(ax=qemc,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
+    storm_data['DAMgrab'].plot(ax=qemc,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
+    
+    showstormintervals(qemc,LBJ_storm_threshold,LBJ_StormIntervals)
+    plt.grid()
+    
+    plt.draw()
+    if show==True:
+        plt.show()
+    return
+#Q_EMC(storm_data_LBJ,True)
 
 def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,show=False):
     title = 'Figure7:Storm Data'
@@ -1140,11 +1181,10 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,show=False):
     storm_data['LBJq'].plot(ax=Q,color='r',label='LBJ-Q')
     storm_data['DAMq'].plot(ax=Q,color='g',label='DAM-Q')
     Q.set_ylabel('Q m^3/15min.')#, Q.set_yscale('log')
-    
-    ## SSC and grab samples
+    ## SSC from turbidity
     storm_data['LBJssc'].plot(ax=SSC,color='r',label='LBJ-SSC')
-    storm_data_LBJ['DAMssc'].plot(ax=SSC,color='g',label='DAM-SSC')
-    
+    storm_data['DAMssc'].plot(ax=SSC,color='g',label='DAM-SSC')
+    ## SSC grab samples
     storm_data['LBJgrab'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
     storm_data['QUARRYgrab'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
     storm_data['DAMgrab'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
@@ -1152,12 +1192,9 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,show=False):
     ## Sediment discharge
     storm_data['LBJ-Sed'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
     storm_data['DAM-Sed'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
-    
     SED.set_ylabel('Sediment Flux (Mg/15minutes)')#, SED.set_yscale('log')#, SED.set_ylim(0,10)
-    
     #QP.legend(loc=0), P.legend(loc=1)             
     #SSC.legend(loc=0),SED.legend(loc=1)
-    
     #Shade Storms
     showstormintervals(Q,storm_threshold,storm_intervals)
     showstormintervals(P,storm_threshold,storm_intervals)
@@ -1237,20 +1274,18 @@ def plot_storms_individually(storm_threshold,storm_intervals):
         #Shade Storms
         shade_color='grey'
         start, end = storm[1]['start'], storm[1]['end']
-        P.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        Q.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        T.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        SSC.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+        P.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), Q.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+        T.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), SSC.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         SED.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         
         plt.tight_layout()        
-        
-        title='Storm_'+str(count)
+    
+        title='Storm_'+str(count)+' '+str(start.year)+'-'+str(start.month)+'-'+str(start.day)
         plt.savefig(figdir+'storm_figures/'+title)
         plt.close('all')
     plt.ion()
     return
-plot_storms_individually(LBJ_storm_threshold,LBJ_StormIntervals)      
+#plot_storms_individually(LBJ_storm_threshold,LBJ_StormIntervals)      
 
 #### Event Sediment Flux
 #### LBJ Event-wise Sediment Flux DataFrame
@@ -1263,7 +1298,19 @@ SedFluxStorms_DAM = StormSums(DAM_StormIntervals,DAM['SedFlux-tons/15min'])
 SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_DAM=Pstorms_DAM.join(SedFluxStorms_DAM)#Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
-    
+
+
+#### EDITED STORMS LIST
+#### LBJ Event-wise Sediment Flux DataFrame
+SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,storm_data_LBJ['LBJ-Sed'])
+SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
+SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
+SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
+#### DAM Event-wise Sediment Flux DataFrame
+SedFluxStorms_DAM = StormSums(DAM_StormIntervals,storm_data_DAM['DAM-Sed'])
+SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
+SedFluxStorms_DAM=Pstorms_DAM.join(SedFluxStorms_DAM)#Add Event S (which will be fewer events than Event Precip)
+SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
     
 #### Calculate correlation coefficients and sediment rating curves    
 def compileALLStorms():
@@ -1663,19 +1710,23 @@ def plotQmaxS(show=True,log=True,save=False,norm=True):
     ## Lower is below in norm==False loop
     
     ## Upper Watershed (=DAM)
-    qs.scatter(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'],edgecolors='grey',color='g',s=upperdotsize,label='Upper (FOREST)')
-    QmaxS_upper_power = powerfunction(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'])
-    PowerFit_CI(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'],xy,qs,linestyle='-',color='g',label='Qmax_UPPER')
-    QmaxS_upper_linear = linearfunction(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'])
-    #LinearFit(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'],xy,qs,linestyle='--',color='g',label='QmaxS_upper_linear')  
-    labelindex(ALLStorms.index,ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'])
+    ALLStorms_upper = ALLStorms[['Qmaxupper','Supper']].dropna()
+    qs.scatter(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],edgecolors='grey',color='g',s=lowerdotsize,label='Upper(VILLAGE)')
+    QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'])
+    PowerFit_CI(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],xy,qs,linestyle='-',color='g',label='Qmax_TOTAL') 
+    QmaxS_upper_linear = linearfunction(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'])
+    #LinearFit(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],xy,qs,linestyle='--',color='g',label='QmaxS_upper_linear') 
+    labelindex(ALLStorms_upper.index,ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],qs)   
+    
     ## Total Watershed (=LBJ)
-    qs.scatter(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'],edgecolors='grey',color='r',s=lowerdotsize,label='Total(VILLAGE)')
-    QmaxS_total_power = powerfunction(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'])
-    PowerFit_CI(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'],xy,qs,linestyle='-',color='r',label='Qmax_TOTAL') 
-    QmaxS_total_linear = linearfunction(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'])
-    #LinearFit(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'],xy,qs,linestyle='--',color='r',label='QmaxS_total_linear') 
-    labelindex(ALLStorms.index,ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'])    
+    ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna()
+    qs.scatter(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],edgecolors='grey',color='r',s=lowerdotsize,label='Total(VILLAGE)')
+    QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'])
+    PowerFit_CI(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],xy,qs,linestyle='-',color='r',label='Qmax_TOTAL') 
+    QmaxS_total_linear = linearfunction(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'])
+    #LinearFit(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],xy,qs,linestyle='--',color='r',label='QmaxS_total_linear') 
+    labelindex(ALLStorms_total.index,ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],qs)   
+    
     
     ## Lower Watershed (=LBJ-DAM)
     if norm==False:
@@ -1703,11 +1754,11 @@ def plotQmaxS(show=True,log=True,save=False,norm=True):
     qs.set_title(title)
     qs.set_ylabel(ylabel)
     qs.set_xlabel(xlabel)#+r'$; DotSize= Qsum (m^3)$')
-
-    fig.canvas.manager.set_window_title('Figure : '+'Qmax vs. S')
-    
     logaxes(log,fig)
     qs.autoscale_view(True,True,True)
+    
+    fig.canvas.manager.set_window_title('Figure : '+'Qmax vs. S')
+      
     show_plot(show,fig)
     savefig(save,title)
     return
@@ -1716,6 +1767,129 @@ def plotQmaxS(show=True,log=True,save=False,norm=True):
 #plotQmaxS(show=True,log=True,save=True,norm=False)
 #plotQmaxS(show=True,log=True,save=True,norm=True)
 
+### Qmax vs S    
+def plotQmaxStotal(show=True,log=True,save=False,norm=True): 
+    fig, qs = plt.subplots(1)
+    xy=np.linspace(.001,100)
+    upperdotsize = 50#scaleSeries(SedFluxStorms_DAM['Qsum']/1000)
+    lowerdotsize = 50#scaleSeries(SedFluxStorms_LBJ['Qsum']/1000)
+    
+    if norm==True:
+        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
+        ylabel,xlabel= r'$SSY (Mg \ km^{-2})$',r'$Q_{max} (m^3 s^{-1} km^{-2})$'
+    elif norm==False:
+        ALLStorms=compileALLStorms()
+        ylabel,xlabel = 'SSY (Mg)',r'$Qmax (m^3 s^{-1})$'
+   
+    ## Lower is below in norm==False loop
+    
+    ## Total Watershed (=LBJ)
+    ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna()
+    qs.scatter(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],edgecolors='grey',color='r',s=lowerdotsize,label='Total(VILLAGE)')
+    QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'])
+    PowerFit_CI(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],xy,qs,linestyle='-',color='r',label='Qmax_TOTAL') 
+    QmaxS_total_linear = linearfunction(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'])
+    #LinearFit(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],xy,qs,linestyle='--',color='r',label='QmaxS_total_linear') 
+    labelindex(ALLStorms_total.index,ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],qs)   
+    
+    if norm==True:
+        Duvert1 = 224.4*(xy**1.34)
+        Duvert2 = 446.6*(xy**0.93)
+        DuvertLAFR = 408*(xy**0.95)
+        DuvertARES= 640*(xy**1.22)
+        DuvertCIES=5039*(xy**1.82)
+        PowerFit(xy,Duvert1,xy,qs,linestyle='-',color='grey',label='Duvert(2012)Linear')
+        PowerFit(xy,Duvert2,xy,qs,linestyle='--',color='grey',label='Duvert(2012)Nonlinear')
+        PowerFit(xy,DuvertLAFR,xy,qs,linestyle='-',color='k',label=r'Duvert(2012)$LA_{FR}$')
+        PowerFit(xy,DuvertARES,xy,qs,linestyle='--',color='k',label=r'Duvert(2012)$AR_{ES}$')
+        PowerFit(xy,DuvertCIES,xy,qs,linestyle='-.',color='k',label=r'Duvert(2012)$CI_{ES}$')
+        qs.legend(loc='best',ncol=3,fancybox=True)  
+    qs.legend(loc='best',ncol=2,fancybox=True)  
+    title="Event Peak Discharge vs Event Sediment Yield from Fagaalu Stream"
+    qs.set_title(title)
+    qs.set_ylabel(ylabel)
+    qs.set_xlabel(xlabel)#+r'$; DotSize= Qsum (m^3)$')
+    logaxes(log,fig)
+    qs.autoscale_view(True,True,True)
+    
+    fig.canvas.manager.set_window_title('Figure : '+'Qmax vs. S')
+
+    show_plot(show,fig)
+    savefig(save,title)
+    return
+#plotQmaxStotal(show=True,log=True,save=False,norm=True)  
+
+### Qmax vs S    
+def plotQmaxSseparate(show=True,log=True,save=False,norm=True): 
+    fig, (qs_upper, qs_total) = plt.subplots(2,sharex=True,sharey=True)
+    xy=np.linspace(.001,100)
+    upperdotsize = 50#scaleSeries(SedFluxStorms_DAM['Qsum']/1000)
+    lowerdotsize = 50#scaleSeries(SedFluxStorms_LBJ['Qsum']/1000)
+    
+    if norm==True:
+        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
+        ylabel,xlabel= r'$SSY (Mg \ km^{-2})$',r'$Q_{max} (m^3 s^{-1} km^{-2})$'
+    elif norm==False:
+        ALLStorms=compileALLStorms()
+        ylabel,xlabel = 'SSY (Mg)',r'$Qmax (m^3 s^{-1})$'
+   
+    ## Lower is below in norm==False loop
+    
+    ## Upper Watershed (=DAM)
+    ALLStorms_upper = ALLStorms[['Qmaxupper','Supper']].dropna()
+    qs_upper.scatter(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],edgecolors='grey',color='g',s=lowerdotsize,label='Upper(VILLAGE)')
+    QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'])
+    PowerFit_CI(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],xy,qs_upper,linestyle='-',color='g',label='Qmax_TOTAL') 
+    QmaxS_upper_linear = linearfunction(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'])
+    #LinearFit(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],xy,qs,linestyle='--',color='g',label='QmaxS_upper_linear') 
+    labelindex(ALLStorms_upper.index,ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],qs_upper)   
+    
+    ## Total Watershed (=LBJ)
+    ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna()
+    qs_total.scatter(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],edgecolors='grey',color='r',s=lowerdotsize,label='Total(VILLAGE)')
+    QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'])
+    PowerFit_CI(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],xy,qs_total,linestyle='-',color='r',label='Qmax_TOTAL') 
+    QmaxS_total_linear = linearfunction(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'])
+    #LinearFit(ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],xy,qs,linestyle='--',color='r',label='QmaxS_total_linear') 
+    labelindex(ALLStorms_total.index,ALLStorms_total['Qmaxtotal']/1000,ALLStorms_total['Stotal'],qs_total)   
+    
+    ## Lower Watershed (=LBJ-DAM)
+    if norm==False:
+        qs_total.scatter(ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'],edgecolors='grey',color='y',s=lowerdotsize,label='Lower (VIL-FOR)')
+        QmaxS_lower_power = powerfunction(ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'])
+        PowerFit(ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'],xy,qs_total,linestyle='-',color='y',label='Qmax_LOWER') 
+        QmaxS_lower_linear = linearfunction(ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'])
+        #LinearFit(ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'],xy,qs_total,linestyle='--',color='y',label='QmaxS_lower_linear') 
+        labelindex(ALLStorms.index,ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'])
+    
+    if norm==True:
+        Duvert1 = 224.4*(xy**1.34)
+        Duvert2 = 446.6*(xy**0.93)
+        DuvertLAFR = 408*(xy**0.95)
+        DuvertARES= 640*(xy**1.22)
+        DuvertCIES=5039*(xy**1.82)
+        PowerFit(xy,Duvert1,xy,qs_total,linestyle='-',color='grey',label='Duvert(2012)Linear')
+        PowerFit(xy,Duvert2,xy,qs_total,linestyle='--',color='grey',label='Duvert(2012)Nonlinear')
+        PowerFit(xy,DuvertLAFR,xy,qs_total,linestyle='-',color='k',label=r'Duvert(2012)$LA_{FR}$')
+        PowerFit(xy,DuvertARES,xy,qs_total,linestyle='--',color='k',label=r'Duvert(2012)$AR_{ES}$')
+        PowerFit(xy,DuvertCIES,xy,qs_total,linestyle='-.',color='k',label=r'Duvert(2012)$CI_{ES}$')
+        qs_total.legend(loc='best',ncol=3,fancybox=True)  
+    
+    title="Event Peak Discharge vs Event Sediment Yield from Fagaalu Stream"
+    plt.suptitle(title)
+    qs_upper.set_ylabel(ylabel)
+    qs_upper.set_xlabel(xlabel)#+r'$; DotSize= Qsum (m^3)$')
+    qs_total.set_xlabel(xlabel)#+r'$; DotSize= Qsum (m^3)$')
+
+    fig.canvas.manager.set_window_title('Figure : '+'Qmax vs. S')
+    
+    logaxes(log,fig)
+    #qs_upper.autoscale_view(True,True,True)
+    #qs_total.autoscale_view(True,True,True)
+    show_plot(show,fig)
+    savefig(save,title)
+    return
+#plotQmaxSseparate(show=True,log=True,save=False,norm=True)  
 
 plt.show()
 elapsed = dt.datetime.now() - start_time 
