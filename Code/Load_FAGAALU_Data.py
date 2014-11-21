@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 #import pytz
 ## Set Pandas display options
 pd.set_option('display.large_repr', 'truncate')
-pd.set_option('display.max_rows', 15)
+pd.set_option('display.max_rows', 25)
 
 #### DIRECTORIES
 git=True

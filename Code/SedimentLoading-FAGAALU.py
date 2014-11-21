@@ -478,7 +478,7 @@ DAM_HEC = pd.ols(y=DAMstageDischarge['Q_HEC(L/sec)'],x=DAMstageDischarge['stage(
 
 ### Compare Discharg Ratings
 def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
-    fig =plt.figure()
+    fig =plt.figure(figsize=(12,8))
     ax = plt.subplot(2,2,1)
     site_lbj = plt.subplot2grid((2,2),(0,0))
     site_dam = plt.subplot2grid((2,2),(1,0))
@@ -486,17 +486,17 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     mpl.rc('lines',markersize=15)
     
     title="Discharge Ratings for LBJ and DAM"
-    xy = np.linspace(0,10000,10000)
+    xy = np.linspace(0,8000,8000)
     
     #LBJ AV Measurements and Rating Curve
     site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='r',markeredgecolor='k',label='LBJ_AV')   
     #LBJ A*ManningV Measurements and Rating Curves
-    site_lbj.plot(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')
+    #site_lbj.plot(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')
 
     ## LBJ MODELS
     ## LBJ Linear    
     LBJ_AVlinear= linearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
-    LinearFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='r',ls='--',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
+    LinearFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
     ## LBJ Power
     LBJ_AVpower = powerfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
     PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
@@ -505,27 +505,35 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     #site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='-',label='LBJ_AVnonLinear')    
     ## LBJ Mannings Linear    
     LBJ_MANlinear=linearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])
-    LinearFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
+    #LinearFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
     ## LBJ Manning Power    
     LBJ_MANpower =powerfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])    
-    PowerFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='-.',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
+    #PowerFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='-.',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
     ## LBJ Manning NonLinear   
     LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)
     #site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
+    ## LBJ Mannings from stream survey
+    LBJ_ManQ, LBJ_Manstage = LBJ_Man['Q']*1000, LBJ_Man['stage']*100
+    site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'.',markersize=2,c='b',label='Mannings')
+    labelindex_subplot(site_lbj, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
     
     #DAM AV Measurements and Rating Curve
     site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],'.',color='g',markeredgecolor='k',label='DAM_AV')
     ## DAM Linear
     DAM_AVlinear=linearfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
-    LinearFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
+    LinearFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
     ## DAM Power    
     DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
-    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
     #DAM HEC-RAS Model and Rating Curve
     #LinearFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
     #PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
     #site_dam.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS Model')
+    ## DAM Mannings from stream survey
+    site_dam.plot(DAM_Man['Q']*1000,DAM_Man['stage']*100,'.',markersize=2,color='g',label='Mannings DAM')   
     
+    labelindex_subplot(site_dam, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
+
     ## Plot selected rating curves for LBJ and DAM
     ## AV measurements
     both.plot(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='r',markeredgecolor='k',label='VILLAGE A-V')  
@@ -536,10 +544,11 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     ## LBJ Nonlinear Model
     #both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
     #both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
-    both.plot(LBJ_Man['Q']*1000,LBJ_Man['stage']*100,'.',markersize=2,color='y',label='Mannings LBJ')
+    #both.plot(LBJ_Man['Q']*1000,LBJ_Man['stage']*100,'.',markersize=2,color='y',label='Mannings LBJ')
+    #PowerFit(DAM_Man['Q']*1000,DAM_Man['stage']*100,xy,both,c='g',ls='-.',label='DAM_Mannings Power')    
     both.plot(DAM_Man['Q']*1000,DAM_Man['stage']*100,'.',markersize=2,color='g',label='Mannings DAM')   
     ## DAM Power    
-    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,both,c='g',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    #PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,both,c='g',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
 
     ## DAM HEC-RAS Model 
     #both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
@@ -553,7 +562,7 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     site_dam.set_ylim(0,PT3['stage'].max()+10)#,site_dam.set_xlim(0,HEC_piecewise(PT3['stage'].max()+10).values)
     both.set_ylim(0,PT1['stage'].max()+10)
     ## Legends
-    site_lbj.legend(loc='best',ncol=2,fancybox=True),site_dam.legend(loc='best',ncol=2,fancybox=True),both.legend(loc='best',ncol=2,fancybox=True)
+    site_lbj.legend(loc='lower right',fancybox=True),site_dam.legend(loc='lower right',fancybox=True),both.legend(loc='best',ncol=2,fancybox=True)
     plt.legend(loc='best')    
     ## Figure title
     #plt.suptitle(title,fontsize=16)
@@ -607,6 +616,7 @@ DAM['Q']= DAM['Q-Mannings']
 print 'DAM Q from Mannings and Surveyed Cross Section'
 
 #### Calculate Q for QUARRY TODO
+QUARRY = pd.DataFrame(DAM['Q']*1.1)
 
 
 ## Convert to 15min interval LBJ
@@ -633,6 +643,7 @@ SampleCounts.index=range(1,len(SampleCounts)+1)
 ## SSC Boxplots and Discharge Concentration
 LBJgrab = SSC[SSC['Location'].isin(['LBJ'])].resample('15Min',fill_method='pad',limit=0)
 QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])].resample('15Min',fill_method='pad',limit=0)
+R2grab =SSC[SSC['Location'].isin(['R2'])].resample('15Min',fill_method='pad',limit=0)
 DAMgrab = SSC[SSC['Location'].isin(['DAM'])].resample('15Min',fill_method='pad',limit=0)
 GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'],LBJgrab['SSC (mg/L)']],axis=1)
 GrabSamples.columns = ['DAM','QUARRY','LBJ']
@@ -667,7 +678,7 @@ dam_ssc = dam_ssc.dropna()
 dam_ssc2012,dam_ssc2013,dam_ssc2014 = dam_ssc[start2012:stop2012],dam_ssc[start2013:stop2013],dam_ssc[start2014:stop2014]
 
 quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])]['SSC (mg/L)']).resample('15Min')
-quarry_ssc['Q']=DAM['Q']
+quarry_ssc['Q']=QUARRY['Q']
 quarry_ssc =quarry_ssc.dropna()
 quarry2012,quarry2013,quarry2014 = quarry_ssc[start2012:stop2012],quarry_ssc[start2013:stop2013],quarry_ssc[start2014:stop2014]
 
@@ -735,31 +746,6 @@ def plotQvsC(ms=6,show=False,log=False,save=True):
 #plotQvsC(ms=20,show=True,log=False,save=False)
 #plotQvsC(ms=20,show=True,log=False,save=True)
  
-## Grab samples to SSYev   
-def InterpolateGrabSamples(Stormslist,Data,offset=0):
-    Events=pd.DataFrame()
-    data=True
-    for storm_index,storm in Stormslist.iterrows():
-        #print storm
-        start = storm['start']-datetime.timedelta(minutes=offset) ##if Storms are defined by stream response you have to grab the preceding precip data
-        end= storm['end']
-        try:
-            event = Data.ix[start:end] ### slice list of Data for event
-        except KeyError:
-            print 'no data available for storm'
-            data = False
-            pass
-        if data != False:
-            event=event.reindex(pd.date_range(start,end,freq='15Min'))
-            event[start] = 0
-            event[end]=0
-            Event=pd.DataFrame(event,columns=['Grab'])
-            Event['GrabInterpolated']=Event['Grab'].interpolate('linear')
-        Events = Events.append(Event)
-    return Events
-QuarryGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, QUARRYgrab,0)
-#plt.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['Grab'],marker='o',ls='None',color='y')
-#plt.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['GrabInterpolated'],marker='None',ls='-',color='y')
 
 #### ..
 #### TURBIDITY
@@ -788,7 +774,7 @@ def FNU_SSCrating(TurbidimeterData,SSCdata,TurbidimeterName,location='LBJ',log=F
 T_SSC_Lab= pd.ols(y=SSC['SSC (mg/L)'],x=SSC['NTU'])
 
 ### NTU ratings
-## LBJ YSI
+## LBJ YSIQuarryGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, QUARRYgrab,60)
 T_SSC_LBJ_YSI=NTU_SSCrating(LBJ_YSI,SSC,'LBJ-YSI','LBJ',log=False)
 LBJ_YSIrating = T_SSC_LBJ_YSI[0]
 ## DAM TS3K
@@ -871,7 +857,55 @@ DAM['SedFlux-tons/sec']=DAM['SedFlux-mg/sec']*(10**-6) ## mg x 10**-6 = tons
 DAM['SedFlux-tons/15min']=DAM['SedFlux-tons/sec']*900 ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
 
 ### QUARRY Event Mean Concentration
+## Grab samples to SSYev   
+def InterpolateGrabSamples(Stormslist,Data,offset=0):
+    Events=pd.DataFrame()
+    for storm_index,storm in Stormslist.iterrows():
+        #print storm
+        start = storm['start']-dt.timedelta(minutes=offset) ##if Storms are defined by stream response you have to grab the preceding precip data
+        end= storm['end']
+        #print str(start)+' '+str(end)
+        try:
+            event = Data['SSC (mg/L)'].ix[start:end] ### slice list of Data for event
+        except KeyError:
+            #print 'Data Error'+str(start)
+            pass
+        ## Test for valid data
+        if len(event.dropna())<3:
+            #print 'Not enough data for storm '+str(start)
+            pass
+        elif len(event.dropna())>=3:
+            #print 'Interpolating data for storm '+str(start)
+            event.ix[start] = 0
+            event.ix[end]=0
+            Event=pd.DataFrame({'Grab':event})
+            Event['GrabInterpolated']=Event['Grab'].interpolate('linear')
+            Events = Events.append(Event)
+        #Events = Events.drop_duplicates().reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    return Events
+QuarryGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, QUARRYgrab,60)   
+R2GrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, R2grab,60)   
+def plot_eventSSCinterpolated(GrabSamples,show=False):
+    fig, ax = plt.subplots(1)
 
+    ## Plot all grab samples
+    ax.plot_date(QUARRYgrab.index,QUARRYgrab['SSC (mg/L)'],marker='o',ls='None',color='grey', label='All Grab Samples')
+    ## Plot samples that are interpolated    
+    ax.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['Grab'],marker='o',ls='None',color='k',label='Interpolated Grab Samples')
+    ## Plot continuous SSC    
+    ax.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['GrabInterpolated'],marker='None',ls='-',color='y',label='Interpolation')
+    ## Shade Storms    
+    showstormintervals(ax,LBJ_storm_threshold,LBJ_StormIntervals)
+    
+    if show==True:
+        plt.show()
+    return
+#plot_eventSSCinterpolated(QuarryGrabSampleSSC,show=True)
+#plot_eventSSCinterpolated(R2GrabSampleSSC,show=True)
+QUARRY['SSC-mg/L'] = QuarryGrabSampleSSC['GrabInterpolated']
+QUARRY['SedFlux-mg/sec']=QUARRY['Q'] * QUARRY['SSC-mg/L']# Q(L/sec) * C (mg/L)
+QUARRY['SedFlux-tons/sec']=QUARRY['SedFlux-mg/sec']*(10**-6) ## mg x 10**-6 = tons
+QUARRY['SedFlux-tons/15min']=QUARRY['SedFlux-tons/sec']*900 ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
 
 
 def plot_T_BOTH(show=False,lwidth=0.5):
@@ -1103,9 +1137,11 @@ def stormdata(StormIntervals):
         end =  storm[1]['end']
         #print start, end
         ## Slice data from storm start to start end
-        data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end],'LBJq':LBJ['Q'][start:end],
-        'DAMq':DAM['Q'][start:end],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],
-        'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],
+        data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end],
+        'LBJq':LBJ['Q'][start:end],'QUARRYq':QUARRY['Q'][start:end],'DAMq':DAM['Q'][start:end],
+        'LBJssc':LBJ['SSC-mg/L'][start:end],'QUARRYssc':QUARRY['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],
+        'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'QUARRY-Sed':QUARRY['SedFlux-tons/15min'][start:end],
+        'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],
         'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],
         'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},index=pd.date_range(start,end,freq='15Min')) ## slice desired data by storm 
         ## Summary stats
@@ -1179,10 +1215,12 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,show=False):
     P.set_ylabel('Precip mm/15min.')
     ## Discharge
     storm_data['LBJq'].plot(ax=Q,color='r',label='LBJ-Q')
+    storm_data['QUARRYq'].plot(ax=Q,color='y',label='QUARRY-Q')
     storm_data['DAMq'].plot(ax=Q,color='g',label='DAM-Q')
     Q.set_ylabel('Q m^3/15min.')#, Q.set_yscale('log')
     ## SSC from turbidity
     storm_data['LBJssc'].plot(ax=SSC,color='r',label='LBJ-SSC')
+    storm_data['QUARRYssc'].plot(ax=SSC,color='y',label='QUARRY-SSC')
     storm_data['DAMssc'].plot(ax=SSC,color='g',label='DAM-SSC')
     ## SSC grab samples
     storm_data['LBJgrab'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
@@ -1191,6 +1229,7 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,show=False):
     SSC.set_ylabel('SSC mg/L')#, SSC.set_ylim(0,1400)
     ## Sediment discharge
     storm_data['LBJ-Sed'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
+    storm_data['QUARRY-Sed'].plot(ax=SED,color='y',label='QUARRY-SedFlux',ls='-')
     storm_data['DAM-Sed'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
     SED.set_ylabel('Sediment Flux (Mg/15minutes)')#, SED.set_yscale('log')#, SED.set_ylim(0,10)
     #QP.legend(loc=0), P.legend(loc=1)             
@@ -1205,7 +1244,7 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,show=False):
     if show==True:
         plt.show()
     return
-#Storm_SedFlux(storm_data_LBJ,LBJ_storm_threshold,LBJ_StormIntervals,True)
+Storm_SedFlux(storm_data_LBJ,LBJ_storm_threshold,LBJ_StormIntervals,True)
 #Storm_SedFlux(torm_data_DAM,DAM_storm_threshold,DAM_StormIntervals,True)
     
 
@@ -1217,15 +1256,19 @@ def plot_storms_individually(storm_threshold,storm_intervals):
         end =  storm[1]['end']+dt.timedelta(minutes=60)
         #print start, end
         ## Slice data from storm start to start end
-        storm_data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end],'LBJq':LBJ['Q'][start:end],'DAMq':DAM['Q'][start:end],
-        'LBJntu':LBJ['YSI-NTU'],'LBJfnu':LBJ['OBS-FNU'],'DAMntu':DAM['NTU'],'LBJssc':LBJ['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],
-        'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],
-        'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},index=pd.date_range(start,end,freq='15Min'))
+        storm_data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end],
+        'LBJq':LBJ['Q'][start:end],'QUARRYq':QUARRY['Q'][start:end],'DAMq':DAM['Q'][start:end],
+        'LBJntu':LBJ['YSI-NTU'],'LBJfnu':LBJ['OBS-FNU'],'DAMntu':DAM['NTU'],
+        'LBJssc':LBJ['SSC-mg/L'][start:end],'QUARRYssc':QUARRY['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],
+        'LBJ-Sed':LBJ['SedFlux-tons/15min'][start:end],'QUARRY-Sed':QUARRY['SedFlux-tons/15min'][start:end],'DAM-Sed':DAM['SedFlux-tons/15min'][start:end],
+        'LBJgrab':LBJgrab['SSC (mg/L)'][start:end],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end]},
+        index=pd.date_range(start,end,freq='15Min'))
         total_storm = len(storm_data[start:end])
         percent_P = len(storm_data['Precip'].dropna())/total_storm *100.
         percent_Q_LBJ = len(storm_data['LBJq'].dropna())/total_storm * 100.
         percent_Q_DAM = len(storm_data['DAMq'].dropna())/total_storm * 100.
         percent_SSC_LBJ = len(storm_data['LBJssc'].dropna())/total_storm * 100.
+        percent_SSC_QUARRY = len(storm_data['QUARRYssc'].dropna())/total_storm * 100.
         percent_SSC_DAM = len(storm_data['DAMssc'].dropna())/total_storm * 100.
         count_LBJgrab = len(LBJgrab.dropna())
         count_QUARRYgrab = len(QUARRYgrab.dropna())
@@ -1246,6 +1289,7 @@ def plot_storms_individually(storm_threshold,storm_intervals):
 
         ## Discharge
         storm_data['LBJq'].plot(ax=Q,color='r',label='LBJ-Q')
+        storm_data['QUARRYq'].plot(ax=Q,color='y',label='QUARRY-Q')
         storm_data['DAMq'].plot(ax=Q,color='g',label='DAM-Q')
         Q.set_ylabel('Q L/sec'), Q.set_ylim(-1)
         ## Turbidity
@@ -1255,16 +1299,16 @@ def plot_storms_individually(storm_threshold,storm_intervals):
         T.set_ylabel('T (NTU,FNU)'),T.set_ylim(-1)
         ## SSC and grab samples
         storm_data['LBJssc'].plot(ax=SSC,color='r',label='LBJ-SSC')
+        storm_data['QUARRYssc'].plot(ax=SSC,color='y',label='QUARRY-SSC')
         storm_data['DAMssc'].plot(ax=SSC,color='g',label='DAM-SSC')
-        
         storm_data['LBJgrab'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
         storm_data['QUARRYgrab'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
         storm_data['DAMgrab'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
         SSC.set_ylabel('SSC mg/L'), SSC.set_ylim(-1)
         ## Sediment discharge
         storm_data['LBJ-Sed'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
+        storm_data['QUARRY-Sed'].plot(ax=SED,color='y',label='QUARRY-SedFlux',ls='-')
         storm_data['DAM-Sed'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
-        
         SED.set_ylabel('SSY tons'), SED.set_ylim(-.1)
         
         #P.legend(loc='best'), 
@@ -1293,6 +1337,11 @@ SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,LBJ['SedFlux-tons/15min'])
 SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
+#### QUARRY Event-wise Sediment Flux DataFrame
+SedFluxStorms_QUARRY = StormSums(DAM_StormIntervals,QUARRY['SedFlux-tons/15min'])
+SedFluxStorms_QUARRY.columns = ['Sstart','Send','Scount','Ssum','Smax']
+SedFluxStorms_QUARRY=Pstorms_QUARRY.join(SedFluxStorms_QUARRY)#Add Event S (which will be fewer events than Event Precip)
+SedFluxStorms_QUARRY=SedFluxStorms_QUARRY.join(Qstorms_QUARRY)
 #### DAM Event-wise Sediment Flux DataFrame
 SedFluxStorms_DAM = StormSums(DAM_StormIntervals,DAM['SedFlux-tons/15min'])
 SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
@@ -1306,6 +1355,11 @@ SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,storm_data_LBJ['LBJ-Sed'])
 SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
+#### QUARRY Event-wise Sediment Flux DataFrame
+SedFluxStorms_QUARRY = StormSums(DAM_StormIntervals,storm_data_QUARRY['QUARRY-Sed'])
+SedFluxStorms_QUARRY.columns = ['Sstart','Send','Scount','Ssum','Smax']
+SedFluxStorms_QUARRY=Pstorms_QUARRY.join(SedFluxStorms_QUARRY)#Add Event S (which will be fewer events than Event Precip)
+SedFluxStorms_QUARRY=SedFluxStorms_QUARRY.join(Qstorms_QUARRY)
 #### DAM Event-wise Sediment Flux DataFrame
 SedFluxStorms_DAM = StormSums(DAM_StormIntervals,storm_data_DAM['DAM-Sed'])
 SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
