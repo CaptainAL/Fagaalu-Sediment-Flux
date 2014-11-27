@@ -84,7 +84,7 @@ def loadSSC(SSCXL,sheet='ALL_MASTER'):
             minute=y[-2:]
             time=dt.time(int(hour),int(minute))
             parsed=dt.datetime.combine(x,time)
-#            print parsed
+            #print parsed
         except:
             parsed = pd.to_datetime(np.nan)
         return parsed

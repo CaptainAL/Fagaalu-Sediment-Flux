@@ -326,6 +326,7 @@ Fagaalu_stage_data = Fagaalu_stage_data.reindex(pd.date_range(start2012,stop2014
 from load_from_MASTER_XL import TS3000,YSI,OBS,loadSSC
 ## Turbidimeter Data DAM
 DAM_TS3K = TS3000(XL,'DAM-TS3K')
+DAM_TS3K = DAM_TS3K[DAM_TS3K>=0]
 DAM_YSI = YSI(XL,'DAM-YSI')
 ## Correct negative NTU values
 DAM_YSI['NTU'][dt.datetime(2013,6,1):dt.datetime(2013,12,31)]=DAM_YSI['NTU'][dt.datetime(2013,6,1):dt.datetime(2013,12,31)]+6
@@ -337,8 +338,24 @@ LBJ_OBSb = OBS(XL,'LBJ-OBSb')
 LBJ_OBSa=LBJ_OBSa.rename(columns={'Turb_SS_Avg':'FNU'})
 LBJ_OBSb=LBJ_OBSb.rename(columns={'Turb_SS_Mean':'FNU'})
 LBJ_OBS=LBJ_OBSa.append(LBJ_OBSb)
+LBJ_OBS['FNU'] = LBJ_OBS['FNU'][LBJ_OBS['FNU']<=3000]
+LBJ_OBS['FNU'] = LBJ_OBS['FNU'].interpolate(limit=2)
 
-## SSC Data, equivalent to SSC but I don't want to change all the code and file names
+## Turbidimeter Data LBJ
+#QUARRYxl = pd.ExcelFile(datadir+'QUARRY-OBS.xlsx')
+#QUARRY_OBS = QUARRYxl.parse('QUARRY-OBS',header=4,parse_cols='A:L',parse_dates=True,index_col=0)
+
+QUARRY_OBS = OBS(XL,'QUARRY-OBS')
+QUARRY_OBS=QUARRY_OBS.rename(columns={'Turb_SS_Mean':'FNU'})
+QUARRY_OBS['FNU'] = QUARRY_OBS['FNU'][QUARRY_OBS['FNU']<=4000]
+
+
+## Despike turbidity data
+
+## http://ocefpaf.github.io/python4oceanographers/blog/2013/05/20/spikes/
+
+
+## SSC Data
 SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
 SSC = loadSSC(SSCXL,'ALL_MASTER')
 SSC= SSC[SSC['SSC (mg/L)']>0]
