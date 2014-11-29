@@ -276,8 +276,8 @@ if StormIntervalDef=='LBJ':
     ## Set Storm Intervals for DAM, same as LBJ   
     QUARRY_StormIntervals=LBJ_StormIntervals
     DAM_StormIntervals=LBJ_StormIntervals
-
-elif StormIntervalDef == 'DAM':  
+    
+if StormIntervalDef == 'DAM':
     print 'Storm intervals defined at DAM'
     ## Define Storm Intervals at DAM
     DAM_StormIntervals=SeparateHydrograph(hydrodata=PT3['stage'])
@@ -293,7 +293,7 @@ elif StormIntervalDef == 'DAM':
     LBJ_StormIntervals=DAM_StormIntervals
     QUARRY_StormIntervals=DAM_StormIntervals
 
-elif StormIntervalDef=='BOTH':
+if StormIntervalDef=='BOTH':
     print 'Storm intervals defined separately at LBJ and DAM'
     ## Define Storm Intervals at LBJ
     LBJ_StormIntervals=SeparateHydrograph(hydrodata=PT1['stage'])
@@ -320,12 +320,14 @@ elif StormIntervalDef=='BOTH':
     QUARRY_StormIntervals=DAM_StormIntervals
     
 ## Use User-defined storm intervals
-elif StormIntervalDef=='User':
+if StormIntervalDef=='User':
     print 'Storm intervals defined by user'
-    stormintervalsXL = pd.ExcelFile(datadir+'StormIntervals_filtered.xlsx')
-    StormIntervals = stormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
-    ## SET BOTH LBJ and DAM Storm intervals
-    LBJ_StormIntervals, QUARRY_StormIntervals, DAM_StormIntervals = StormIntervals, StormIntervals, StormIntervals
+    LBJstormintervalsXL = pd.ExcelFile(datadir+'LBJ_StormIntervals_filtered.xlsx')
+    LBJ_StormIntervals = LBJstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
+    ## 
+    DAMstormintervalsXL = pd.ExcelFile(datadir+'DAM_StormIntervals_filtered.xlsx')
+    DAM_StormIntervals = DAMstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
+    QUARRY_StormIntervals, DAM_StormIntervals = DAM_StormIntervals, DAM_StormIntervals
 
 
 ### SAVE Storm Intervals for LATER
@@ -622,14 +624,14 @@ DAM['Q']= DAM['Q-Mannings']
 print 'DAM Q from Mannings and Surveyed Cross Section'
 
 #### Calculate Q for QUARRY TODO
-QUARRY = pd.DataFrame(DAM['Q']*1.1)
+QUARRY = pd.DataFrame(DAM['Q']/.9*1.17) ## Q* from DAM x Area Quarry
 
 
 ## Convert to 15min interval LBJ
 LBJq = (LBJ*900) ## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
 LBJq['stage']=PT1['stage'] ## put unaltered stage back in
 
-## Convert to 15min interval LBJ
+## Convert to 15min interval QUARRY
 QUARRYq = (QUARRY*900) ## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
 QUARRYq['stage']=PT3['stage'] ## put unaltered stage back in
 
@@ -1280,7 +1282,7 @@ def stormdata(StormIntervals,print_stats=False):
         if data['LBJ-Sed'].sum() < 0:
             data['LBJ-Sed'] = np.nan
         storm_data = storm_data.append(data) ## add each storm to each other
-    storm_data = storm_data.drop_duplicates()#.reindex(pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))
+    storm_data = storm_data.drop_duplicates().reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     return storm_data
 storm_data_LBJ = stormdata(LBJ_StormIntervals)
 storm_data_QUARRY = stormdata(QUARRY_StormIntervals)
@@ -1307,8 +1309,8 @@ def Q_EMC(storm_data, show=False):
     return
 #Q_EMC(storm_data_LBJ,True)
 
-def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,show=False):
-    title = 'Figure7:Storm Data'
+def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
+
     fig, (P,Q,T,SSC,SED) = plt.subplots(nrows=5,ncols=1,sharex=True)
     ## Precip
     storm_data['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Timu1')
@@ -1352,12 +1354,12 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,show=False):
     showstormintervals(SSC,storm_threshold,storm_intervals)
     showstormintervals(SED,storm_threshold,storm_intervals)
     
-    plt.draw()
+    plt.suptitle(title)
     if show==True:
         plt.show()
     return
-Storm_SedFlux(storm_data_LBJ,LBJ_storm_threshold,LBJ_StormIntervals,True)
-#Storm_SedFlux(torm_data_DAM,DAM_storm_threshold,DAM_StormIntervals,True)
+Storm_SedFlux(storm_data_LBJ,LBJ_storm_threshold,LBJ_StormIntervals,'LBJ_StormIntervals',True)
+Storm_SedFlux(storm_data_DAM,DAM_storm_threshold,DAM_StormIntervals,'DAM_StormIntervals',True)
 
 def plot_storms_individually(storm_threshold,storm_intervals):
     count = 0
@@ -1455,7 +1457,7 @@ SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
 #### QUARRY Event-wise Sediment Flux DataFrame
-SedFluxStorms_QUARRY = StormSums(DAM_StormIntervals,QUARRY['SedFlux-tons/15min'])
+SedFluxStorms_QUARRY = StormSums(QUARRY_StormIntervals,QUARRY['SedFlux-tons/15min'])
 SedFluxStorms_QUARRY.columns = ['Sstart','Send','Scount','Ssum','Smax']
 SedFluxStorms_QUARRY=Pstorms_QUARRY.join(SedFluxStorms_QUARRY)#Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_QUARRY=SedFluxStorms_QUARRY.join(Qstorms_QUARRY)
@@ -1517,10 +1519,13 @@ def plotS_storm_table(show=False):
     diff['% Lower'] = diff['Slower']/diff['Stotal']*100
     diff['% Lower'] = diff['% Lower'].apply(np.int)
     diff['Psum'] = diff['Pstorms'].apply(int)
-    diff['Storm#']=range(1,len(diff)+1)
+    diff['Storm#']=range(1,len(diff)+1) 
+    ## Filter negative values for S at LBJ    
+    diff = diff[diff['Slower']>0]
     ## add summary stats to bottom of table
     diff=diff.append(pd.DataFrame({'Storm#':'-','Psum':'-','Supper':'-','Slower':'-','Stotal':'Average:','% Upper':'%.1f'%diff['% Upper'].mean(),'% Lower':'%.1f'%diff['% Lower'].mean()},index=[pd.NaT]))
-   
+
+    ## BUild table
     nrows, ncols = len(diff),len(diff.columns)
     hcell, wcell=0.2,1
     hpad, wpad = .8,.5
@@ -1539,9 +1544,12 @@ def plotS_storm_table(show=False):
     if show==True:
         plt.show()
     return
-plotS_storm_table(show=True)
+#plotS_storm_table(show=True)
 
 def NormalizeSSYbyCatchmentArea(ALLStorms):
+    ## DAM = 0.9 km2
+    ## QUARRY = 1.17 km2
+    ## LBJ = 1.78 km2
     ## Normalize Sediment Load by catchment area (Duvert 2012)
     ALLStorms['Supper']=ALLStorms['Supper']/.9
     ALLStorms['Slower']=ALLStorms['Slower']/.88
@@ -1557,7 +1565,7 @@ def NormalizeSSYbyCatchmentArea(ALLStorms):
     ALLStorms['Qmaxtotal']=SedFluxStorms_LBJ['Qmax']/1.78
     ## Add Event Precipitation and EI
     ALLStorms['Pstorms']=Pstorms_LBJ['Psum'] ## Add Event Precip
-    ALLStorms['EI'] = LBJ_Stormdf['EI'][LBJ_Stormdf['EI']>1] ## Add Event Erosion Index
+    #ALLStorms['EI'] = LBJ_Stormdf['EI'][LBJ_Stormdf['EI']>1] ## Add Event Erosion Index
     return ALLStorms
 
 def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms,pval=0.05,show=False):
@@ -2007,13 +2015,13 @@ def plotQmaxSseparate(show=True,log=True,save=False,norm=True):
     ## Lower is below in norm==False loop
     
     ## Upper Watershed (=DAM)
-    ALLStorms_upper = ALLStorms[['Qmaxupper','Supper']].dropna()
-    qs_upper.scatter(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],edgecolors='grey',color='g',s=lowerdotsize,label='Upper(VILLAGE)')
-    QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'])
-    PowerFit_CI(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],xy,qs_upper,linestyle='-',color='g',label='Qmax_TOTAL') 
-    QmaxS_upper_linear = linearfunction(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'])
+    QmaxS_upper = SedFluxStorms_DAM[['Qmax','Ssum']].dropna()
+    qs_upper.scatter(QmaxS_upper['Qmax']/1000,QmaxS_upper['Ssum'],edgecolors='grey',color='g',s=lowerdotsize,label='Upper(VILLAGE)')
+    QmaxS_upper_power = powerfunction(QmaxS_upper['Qmax']/1000,QmaxS_upper['Ssum'])
+    PowerFit_CI(QmaxS_upper['Qmax']/1000,QmaxS_upper['Ssum'],xy,qs_upper,linestyle='-',color='g',label='Qmax_TOTAL') 
+    QmaxS_upper_linear = linearfunction(QmaxS_upper['Qmax']/1000,QmaxS_upper['Ssum'])
     #LinearFit(ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],xy,qs,linestyle='--',color='g',label='QmaxS_upper_linear') 
-    labelindex(ALLStorms_upper.index,ALLStorms_upper['Qmaxupper']/1000,ALLStorms_upper['Supper'],qs_upper)   
+    labelindex(QmaxS_upper.index,QmaxS_upper['Qmax']/1000,QmaxS_upper['Ssum'],qs_upper)   
     
     ## Total Watershed (=LBJ)
     ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna()
@@ -2060,7 +2068,7 @@ def plotQmaxSseparate(show=True,log=True,save=False,norm=True):
     show_plot(show,fig)
     savefig(save,title)
     return
-#plotQmaxSseparate(show=True,log=True,save=False,norm=True)  
+plotQmaxSseparate(show=True,log=True,save=False,norm=True)  
 
 plt.show()
 elapsed = dt.datetime.now() - start_time 
