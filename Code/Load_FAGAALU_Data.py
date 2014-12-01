@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 ## Set Pandas display options
 pd.set_option('display.large_repr', 'truncate')
 pd.set_option('display.max_rows', 25)
+pd.set_option('display.max_columns', 10)
 
 #### DIRECTORIES
 git=True
@@ -338,7 +339,7 @@ LBJ_OBSb = OBS(XL,'LBJ-OBSb')
 LBJ_OBSa=LBJ_OBSa.rename(columns={'Turb_SS_Avg':'FNU'})
 LBJ_OBSb=LBJ_OBSb.rename(columns={'Turb_SS_Mean':'FNU'})
 LBJ_OBS=LBJ_OBSa.append(LBJ_OBSb)
-LBJ_OBS['FNU'] = LBJ_OBS['FNU'][LBJ_OBS['FNU']<=3000]
+LBJ_OBS['FNU'] = LBJ_OBS['FNU'][LBJ_OBS['FNU']<=4000]
 LBJ_OBS['FNU'] = LBJ_OBS['FNU'].interpolate(limit=2)
 
 ## Turbidimeter Data LBJ
@@ -348,12 +349,10 @@ LBJ_OBS['FNU'] = LBJ_OBS['FNU'].interpolate(limit=2)
 QUARRY_OBS = OBS(XL,'QUARRY-OBS')
 QUARRY_OBS=QUARRY_OBS.rename(columns={'Turb_SS_Mean':'FNU'})
 QUARRY_OBS['FNU'] = QUARRY_OBS['FNU'][QUARRY_OBS['FNU']<=4000]
-
+QUARRY_OBS['FNU'] = QUARRY_OBS['FNU']
 
 ## Despike turbidity data
-
 ## http://ocefpaf.github.io/python4oceanographers/blog/2013/05/20/spikes/
-
 
 ## SSC Data
 SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
@@ -361,18 +360,18 @@ SSC = loadSSC(SSCXL,'ALL_MASTER')
 SSC= SSC[SSC['SSC (mg/L)']>0]
 
 
-#### Import NUTRIENT Data
-from load_from_MASTER_XL import loadNUTES1,loadNUTES2and3
-##NUTRIENTS1 (first field season)
-NUTESXL = pd.ExcelFile(datadir+'NUTRIENTS/NUTRIENTS1.xlsx')
-NUTES1 = loadNUTES1(NUTESXL,'Data')
-##NUTRIENTS2and3 (second and third field season)
-NUTES2XL = pd.ExcelFile(datadir+'NUTRIENTS/NUTRIENTS from Lisa 5_5_14.xlsx')
-NUTES2infoXL = pd.ExcelFile(datadir+'NUTRIENTS/NUTRIENTS to Lisa 3_17_14.xlsx')
-NUTES2and3 = loadNUTES2and3(NUTES2XL,NUTES2infoXL)
-
-#NUTES2and3.to_excel(datadir+'samoa/WATERSHED_ANALYSIS/NUTRIENTS/NUTES2and3.xlsx')
-NUTES = NUTES1.append(NUTES2and3)
-#NUTES.to_excel(datadir+'samoa/WATERSHED_ANALYSIS/NUTRIENTS/NUTES_ALL.xlsx')
+##### Import NUTRIENT Data
+#from load_from_MASTER_XL import loadNUTES1,loadNUTES2and3
+###NUTRIENTS1 (first field season)
+#NUTESXL = pd.ExcelFile(datadir+'NUTRIENTS/NUTRIENTS1.xlsx')
+#NUTES1 = loadNUTES1(NUTESXL,'Data')
+###NUTRIENTS2and3 (second and third field season)
+#NUTES2XL = pd.ExcelFile(datadir+'NUTRIENTS/NUTRIENTS from Lisa 5_5_14.xlsx')
+#NUTES2infoXL = pd.ExcelFile(datadir+'NUTRIENTS/NUTRIENTS to Lisa 3_17_14.xlsx')
+#NUTES2and3 = loadNUTES2and3(NUTES2XL,NUTES2infoXL)
+#
+##NUTES2and3.to_excel(datadir+'samoa/WATERSHED_ANALYSIS/NUTRIENTS/NUTES2and3.xlsx')
+#NUTES = NUTES1.append(NUTES2and3)
+##NUTES.to_excel(datadir+'samoa/WATERSHED_ANALYSIS/NUTRIENTS/NUTES_ALL.xlsx')
 
 

@@ -59,30 +59,36 @@ def SeparateHydrograph(hydrodata='stage',minimum_length=8):
 def StormSums(Stormslist,Data,offset=0):
     eventlist = []
     index =[]
+    print 'Summing storms...'
     for storm_index,storm in Stormslist.iterrows():
-        #print storm
         start = storm['start']-timedelta(minutes=offset) ##if Storms are defined by stream response you have to grab the preceding precip data
         end= storm['end']
         data = True ## Innocent until proven guilty
         try:
+            print str(start) +' '+str(end)
             event = Data.ix[start:end] ### slice list of Data for event
         except KeyError:
             start = start+timedelta(minutes=15) ## if the start time falls between 2 30minute periods
-        try:
-            event = Data.ix[start:end]
-        except KeyError:
-            end = end+timedelta(minutes=15)
-        try:
-            event = Data.ix[start:end]
-        except KeyError:
-            print 'no precip data available for storm'
-            data = False
-            pass
+            print 'change storm start to '+str(start)            
+            try:
+                event = Data.ix[start:end]
+            except KeyError:
+                end = end+timedelta(minutes=15)
+                print 'change storm end to '+str(end) 
+                try:
+                    event = Data.ix[start:end]
+                except KeyError:
+                    print 'no storm data available for storm '+str(start)
+                    data = False
+                    pass
         if data != False:
             eventcount = event.count()
             eventsum = event.sum()
             eventmax = event.max()
-            eventlist.append((storm['start'],[storm['start']-timedelta(minutes=offset),storm['end'],eventcount,eventsum,eventmax])) 
+            eventlist.append((storm['start'],[storm['start'],storm['end'],eventcount,eventsum,eventmax])) 
+        if data == False:
+            eventcount,eventsum,eventmax=np.nan,np.nan,np.nan
+            eventlist.append((storm['start'],[storm['start'],storm['end'],eventcount,eventsum,eventmax])) 
     Events=DataFrame.from_items(eventlist,orient='index',columns=['start','end','count','sum','max'])
     return Events
 
