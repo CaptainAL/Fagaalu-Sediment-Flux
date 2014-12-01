@@ -1,6 +1,7 @@
-from pandas import DataFrame
+import pandas as pd
 from math import isnan
 from numpy import nan
+import numpy as np
 from datetime import timedelta
 
 #### Hydrograph Separation #####
@@ -51,21 +52,20 @@ def SeparateHydrograph(hydrodata='stage',minimum_length=8):
         if event.count() >= minimum_length:
             eventlist.append([start,end,eventduration])
 
-    Events=DataFrame(eventlist,columns=['start','end','duration (hrs)'])
+    Events=pd.DataFrame(eventlist,columns=['start','end','duration (hrs)'])
     #drop_rows = Events[Events['duration (min)'] <= timedelta(minutes=120)] ## Filters events that are too short
     #Events = Events.drop(drop_rows.index) ## Filtered DataFrame of storm start,stop,count,sum
     return Events
 
 def StormSums(Stormslist,Data,offset=0):
-    eventlist = []
-    index =[]
+    Events = pd.DataFrame(columns=['start','end','count','sum','max'])
     print 'Summing storms...'
     for storm_index,storm in Stormslist.iterrows():
         start = storm['start']-timedelta(minutes=offset) ##if Storms are defined by stream response you have to grab the preceding precip data
         end= storm['end']
         data = True ## Innocent until proven guilty
         try:
-            print str(start) +' '+str(end)
+            print 'start: '+str(start) +' end: '+str(end)
             event = Data.ix[start:end] ### slice list of Data for event
         except KeyError:
             start = start+timedelta(minutes=15) ## if the start time falls between 2 30minute periods
@@ -79,16 +79,10 @@ def StormSums(Stormslist,Data,offset=0):
                     event = Data.ix[start:end]
                 except KeyError:
                     print 'no storm data available for storm '+str(start)
-                    data = False
                     pass
-        if data != False:
-            eventcount = event.count()
-            eventsum = event.sum()
-            eventmax = event.max()
-            eventlist.append((storm['start'],[storm['start'],storm['end'],eventcount,eventsum,eventmax])) 
-        if data == False:
-            eventcount,eventsum,eventmax=np.nan,np.nan,np.nan
-            eventlist.append((storm['start'],[storm['start'],storm['end'],eventcount,eventsum,eventmax])) 
-    Events=DataFrame.from_items(eventlist,orient='index',columns=['start','end','count','sum','max'])
+        Events = Events.append(pd.DataFrame(
+        {'start':start,'end':end,'count':event.count(),
+        'sum':event.sum(),'max':event.max()},index=[storm['start']]))
+        Events[['count','sum','max']]=Events[['count','sum','max']].astype(float)
     return Events
 
