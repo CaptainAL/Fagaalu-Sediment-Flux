@@ -159,11 +159,11 @@ def plotStageIntervals(fig,ax,start,stop):
     #ax.plot_date(LBJfieldnotesStage['Stage (cm)'][start:stop].index,LBJfieldnotesStage['Stage (cm)'][start:stop],marker='o',ls='None',color='r',label='LBJ Field Notes')
     ## show storm intervals?
 
-    showstormintervals(ax,storm_threshold=DAM_storm_threshold,showStorms=DAM_StormIntervals,shade_color='g',show=True)
-    showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='grey',show=True)
+    #showstormintervals(ax,storm_threshold=DAM_storm_threshold,showStorms=DAM_StormIntervals,shade_color='g',show=True)
+    #showstormintervals(ax,storm_threshold=LBJ_storm_threshold,showStorms=LBJ_StormIntervals,shade_color='grey',show=True)
     
-    AddTimu1(fig,ax,Precip['Timu1-15'])
-    AddTimu1(fig,ax,Precip['FPrain'])
+    #AddTimu1(fig,ax,Precip['Timu1-15'])
+    #AddTimu1(fig,ax,Precip['FPrain'])
     
     ax.set_ylim(0,110)
     ax.set_xlim(start,stop)
@@ -195,13 +195,13 @@ def plotStageYears(show=False):
 plotStageYears(True)
 
 def plotdischargeintervals(fig,ax,start,stop):
-    LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AVLog)')
+    LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AV PowerLaw)')
     ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='r')
-    DAM['Q'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-D_Flume)')
+    DAM['Q'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-Mannings)')
     ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='g')
     
     #AddTimu1(fig,ax,Precip['Timu1-15'][start:stop]) 
-    showstormintervals(ax,show=True)
+    showstormintervals(ax,storm_threshold=LBJ_storm_threshold,StormsList=LBJ_StormIntervals,show=True)
     ax.set_ylim(0,2600)
     return
     
