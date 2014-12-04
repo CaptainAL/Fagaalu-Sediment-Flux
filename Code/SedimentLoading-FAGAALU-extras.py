@@ -342,32 +342,36 @@ def PQyears_BOTH(show=False):
     return
 #PQyears_BOTH(True)
 
-def PQvol_years_BOTH(show=False):
+def PQvol_years_BOTH(StormsLBJ,StormsDAM,show=False):
     fig, (site_lbj,site_dam)=plt.subplots(1,2,sharey=True,sharex=True)
     dotsize=20
-    site_lbj.scatter(StormsLBJ['PsumVol'][start2012:stop2012]*.001,StormsLBJ['Qsum'][start2012:stop2012]*.001,color='g',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2012:stop2012].dropna().values),label='2012')
-    site_lbj.scatter(StormsLBJ['PsumVol'][start2013:stop2013]*.001,StormsLBJ['Qsum'][start2013:stop2013]*.001,color='y',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2013:stop2013].dropna().values),label='2013')
-    site_lbj.scatter(StormsLBJ['PsumVol'][start2014:stop2014]*.001,StormsLBJ['Qsum'][start2014:stop2014]*.001,color='r',marker='o',s=scaleSeries(StormsLBJ['Pmax'][start2014:stop2014].dropna().values),label='2014')
+    stormsLBJ=StormsLBJ[['PsumVol','Qsum']]/1000
+    stormsLBJ['Pmax']=StormsLBJ[['Pmax']]
+    site_lbj.scatter(stormsLBJ['PsumVol'][start2012:stop2012],stormsLBJ['Qsum'][start2012:stop2012],color='g',marker='o',s=scaleSeries(stormsLBJ['Pmax'][start2012:stop2012].dropna().values),label='2012')
+    site_lbj.scatter(stormsLBJ['PsumVol'][start2013:stop2013],stormsLBJ['Qsum'][start2013:stop2013],color='y',marker='o',s=scaleSeries(stormsLBJ['Pmax'][start2013:stop2013].dropna().values),label='2013')
+    site_lbj.scatter(stormsLBJ['PsumVol'][start2014:stop2014],stormsLBJ['Qsum'][start2014:stop2014],color='r',marker='o',s=scaleSeries(stormsLBJ['Pmax'][start2014:stop2014].dropna().values),label='2014')
 
     site_lbj.set_title('LBJ')
     site_lbj.set_ylabel('Event Discharge (m3)'),site_lbj.set_xlabel('Precipitation (m3) - DotSize=15minMaxPrecip(mm)')
-    #site_lbj.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), site_lbj.set_xlim(0,250)
+    #site_lbj.set_ylim(0,stormsLBJ['Qsum'].max()+50000000), site_lbj.set_xlim(0,250)
     site_lbj.legend(loc=4)
     site_lbj.grid(True)
 
-    site_dam.scatter(StormsDAM['PsumVol'][start2012:stop2012]*.001,StormsDAM['Qsum'][start2012:stop2012]*.001,color='g',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2012:stop2012].values),label='2012')
-    site_dam.scatter(StormsDAM['PsumVol'][start2013:stop2013]*.001,StormsDAM['Qsum'][start2013:stop2013]*.001,color='y',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2013:stop2013].values),label='2013')
-    site_dam.scatter(StormsDAM['PsumVol'][start2014:stop2014]*.001,StormsDAM['Qsum'][start2014:stop2014]*.001,color='r',marker='o',s=scaleSeries(StormsDAM['Pmax'].dropna()[start2014:stop2014].values),label='2014')
+    stormsDAM=StormsDAM[['PsumVol','Qsum']]/1000
+    stormsDAM['Pmax']=StormsDAM[['Pmax']]
+    site_dam.scatter(stormsDAM['PsumVol'][start2012:stop2012],stormsDAM['Qsum'][start2012:stop2012],color='g',marker='o',s=scaleSeries(stormsDAM['Pmax'].dropna()[start2012:stop2012].values),label='2012')
+    site_dam.scatter(stormsDAM['PsumVol'][start2013:stop2013],stormsDAM['Qsum'][start2013:stop2013],color='y',marker='o',s=scaleSeries(stormsDAM['Pmax'].dropna()[start2013:stop2013].values),label='2013')
+    site_dam.scatter(stormsDAM['PsumVol'][start2014:stop2014],stormsDAM['Qsum'][start2014:stop2014],color='r',marker='o',s=scaleSeries(stormsDAM['Pmax'].dropna()[start2014:stop2014].values),label='2014')
     
     site_dam.set_title('DAM')
     site_dam.set_ylabel('Event Discharge (m3)'),site_dam.set_xlabel('Precipitation (m3) - DotSize=15minMaxPrecip(mm)')
-    #site_dam.set_ylim(0,StormsLBJ['Qsum'].max()+50000000), site_dam.set_xlim(0,250)
+    #site_dam.set_ylim(0,stormsLBJ['Qsum'].max()+50000000), site_dam.set_xlim(0,250)
     site_dam.legend(loc=4)
     site_dam.grid(True)
     
     ### Label on click
-    labelindex(StormsLBJ.index,StormsLBJ['Psum'],StormsLBJ['Qsum'])
-    labelindex(StormsDAM.index,StormsDAM['Psum'],StormsDAM['Qsum'])
+    labelindex_subplot(site_lbj,stormsLBJ.index,stormsLBJ['PsumVol'],stormsLBJ['Qsum'])
+    labelindex_subplot(site_dam,stormsDAM.index,stormsDAM['PsumVol'],stormsDAM['Qsum'])
     
     title="Event Rainfall vs. Event Discharge Fagaalu Stream"
     fig.suptitle(title,fontsize=16)
@@ -382,7 +386,7 @@ def PQvol_years_BOTH(show=False):
     if show==True:
         plt.show()
     return
-#PQvol_years_BOTH(True)
+PQvol_years_BOTH(StormsLBJ,StormsDAM,True)
     
 def plotNTU_LBJ(show=False,lwidth=0.5):
     fig, (precip, lbjQ, ntu) = plt.subplots(3,1,sharex=True)
