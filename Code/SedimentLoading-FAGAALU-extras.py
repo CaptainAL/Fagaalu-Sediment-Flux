@@ -843,3 +843,127 @@ def QmaxSyears(show=False): ### P vs. S and Q vs. S
         plt.show()
     return
 #plotQmaxSyears(True)
+
+
+
+#### Sediment Rating Curves: on area-normalized SSY, Q and Qmax
+def plotALLStorms_ALLRatings(ms=10,show=False,log=False,save=False,norm=False):    
+    fig, ((ps,ei),(qsums,qmaxs)) = plt.subplots(2,2)
+    title = 'All sediment rating curves for all predictors'
+    if norm==True:
+        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
+        ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = r'$SSY (Mg/km^2)$','Precip (mm)','Erosivity Index',r'$Qsum (L/km^2)$',r'$Qmax (L/sec/km^2)$'
+    else:
+        ALLStorms=compileALLStorms()
+        ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = 'SSY (Mg)','Precip (mm)','Erosivity Index','Qsum (L)','Qmax (L/sec)'
+    xy=None ## let the Fit functions plot their own lines
+    #mpl.rc('lines',markersize=ms)
+    ## P vs S at Upper,Lower,Total (power)
+    ps.plot(ALLStorms['Pstorms'],ALLStorms['Supper'],'.',color='g',label='Upper')
+    ps.plot(ALLStorms['Pstorms'],ALLStorms['Slower'],'.',color='y',label='Lower')
+    ps.plot(ALLStorms['Pstorms'],ALLStorms['Stotal'],'.',color='r',label='Total')
+    ## Upper Watershed (=DAM)
+    PS_upper_power = powerfunction(ALLStorms['Pstorms'],ALLStorms['Supper'])
+    PowerFit(ALLStorms['Pstorms'],ALLStorms['Supper'],xy,ps,linestyle='-',color='g',label='PS_upper_power')
+    PS_upper_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Supper'])
+    LinearFit(ALLStorms['Pstorms'],ALLStorms['Supper'],xy,ps,linestyle='--',color='g',label='PS_upper_linear')  
+    ## Lower Watershed (=LBJ-DAM)
+    PS_lower_power = powerfunction(ALLStorms['Pstorms'],ALLStorms['Slower'])
+    PowerFit(ALLStorms['Pstorms'],ALLStorms['Slower'],xy,ps,linestyle='-',color='y',label='PS_lower_power') 
+    PS_lower_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Slower'])
+    LinearFit(ALLStorms['Pstorms'],ALLStorms['Slower'],xy,ps,linestyle='--',color='y',label='PS_lower_linear') 
+    ## Total Watershed (=LBJ)
+    PS_total_power = powerfunction(ALLStorms['Pstorms'],ALLStorms['Stotal'])
+    PowerFit(ALLStorms['Pstorms'],ALLStorms['Stotal'],xy,ps,linestyle='-',color='r',label='PS_total_power') 
+    PS_total_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Stotal'])
+    LinearFit(ALLStorms['Pstorms'],ALLStorms['Stotal'],xy,ps,linestyle='--',color='r',label='PS_total_linear') 
+
+    ps.set_title('Total Event Precip (mm)')
+    ps.set_ylabel(ylabel)
+    
+    ## EI vs S at Upper,Lower,Total (power)
+    ei.plot(ALLStorms['EI'],ALLStorms['Supper'],'.',color='g',label='Upper')
+    ei.plot(ALLStorms['EI'],ALLStorms['Slower'],'.',color='y',label='Lower')
+    ei.plot(ALLStorms['EI'],ALLStorms['Stotal'],'.',color='r',label='Total')
+    
+    EI_upper_power = powerfunction(ALLStorms['EI'],ALLStorms['Supper'])
+    PowerFit(ALLStorms['EI'],ALLStorms['Supper'],xy,ei,linestyle='-',color='g',label='EI_upper_power')
+    EI_upper_linear = linearfunction(ALLStorms['EI'],ALLStorms['Supper'])
+    LinearFit(ALLStorms['EI'],ALLStorms['Supper'],xy,ei,linestyle='--',color='g',label='EI_upper_linear')  
+    
+    EI_lower_power = powerfunction(ALLStorms['EI'],ALLStorms['Slower'])
+    PowerFit(ALLStorms['EI'],ALLStorms['Slower'],xy,ei,linestyle='-',color='y',label='EI_lower_power') 
+    EI_lower_linear = linearfunction(ALLStorms['EI'],ALLStorms['Slower'])
+    LinearFit(ALLStorms['EI'],ALLStorms['Slower'],xy,ei,linestyle='--',color='y',label='EI_lower_linear') 
+    
+    EI_total_power = powerfunction(ALLStorms['EI'],ALLStorms['Stotal'])
+    PowerFit(ALLStorms['EI'],ALLStorms['Stotal'],xy,ei,linestyle='-',color='r',label='EI_total_power') 
+    EI_total_linear = linearfunction(ALLStorms['EI'],ALLStorms['Stotal'])
+    LinearFit(ALLStorms['EI'],ALLStorms['Stotal'],xy,ei,linestyle='--',color='r',label='EI_total_linear') 
+    
+    ei.set_title('Erosivity Index (MJmm ha-1 h-1)')
+    ei.set_ylabel(ylabel)
+
+    ## Qsum vs S at Upper,Lower,Total (power)
+    qsums.plot(ALLStorms['Qsumupper'],ALLStorms['Supper'],'.',color='g',label='Upper')
+    qsums.plot(ALLStorms['Qsumlower'],ALLStorms['Slower'],'.',color='y',label='Lower')
+    qsums.plot(ALLStorms['Qsumtotal'],ALLStorms['Stotal'],'.',color='r',label='Total')
+    
+    QsumS_upper_power = powerfunction(ALLStorms['Qsumupper'],ALLStorms['Supper'])
+    PowerFit(ALLStorms['Qsumupper'],ALLStorms['Supper'],xy,qsums,linestyle='-',color='g',label='QsumS_upper_power')
+    QsumS_upper_linear = linearfunction(ALLStorms['Qsumupper'],ALLStorms['Supper'])
+    LinearFit(ALLStorms['Qsumupper'],ALLStorms['Supper'],xy,qsums,linestyle='--',color='g',label='QsumS_upper_linear')  
+
+    QsumS_lower_power = powerfunction(ALLStorms['Qsumlower'],ALLStorms['Slower'])
+    PowerFit(ALLStorms['Qsumlower'],ALLStorms['Slower'],xy,qsums,linestyle='-',color='y',label='QsumS_lower_power') 
+    QsumS_lower_linear = linearfunction(ALLStorms['Qsumlower'],ALLStorms['Slower'])
+    LinearFit(ALLStorms['Qsumlower'],ALLStorms['Slower'],xy,qsums,linestyle='--',color='y',label='QsumS_lower_linear') 
+    
+    QsumS_total_power = powerfunction(ALLStorms['Qsumtotal'],ALLStorms['Stotal'])
+    PowerFit(ALLStorms['Qsumtotal'],ALLStorms['Stotal'],xy,qsums,linestyle='-',color='r',label='QsumS_total_power') 
+    QsumS_total_linear = linearfunction(ALLStorms['Qsumtotal'],ALLStorms['Stotal'])
+    LinearFit(ALLStorms['Qsumtotal'],ALLStorms['Stotal'],xy,qsums,linestyle='--',color='r',label='QsumS_total_linear') 
+    
+    qsums.set_title('Event Q sum')
+    qsums.set_ylabel(ylabel), qsums.set_xlabel(xlabelQsum)
+
+    ## Qmax vs S at Upper,Lower,Total (power)
+    qmaxs.plot(ALLStorms['Qmaxupper'],ALLStorms['Supper'],'.',color='g',label='Upper')
+    qmaxs.plot(ALLStorms['Qmaxlower'],ALLStorms['Slower'],'.',color='y',label='Lower')
+    qmaxs.plot(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'],'.',color='r',label='Total')
+    
+    QmaxS_upper_power = powerfunction(ALLStorms['Qmaxupper'],ALLStorms['Supper'])
+    PowerFit(ALLStorms['Qmaxupper'],ALLStorms['Supper'],xy,qmaxs,linestyle='-',color='g',label='QmaxS_upper_power')
+    QmaxS_upper_linear = linearfunction(ALLStorms['Qmaxupper'],ALLStorms['Supper'])
+    LinearFit(ALLStorms['Qmaxupper'],ALLStorms['Supper'],xy,qmaxs,linestyle='--',color='g',label='QmaxS_upper_linear')  
+    
+    QmaxS_lower_power = powerfunction(ALLStorms['Qmaxlower'],ALLStorms['Slower'])
+    PowerFit(ALLStorms['Qmaxlower'],ALLStorms['Slower'],xy,qmaxs,linestyle='-',color='y',label='QmaxS_lower_power') 
+    QmaxS_lower_linear = linearfunction(ALLStorms['Qmaxlower'],ALLStorms['Slower'])
+    LinearFit(ALLStorms['Qmaxlower'],ALLStorms['Slower'],xy,qmaxs,linestyle='--',color='y',label='QmaxS_lower_linear') 
+    
+    QmaxS_total_power = powerfunction(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'])
+    PowerFit(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'],xy,qmaxs,linestyle='-',color='r',label='QmaxS_total_power') 
+    QmaxS_total_linear = linearfunction(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'])
+    LinearFit(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'],xy,qmaxs,linestyle='--',color='r',label='QmaxS_total_linear') 
+    
+    qmaxs.set_title('Event Qmax')
+    qmaxs.set_ylabel(ylabel),qmaxs.set_xlabel(xlabelQmax)
+    
+    
+    l1,l2,l3 = plt.plot(None,None,'g-',None,None,'y-',None,None,'r-')
+    fig.legend((l1,l2,l3),('UPPER','LOWER','TOTAL'), 'upper left',fancybox=True)
+
+        #for ax in fig.axes:
+        #ax.legend(loc='best',ncol=2,fancybox=True)           
+            
+    logaxes(log,fig)
+    for ax in fig.axes:
+        ax.autoscale_view(True,True,True)
+    plt.tight_layout()
+    show_plot(show,fig)
+    savefig(save,title)
+    return
+plotALLStorms_ALLRatings(show=True,log=True,save=False)
+#plotALLStorms_ALLRatings(show=True,log=False,save=True)
+#plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
