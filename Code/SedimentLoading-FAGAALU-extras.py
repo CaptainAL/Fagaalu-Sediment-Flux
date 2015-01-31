@@ -5,6 +5,22 @@ Created on Mon Sep 15 11:09:32 2014
 @author: Alex
 """
 
+def baroCheck(show=False):
+    fig, baro = plt.subplots(1)
+    
+    baro.scatter(allbaro['FPbaro'],allbaro['NDBCbaro'])
+    baro.scatter(allbaro['BaroLogger'],allbaro['NDBCbaro'],c='r',label='BaroLogger at LBJ')
+    baro.plot((100.0, 101.8),(100.0, 101.8))
+    baro.set_ylim(100.0, 101.8), baro.set_xlim(100.0, 101.8)
+    baro.set_ylabel('NSTP6 barometric pressure (hPa)'), baro.set_xlabel('Wx Station barometric pressure (hPa)')
+    baro.legend()
+    fig.tight_layout(pad=0.1)
+    if show==True:
+        plt.show()
+    return
+baroCheck(True)
+    
+
 def plot_AirportWind(show=False):
     fig, (speed,direction) = plt.subplots(2,1,sharex=True)
     
@@ -24,14 +40,15 @@ def plotSTAGE(show=False):
     title="Stage for PT's in Fagaalu Stream"
     #### PT1 stage LBJ
     stage.plot_date(PT1['stage'].index,PT1['stage'],marker='None',ls='-',color='r',label='LBJ')
+    LBJfieldnotesStage['RefGageHeight(cm)'].plot(ax=stage,marker='o',markersize=6,ls='None',color='r',label='LBJ Field Notes')
     print 'Lowest PT1 stage: '+str(PT1['stage'].min())
     #### PT2 stage DT
     stage.plot_date(PT2['stage'].index,PT2['stage'],marker='None',ls='-',color='y',label='DT')
     #### PT3 stage Dam
     stage.plot_date(PT3['stage'].index,PT3['stage'],marker='None',ls='-',color='g',label='DAM')
-    LBJfieldnotesStage['Stage (cm)'].plot(ax=stage,marker='o',ls='None',color='r',label='LBJ Field Notes')
+    
     ## show storm intervals?
-    showstormintervals(stage,shade_color='g',show=True)
+    #showstormintervals(stage,shade_color='g',show=True)
     
     #### Format X axis and Primary Y axis
     stage.set_title(title)
@@ -39,7 +56,7 @@ def plotSTAGE(show=False):
     stage.set_ylim(0,145)
     stage.legend(loc=2)
     #### Add Precip data from Timu1
-    AddTimu1(fig,stage,Precip['Timu1-15'])
+    #AddTimu1(fig,stage,Precip['Timu1-15'])
     
     plt.setp(stage.get_xticklabels(),rotation='vertical',fontsize=9)
     plt.subplots_adjust(left=0.1,right=0.83,top=0.93,bottom=0.15)
@@ -49,7 +66,7 @@ def plotSTAGE(show=False):
     stage.grid(True)
     show_plot(show)
     return
-plotSTAGE(True)
+#plotSTAGE(True)
  
  
 def plotPRECIP(show=False):
@@ -164,36 +181,85 @@ def plotStageIntervals(fig,ax,start,stop):
     
     #AddTimu1(fig,ax,Precip['Timu1-15'])
     #AddTimu1(fig,ax,Precip['FPrain'])
-    
+    ax.xaxis.set_major_locator(matplotlib.dates.MonthLocator(range(1, 13), bymonthday=1, interval=2))
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%b '%y"))
     ax.set_ylim(0,110)
     ax.set_xlim(start,stop)
     ax.set_ylabel('Stage (cm)')
     return
     
 def plotStageYears(show=False):
-    fig, (stage2012, stage2013, stage2014) = plt.subplots(3)
+    fig, (stage2012, stage2013, stage2014) = plt.subplots(3,figsize=(6.5,4))
     title="Stage for PT's in Fagaalu Stream"
     #### PT1 stage LBJ
     plotStageIntervals(fig,stage2012,start2012,stop2012)
-    stage2012.plot(DAMstageDischarge['stage(cm)'],'.')
     #### PT2 stage DT
     plotStageIntervals(fig,stage2013,start2013,stop2013)    
     #### PT3 stage Dam    
     plotStageIntervals(fig,stage2014,start2014,stop2014)    
 
-    plt.subplots_adjust(left=0.1,right=0.83,top=0.93,bottom=0.15)
     #### Legend
     #LegendWithPrecip(stage2012)
     fig.canvas.manager.set_window_title('Figure 1: '+title) 
-    stage2012.set_title(title)
-    stage2014.legend()
-    plt.tight_layout()
-    plt.draw()
+    
+    stage2012.legend()
+    
+    
+    fig.tight_layout(pad=0.1)
+
     if show==True:
         plt.show()
     return
-plotStageYears(True)
+#plotStageYears(True)
 
+def plotPTstageYears(Pt,show=False):
+    fig, (stage2012, stage2013, stage2014) = plt.subplots(3,figsize=(10,8))
+
+    ## Plot Uncorrected stage data
+    Pt['Uncorrected_stage'][start2012:stop2012].plot(ax=stage2012,color='g',x_compat=True)
+    Pt['Uncorrected_stage'][start2013:stop2013].plot(ax=stage2013,color='g',x_compat=True)
+    Pt['Uncorrected_stage'][start2014:stop2014].plot(ax=stage2014,color='g',x_compat=True)
+    ## Plot Corrected stage data
+    Pt['stage_corrected_Manual'][start2012:stop2012].plot(ax=stage2012,color='r',x_compat=True)
+    Pt['stage_corrected_Manual'][start2013:stop2013].plot(ax=stage2013,color='r',x_compat=True)
+    Pt['stage_corrected_Manual'][start2014:stop2014].plot(ax=stage2014,color='r',x_compat=True)
+    ## Plotstage data
+    Pt['stage'][start2012:stop2012].plot(ax=stage2012,color='grey',ls='--',x_compat=True)
+    Pt['stage'][start2013:stop2013].plot(ax=stage2013,color='grey',ls='--',x_compat=True)
+    Pt['stage'][start2014:stop2014].plot(ax=stage2014,color='grey',ls='--',x_compat=True)
+    
+    ## Reference Staff Gage Height
+    LBJfieldnotesStage['RefGageHeight(cm)'][start2012:stop2012].plot(ax=stage2012,marker='o',markersize=6,ls='None',color='r',label='LBJ Field Notes')
+    LBJfieldnotesStage['RefGageHeight(cm)'][start2013:stop2013].plot(ax=stage2013,marker='o',markersize=6,ls='None',color='r',label='LBJ Field Notes')
+    LBJfieldnotesStage['RefGageHeight(cm)'][start2014:stop2014].plot(ax=stage2014,marker='o',markersize=6,ls='None',color='r',label='LBJ Field Notes')
+    
+    
+    stage2012.bar(LBJfieldnotesStage['GH-PT'][start2012:stop2012].index,LBJfieldnotesStage['GH-PT'][start2012:stop2012],width=0.1,align='center',color='r')
+    stage2013.bar(LBJfieldnotesStage['GH-PT'][start2013:stop2013].index,LBJfieldnotesStage['GH-PT'][start2013:stop2013],width=0.1,align='center',color='r')
+    stage2014.bar(LBJfieldnotesStage['GH-PT'][start2014:stop2014].index,LBJfieldnotesStage['GH-PT'][start2014:stop2014],width=0.1,align='center',color='r')
+    
+    shade_color='grey'
+    stage2012.axvspan(fieldstart2012,fieldstop2012,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    stage2013.axvspan(fieldstart2013,fieldstop2013,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    stage2014.axvspan(fieldstart2014a,fieldstop2014a,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    stage2014.axvspan(fieldstart2014b,fieldstop2014b,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    
+    #stage2012.xaxis.set_major_locator(matplotlib.dates.MonthLocator(interval=2))
+    #stage2013.xaxis.set_major_locator(matplotlib.dates.MonthLocator(interval=2))
+    #stage2014.xaxis.set_major_locator(matplotlib.dates.MonthLocator(interval=4))
+    
+    ## Format
+    y0, y1 = 0, 150
+    stage2012.set_ylim(y0,y1),stage2013.set_ylim(y0,y1),stage2014.set_ylim(y0,y1)
+    stage2012.set_xlabel(''),stage2013.set_xlabel(''),stage2014.set_xlabel('')
+    stage2012.legend()
+    fig.tight_layout(pad=0.1)
+    if show==True:
+        plt.show()
+    return
+plotPTstageYears(PT1,show=True)
+    
+    
 def plotdischargeintervals(fig,ax,start,stop):
     LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AV PowerLaw)')
     ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='r')
@@ -219,7 +285,7 @@ def QYears(show=False):
     if show==True:
         plt.show()
     return
-QYears(True)
+#QYears(True)
 
 #P_Q.scatter(PQdaily['Timu1daily'],PQdaily['Qdaily'],marker='o',s=dotsize,color='r')
 def PQ(show=False): ## "Event Rainfall(mm) vs. Event Discharge (L) Fagaalu Stream"
@@ -386,7 +452,7 @@ def PQvol_years_BOTH(StormsLBJ,StormsDAM,show=False):
     if show==True:
         plt.show()
     return
-PQvol_years_BOTH(StormsLBJ,StormsDAM,True)
+#PQvol_years_BOTH(StormsLBJ,StormsDAM,True)
     
 def plotNTU_LBJ(show=False,lwidth=0.5):
     fig, (precip, lbjQ, ntu) = plt.subplots(3,1,sharex=True)
@@ -964,6 +1030,6 @@ def plotALLStorms_ALLRatings(ms=10,show=False,log=False,save=False,norm=False):
     show_plot(show,fig)
     savefig(save,title)
     return
-plotALLStorms_ALLRatings(show=True,log=True,save=False)
+#plotALLStorms_ALLRatings(show=True,log=True,save=False)
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
