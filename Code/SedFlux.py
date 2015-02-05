@@ -409,10 +409,10 @@ def plot_prob_occurrence(sheet_name):
     fig.tight_layout()
     return P_Station
     
-VaipitoRes =plot_prob_occurrence('VaipitoRes')
-Afono= plot_prob_occurrence('Pioa-Afono')
-Aunuu = plot_prob_occurrence('Aunuu')
-Malaeimi = plot_prob_occurrence('Malaeimi-Mapusaga')
+#VaipitoRes =plot_prob_occurrence('VaipitoRes')
+#Afono= plot_prob_occurrence('Pioa-Afono')
+#Aunuu = plot_prob_occurrence('Aunuu')
+#Malaeimi = plot_prob_occurrence('Malaeimi-Mapusaga')
 
 def prob_occurrence():
     P_Station= pd.DataFrame(Precip['Timu1daily'].dropna())
@@ -436,7 +436,7 @@ def prob_occurrence():
     plt.title(data_days+' days of data('+data_years+' years)')
     fig.tight_layout()
     return P_Station
-prob_occurrence()
+#prob_occurrence()
 
 #from HydrographTools import StormSums
 #def StormSums(Stormslist,Data,offset=0):
@@ -680,11 +680,11 @@ def PT_Hobo(allbaro,PTname,XL,sheet='',tshift=0,zshift=0): # tshift in 15Min(or 
     PT=PT.resample('15Min',how='mean')
     PT=PT.shift(tshift) ## shift by 3 hours (12 x 15minutes)
     PT['barodata']=allbaro['Baropress']
-    PT['stage']=(PT['Pressure']-PT['barodata'])/9.81*100.0
+    PT['stage']=(PT['Pressure']-PT['barodata'])*.102*100.0 ## hPa  to cm
     #PT['stage']=PT['stage'].where(PT['stage']>0,PT['barodata']) ## filter negative values
     PT['stage']=PT['stage'].round(1)  
     PT['stage']=PT['stage']+zshift
-    PT['Uncorrected_stage']=PT['stage']
+    PT['Uncorrected_stage']=PT['stage'].round(0)
     return PT
 
 def PT_Levelogger(allbaro,PTname,XL,sheet,tshift=0,zshift=0): # tshift in hours, zshift in cm
@@ -694,32 +694,45 @@ def PT_Levelogger(allbaro,PTname,XL,sheet,tshift=0,zshift=0): # tshift in hours,
     PT=PT.resample('15Min',how='mean')
     PT['barodata']=allbaro['Baropress']
     PT=PT.shift(tshift) ## shift by 3 hours (12 x 15minutes)
-    PT['stage']=(PT['LEVEL']-PT['barodata'])/9.81*100.0
+    PT['stage']=(PT['LEVEL']-PT['barodata'])*.102*100.0
     #PT['stage']=PT['stage'].where(PT['stage']>0,0) ## filter negative values
     PT['stage']=PT['stage'].round(1)  
     PT['stage']=PT['stage']+zshift
-    PT['Uncorrected_stage']=PT['stage']
+    PT['Uncorrected_stage']=PT['stage'].round(0)
     return PT
 ## PT1 LBJ
 # tshift in 15Min(or whatever the timestep is), zshift in cm
-PT1a = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1a',12) #12 x 15min = 3hours
-PT1ba = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ba',3)
-PT1bb = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1bb',3,zshift=-1.5)
-PT1c = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1c',0)
-PT1 = pd.concat([PT1a,PT1ba,PT1bb,PT1c])
+PT1aa = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1aa',tshift=12) #12 x 15min = 3hours (It says it was at GMT-8 instead of GMT-11 but the logger time was set to local anyway)
+PT1ab = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ab',tshift=12) #12 x 15min = 3hours (It says it was at GMT-8 instead of GMT-11 but the logger time was set to local anyway)
+PT1ba = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ba',tshift=4)
+PT1bb = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1bb',tshift=4)
+PT1bc = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1bc',tshift=4)
+PT1c = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1c')
+PT1 = pd.concat([PT1aa,PT1ab,PT1ba,PT1bb,PT1bc,PT1c])
+
+rawPT1XL = pd.ExcelFile(datadir+'PT-Fagaalu1-raw.xlsx') 
+rawPT1=pd.DataFrame()
+for sheet_name in rawPT1XL.sheet_names:
+    print sheet_name
+    sheet = rawPT1XL.parse(sheet_name,header=1,index_col=0,parse_cols='B,C',parse_dates=True)
+    sheet.columns=['Pressure']
+    rawPT1 = rawPT1.append(sheet)
+
 ## PT2 QUARRY
 # tshift in 15Min(or whatever the timestep is), zshift in cm
 PT2 = PT_Levelogger(allbaro,'PT2 Drive Thru',XL,'PT-Fagaalu2',0,-22)
+
 ## PT3 DAM
 # tshift in 15Min(or whatever the timestep is), zshift in cm
-PT3a = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3a',12,zshift=-3.75)
-PT3b = PT_Levelogger(allbaro,'PT3b Dam',XL,'PT-Fagaalu3b',0,zshift=-23)
-PT3c = PT_Levelogger(allbaro,'PT3c Dam',XL,'PT-Fagaalu3c',0,zshift=-19.5)
-PT3d = PT_Levelogger(allbaro,'PT3d Dam',XL,'PT-Fagaalu3d',0,zshift=-17.1)
-PT3e = PT_Levelogger(allbaro,'PT3e Dam',XL,'PT-Fagaalu3e',0,zshift=-18.4)
-PT3f = PT_Levelogger(allbaro,'PT3f Dam',XL,'PT-Fagaalu3f',0,zshift=-17)
-PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0,zshift=-10.5)
-PT3 = pd.concat([PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
+PT3aa = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3aa',12)
+PT3ab = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3ab',12)
+PT3b = PT_Levelogger(allbaro,'PT3b Dam',XL,'PT-Fagaalu3b',0)
+PT3c = PT_Levelogger(allbaro,'PT3c Dam',XL,'PT-Fagaalu3c',0)
+PT3d = PT_Levelogger(allbaro,'PT3d Dam',XL,'PT-Fagaalu3d',0)
+PT3e = PT_Levelogger(allbaro,'PT3e Dam',XL,'PT-Fagaalu3e',0)
+PT3f = PT_Levelogger(allbaro,'PT3f Dam',XL,'PT-Fagaalu3f',0)
+PT3g = PT_Levelogger(allbaro,'PT3g Dam',XL,'PT-Fagaalu3g',0)
+PT3 = pd.concat([PT3aa,PT3ab,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
 PT3 = PT3[PT3>0]
 
 PT1 = PT1.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
@@ -766,43 +779,46 @@ def plot_stage_data(show=False):
 #plot_stage_data(show=True)
     
   
-### Check PT against reference staff gage at LBJ
-LBJfieldnotes = FieldNotes('LBJstage',1,fieldbookdata)
-LBJfieldnotesStage = pd.DataFrame(LBJfieldnotes['RefGageHeight(cm)'].resample('5Min',how='first').dropna(),columns=['RefGageHeight(cm)'])
-LBJfieldnotesStage =LBJfieldnotesStage.shift(0)
-LBJfieldnotesStage['PT1']=PT1['stage']
-LBJfieldnotesStage['GH-PT']=LBJfieldnotesStage['RefGageHeight(cm)']-PT1['stage']
-
-PT1['GH Correction']=LBJfieldnotesStage['GH-PT']
-PT1['GH Correction Int']= PT1['GH Correction'].interpolate()
-PT1['stage_corrected_RefGage'] = PT1['stage']+PT1['GH Correction Int']
-
-LBJfieldnotesStage['GH-PT'].plot(ls='None',marker='.')
-
 ## Plot Stage Correction
 #PT1['stage'].plot=('y')
 #LBJfieldnotesStage['RefGageHeight(cm)'].plot(ls='None',marker='o',markersize=6,c='g')
 #PT1['stage corrected'].plot(color='k')
 
-StageCorrXL = pd.ExcelFile(datadir+'Q/StageCorrection.xlsx')
+
 def correct_Stage(StageCorrXL,location,PTdata):
     print 'Correcting stage for '+location
-    StageCorr = StageCorrXL.parse(location)
+    def my_parser(x,y):
+        try:
+            y = str(int(y))
+            hour=y[:-2]
+            minute=y[-2:]
+            time=dt.time(int(hour),int(minute))
+        except:
+            time=dt.time(0,0)
+        parsed=dt.datetime.combine(x,time)
+        #print parsed
+        return parsed
+    StageCorr = StageCorrXL.parse(location,parse_dates=False)
     Correction=pd.DataFrame()
     for correction in StageCorr.iterrows():
-        t1 = correction[1]['T1_date']
-        t2 = correction[1]['T2_date']
+        t1_date = correction[1]['T1_date']
+        t1_time = correction[1]['T1_time']
+        t1 = my_parser(t1_date,t1_time)
+        t2_date = correction[1]['T2_date']
+        t2_time = correction[1]['T2_time']
+        t2 = my_parser(t2_date,t2_time)
         z = correction[1]['z']    
         print t1,t2, z
         Correction = Correction.append(pd.DataFrame({'z':z},index=pd.date_range(t1,t2,freq='15Min')))
     Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     PTdata['Manual_Correction'] = Correction['z']
-    PTdata['stage_corrected_Manual'] = PTdata['stage']+PTdata['Manual_Correction']
-    PTdata['stage']=PTdata['stage_corrected_Manual'].where(PTdata['stage_corrected_Manual']>0,PTdata['stage'])
+    PTdata['stage_corrected_Manual'] = PTdata['Uncorrected_stage']+PTdata['Manual_Correction']
+    PTdata['stage']=PTdata['stage_corrected_Manual'].where(PTdata['stage_corrected_Manual']>0,PTdata['stage']).round(0)
     return PTdata
-    
+StageCorrXL = pd.ExcelFile(datadir+'Q/StageCorrection.xlsx')    
 PT1 = correct_Stage(StageCorrXL,'LBJ',PT1)
 PT3 = correct_Stage(StageCorrXL,'DAM',PT3)
+
 
 ## STAGE DATA FOR PT's
 #### FINAL STAGE DATA with CORRECTIONS
@@ -943,6 +959,45 @@ LBJ_StormIntervals.to_excel(datadir+'Q/StormIntervals/LBJ_StormIntervals.xlsx')
 QUARRY_StormIntervals.to_excel(datadir+'Q/StormIntervals/QUARRY_StormIntervals.xlsx')
 DAM_StormIntervals.to_excel(datadir+'Q/StormIntervals/DAM_StormIntervals.xlsx')
 
+### Check PT against reference staff gage at LBJ
+LBJfieldnotes = FieldNotes('LBJstage',1,fieldbookdata)
+LBJfieldnotesStage = pd.DataFrame(LBJfieldnotes['RefGageHeight(cm)'].resample('5Min',how='first').dropna(),columns=['RefGageHeight(cm)'])
+LBJfieldnotesStage =LBJfieldnotesStage.shift(0)
+LBJfieldnotesStage['Uncorrected_stage']=PT1['Uncorrected_stage']
+LBJfieldnotesStage['GH-Uncorrected_stage']=LBJfieldnotesStage['RefGageHeight(cm)']-LBJfieldnotesStage['Uncorrected_stage']
+LBJfieldnotesStage['Corrected_stage']=PT1['stage']
+LBJfieldnotesStage['GH-Corrected_stage']=LBJfieldnotesStage['RefGageHeight(cm)']-LBJfieldnotesStage['Corrected_stage']
+
+PT1['GH Correction']=LBJfieldnotesStage['GH-Uncorrected_stage']
+PT1['GH Correction Int']= PT1['GH Correction'].interpolate()
+PT1['stage_corrected_RefGage'] = PT1['Uncorrected_stage']+PT1['GH Correction Int']
+
+def compare_PT_Ref():
+    fig, (uncorr, corr) = plt.subplots(2,1,sharex=True,sharey=True)
+    LBJfieldnotesStage['GH-Uncorrected_stage'].plot(ax=uncorr,ls='None',marker='.',c='r',label='All Gage Height Readings (uncorrected)')
+    LBJfieldnotesStage['GH-Uncorrected_stage'][LBJfieldnotesStage['Uncorrected_stage']<LBJ_storm_threshold].plot(ax=uncorr,ls='None',marker='.',c='b',label='Baseflow Gage Height Readings (uncorrected)')
+    uncorr.legend(loc='best'), uncorr.set_title('Uncorrected PT stage')
+    LBJfieldnotesStage['GH-Corrected_stage'].plot(ax=corr, ls='None',marker='.',c='r',label='All Gage Height Readings (corrected)')
+    LBJfieldnotesStage['GH-Corrected_stage'][LBJfieldnotesStage['Corrected_stage']<LBJ_storm_threshold].plot(ax=corr,ls='None',marker='.',c='b',label='Baseflow Gage Height Readings (corrected)')
+    corr.legend(loc='best'), corr.set_title('Corrected PT stage')
+    return
+
+def press_diff():   
+    fig, (baro, pt, diff) = plt.subplots(3,1,sharex=True)
+    allbaro['Baropress'].plot(ax=baro,c='k')
+    allbaro['NDBCbaro'].plot(ax=baro,c='r')
+    allbaro['FPbaro'].plot(ax=baro,c='g')
+    
+    PT1['Pressure'].plot(ax=baro,c='b')
+    PT1['stage'].plot(ax=pt,c='b')
+    press_diff_baseflow = PT1['Pressure'][PT1['stage']<10]-PT1['barodata']
+    m.rolling_mean(press_diff_baseflow,window=96).plot(ax=diff)
+    diff.axhline(0.63,ls='--',linewidth=1,c='b',label='Baseflow')
+    plt.legend()
+    return
+
+
+
 #### ..
 #### STAGE TO DISCHARGE ####
 #from stage2discharge_ratingcurve import AV_RatingCurve#, calcQ, Mannings_rect, Weir_rect, Weir_vnotch, Flume
@@ -1033,10 +1088,11 @@ def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=
                     except:
                         stage =np.nan
                         print location+' '+str(DateTime)+' '+'Stage= '+str(stage)+' Q= '+str(AV_Q)
-                    Qdf = Qdf.append(pd.DataFrame({'stage(cm)':stage,'Q-AV(L/sec)':AV_Q,'Q-AManningV(L/sec)':ManningQ,'Area(m2)':Area,'V(m/s)':V,'ManningV(m/s)':ManningV,'WP':WP,'R':R},index=[DateTime]))
+                    Qdf = Qdf.append(pd.DataFrame({'stage(cm)':stage,'Q-AV(L/sec)':round(AV_Q,0),'Q-AManningV(L/sec)':round(ManningQ,0),
+                    'Area(m2)':Area,'V(m/s)':V,'ManningV(m/s)':ManningV,'WP':WP,'R':R},index=[DateTime]))
                     
                     if printResults==True:                    
-                        print str(DateTime)+': stage='+'%.2f'%stage+' Q= '+'%.2f'%AV_Q+' ManningQ= '+'%.2f'%ManningQ
+                        print str(DateTime)+': stage='+'%.2f'%stage+' Q= '+'%.0f'%AV_Q+' ManningQ= '+'%.2f'%ManningQ
                         print df              
     return Qdf  
 
@@ -1051,7 +1107,7 @@ def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=
 
 ### Discharge using Mannings and Surveyed Cros-section
 #from ManningsRatingCurve import Mannings, Mannings_Series
-def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display=True):    
+def Mannings(XSfile,sheetname,Slope,Manning_n,k=1,stage_start=.01,stage_end=None,display=True):    
     ## Open and parse file; drop NA  
     print XSfile+' '+sheetname
     print 'Slope: '+str(Slope)+' Mannings n: '+str(Manning_n)
@@ -1099,9 +1155,11 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
         ## n = 0.32*(S**0.30)*(R**-0.16)
         if Manning_n == 'Jarrett':
             n = 0.32*(S**0.30)*(R**-0.16)
+            n = n * k
         ## Mannings = (1R^2/3 * S^1/2)/n
         ManningV = (1*(R**(2.0/3.0))*(S**0.5))/n
         ManningQ = ManningV * Area ## M3/s
+        ManningQ= round(ManningQ,3)
         if display == True:
             fig, ax1 = plt.subplots(1)
             ax1.plot(df['Dist'],df['y1'],'-o',c='k')
@@ -1123,7 +1181,7 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
     DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r, 'Man_n':Man_n,'vel':v,'Q':q})
     return DF,df
     
-def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):    
+def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):    
     ## Open and parse file; drop NA  
     print XSfile+' '+sheetname
     print 'Slope: '+str(Slope)+' Mannings n: '+str(Manning_n)
@@ -1159,10 +1217,12 @@ def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):
         ## Jarrett (1990) equation for n
         ## n = 0.32*(S**0.30)*(R**-0.16)
         if Manning_n == 'Jarrett':
-            n = 0.32*(S**0.30)*(R**-0.16)        
+            n = 0.32*(S**0.30)*(R**-0.16) 
+            n = n * k
         ## Mannings = (1R^2/3 * S^1/2)/n
         ManningV = (1*(R**(2.0/3.0))*(S**0.5))/n
         ManningQ = ManningV * Area ## M3/s
+        ManningQ= round(ManningQ,3)
         areas.append(Area)
         wp.append(WP)
         r.append(R)
@@ -1178,8 +1238,9 @@ if 'LBJ_Man' not in locals():
         print 'Calculate Mannings Q for LBJ'
         LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
     except:
-        LBJ_Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['LBJ'])
-        LBJ_Man.to_csv(datadir+'Q/LBJ_Man.csv')
+        LBJ_stage_reduced = Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
+        LBJ_Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',k=.06/.08,stage_series=LBJ_stage_reduced)
+        LBJ_Man.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
         pass
 ## Read DAM_Man Discharge from .csv, or calculate new if needed
 if 'DAM_Man' not in locals():
@@ -1187,7 +1248,8 @@ if 'DAM_Man' not in locals():
         print 'Calculate Mannings Q for DAM'
         DAM_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/DAM_Man.csv')
     except:
-        DAM_Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['Dam'])
+        DAM_stage_reduced = Fagaalu_stage_data['Dam'].dropna().round(0).drop_duplicates().order()
+        DAM_Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',k=.025/.06,stage_series=DAM_stage_reduced)
         DAM_Man.to_csv(datadir+'Q/Manning_Q_files/DAM_Man.csv')
         pass 
 
@@ -1279,24 +1341,60 @@ DAMstageDischarge['Q_HEC(L/sec)']= HEC_piecewise(DAMstageDischarge['stage(cm)'])
 
 DAM_HEC = pd.ols(y=DAMstageDischarge['Q_HEC(L/sec)'],x=DAMstageDischarge['stage(cm)'],intercept=True) 
 
+
+## This function calculates the coeff of determination (r2) for 
+## a function (=Manning's rating curve) and some independent points (=AV Q measurements
+def Manning_AV_r2(Man_Series,AV_Series):
+    # LBJ Mannings = y predicted
+    ManQ, Manstage = Man_Series['Q']*1000, Man_Series['stage']*100
+    y_predicted = pd.DataFrame({'Q_Man':ManQ.values},index=Manstage).drop_duplicates().sort()
+    ## LBJ AV  = y
+    AV_Q, AVstage = AV_Series['Q-AV(L/sec)'], AV_Series['stage(cm)']
+    y_ = pd.DataFrame({'Q_AV':AV_Q.values},index=AVstage).drop_duplicates().sort()
+    y_['Q_Man'] = y_predicted
+    y_=  y_.dropna() # keep it clean
+    
+    y_bar = y_['Q_AV'].mean()
+    y_var = (y_['Q_AV'] - y_bar)**2.
+    ss_tot = y_var.sum()
+    y_res = (y_['Q_AV']-y_['Q_Man'])**2.
+    ss_res = y_res.sum()
+    r2 = 1-(ss_res/ss_tot)
+    return  r2
+LBJ_Man_r2 = Manning_AV_r2(LBJ_Man,LBJstageDischarge)
+DAM_Man_r2 = Manning_AV_r2(DAM_Man,DAMstageDischarge)
+
+def HEC_AV_r2(HEC_Series,AV_Series):
+    # LBJ Mannings = y predicted
+    HEC_Q, HECstage = HEC_Series['Q_HEC(L/sec)'].round(0), HEC_Series['stage(cm)']
+    y_predicted = pd.DataFrame({'Q_HEC':HEC_Q.values},index=HECstage).drop_duplicates().sort()
+    ## LBJ AV  = y
+    AV_Q, AVstage = AV_Series['Q-AV(L/sec)'], AV_Series['stage(cm)']
+    y_ = pd.DataFrame({'Q_AV':AV_Q.values},index=AVstage).drop_duplicates().sort()
+    y_['Q_Man'] = y_predicted
+    y_=  y_.dropna() # keep it clean
+    
+    y_bar = y_['Q_AV'].mean()
+    y_var = (y_['Q_AV'] - y_bar)**2.
+    ss_tot = y_var.sum()
+    y_res = (y_['Q_AV']-y_['Q_Man'])**2.
+    ss_res = y_res.sum()
+    r2 = 1-(ss_res/ss_tot)
+    return  r2
+DAM_HEC_r2 = HEC_AV_r2(DAM_HECstageDischarge,DAMstageDischarge)
+
 ### Compare Discharg Ratings
-def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
-    fig =plt.figure()
-    ax = plt.subplot(2,2,1)
-    site_lbj = plt.subplot2grid((2,2),(0,0))
-    site_dam = plt.subplot2grid((2,2),(1,0))
-    both = plt.subplot2grid((2,2),(0,1),rowspan=2)
-    #mpl.rc('lines',markersize=15)
-    
-    title="Discharge Ratings for LBJ and DAM"
+def plotQratingLBJ(show=False,log=False,save=False): ## Rating Curves
+    fig, (site_lbj, site_lbj_zoom)= plt.subplots(1,2,figsize=(8,4))
     xy = np.linspace(0,8000,8000)
-    
+    title="Discharge Ratings for VILLAGE (LBJ)"
     #LBJ AV Measurements and Rating Curve
     site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='LBJ_AV 12') 
     site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='LBJ_AV 13') 
     site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='LBJ_AV 14') 
-    #LBJ A*ManningV Measurements and Rating Curves
-    #site_lbj.plot(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='LBJ_AV 12') 
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='LBJ_AV 13') 
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='LBJ_AV 14') 
 
     ## LBJ MODELS
     ## LBJ Linear    
@@ -1304,7 +1402,8 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     #LinearFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
     ## LBJ Power
     LBJ_AVpower = powerfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
-    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='g',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj_zoom,c='g',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])        
     ## LBJ NonLinear
     #LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)  
     #site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='-',label='LBJ_AVnonLinear')    
@@ -1319,78 +1418,98 @@ def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
     #site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
     ## LBJ Mannings from stream survey
     LBJ_ManQ, LBJ_Manstage = LBJ_Man['Q']*1000, LBJ_Man['stage']*100
-    site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'.',markersize=2,c='b',label='Mannings')
-    labelindex_subplot(site_lbj, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
-    site_lbj.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
-    
-    
-    #DAM AV Measurements and Rating Curve
-    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
-    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
-    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
-
-    ### DAM Linear
-    #DAM_AVlinear=linearfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
-    #LinearFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
-    ## DAM Power    
-    DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
-    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
-    #DAM HEC-RAS Model and Rating Curve
-    #LinearFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
-    #PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
-    #site_dam.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS Model')
-    ## DAM Mannings from stream survey
-    site_dam.plot(DAM_Man['Q']*1000,DAM_Man['stage']*100,'.',markersize=2,color='g',label='Mannings DAM')   
-    site_dam.axhline(DAM_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
-    labelindex_subplot(site_dam, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
-
-    ## Plot selected rating curves for LBJ and DAM
-    ## AV measurements
-    both.plot(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='r',markeredgecolor='k',label='VILLAGE A-V')  
-    both.plot(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],'.',color='g',markeredgecolor='k',label='FOREST A-V')    
-    
-    ##LBJ Power
-    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,both,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
-    ## LBJ Nonlinear Model
-    #both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
-    #both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
-    #both.plot(LBJ_Man['Q']*1000,LBJ_Man['stage']*100,'.',markersize=2,color='y',label='Mannings LBJ')
-    #PowerFit(DAM_Man['Q']*1000,DAM_Man['stage']*100,xy,both,c='g',ls='-.',label='DAM_Mannings Power')    
-    both.plot(DAM_Man['Q']*1000,DAM_Man['stage']*100,'.',markersize=2,color='g',label='Mannings DAM')   
-    ## DAM Power    
-    #PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,both,c='g',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
-
-    ## DAM HEC-RAS Model 
-    #both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
-    
+    site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='r',label='Mannings '+r'$r^2$'+"%.2f"%LBJ_Man_r2)
+    site_lbj_zoom.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='r',label='Mannings')
     ## Storm Thresholds
-    both.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='r',label='Storm threshold')
-    both.axhline(DAM_storm_threshold,ls='--',linewidth=0.2,c='g',label='Storm threshold')
-
+    site_lbj.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='r',label='Storm threshold')
+    site_lbj_zoom.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='r',label='Storm threshold')
+    ## Label point -click
+    labelindex_subplot(site_lbj, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
+    labelindex_subplot(site_lbj_zoom, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
     ## Label subplots    
-    site_lbj.set_title('VILLLAGE'),site_lbj.set_ylabel('Stage(cm)'),site_lbj.set_xlabel('Q(L/sec)')
-    site_dam.set_title('FOREST'),site_dam.set_ylabel('Stage(cm)'),site_dam.set_xlabel('Q(L/sec)')
-    both.set_title('Selected Ratings'),both.set_ylabel('Stage(cm)'),both.set_xlabel('Q(L/sec)'),both.yaxis.tick_right(),both.yaxis.set_label_position('right')
+    site_lbj.set_ylabel('Stage(cm)'),site_lbj.set_xlabel('Q(L/sec)'),site_lbj_zoom.set_xlabel('Q(L/sec)')
     ## Format subplots
     site_lbj.set_ylim(0,PT1['stage'].max()+10)#,site_lbj.set_xlim(0,LBJ_AVnonLinear(PT1['stage'].max()+10))
-    site_dam.set_ylim(0,PT3['stage'].max()+10)#,site_dam.set_xlim(0,HEC_piecewise(PT3['stage'].max()+10).values)
-    both.set_ylim(0,PT1['stage'].max()+10)
+    site_lbj_zoom.set_ylim(0,45), site_lbj_zoom.set_xlim(0,1600)
     ## Legends
-    site_lbj.legend(loc='lower right',fancybox=True),site_dam.legend(loc='lower right',fancybox=True),both.legend(loc='best',ncol=2,fancybox=True)
-    plt.legend(loc='best')    
+    site_lbj.legend(loc='lower right',fancybox=True)  
     ## Figure title
     #plt.suptitle(title,fontsize=16)
     fig.canvas.manager.set_window_title('Figure : '+title) 
     logaxes(log,fig)
     for ax in fig.axes:
         ax.autoscale_view(True,True,True)
+    plt.tight_layout(pad=0.1)
     show_plot(show,fig)
     savefig(save,title)
     return
-plotStageDischargeRatings(show=True,log=False,save=False)
-#plotStageDischargeRatings(show=True,log=False,save=True)
-#plotStageDischargeRatings(show=True,log=True,save=True)
-#plotStageDischargeRatings(show=True,log=True,save=False)
+plotQratingLBJ(show=True,log=False,save=False)
+#plotQratingLBJ(show=True,log=False,save=True)
+#plotQratingLBJ(show=True,log=True,save=True)
+#plotQratingLBJ(show=True,log=True,save=False)
+
+
+
+### Compare Discharg Ratings
+def plotQratingDAM(show=False,log=False,save=False): ## Rating Curves
+    fig, (site_dam, site_dam_zoom) = plt.subplots(1,2,figsize=(8,4))
+    
+    title="Discharge Ratings for FOREST (DAM)"
+    xy = np.linspace(0,8000,8000)
+    
+    #DAM AV Measurements and Rating Curve
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+    #DAM AV Measurements and Rating Curve
+    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
+    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
+    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+    
+    ### DAM Linear
+    #DAM_AVlinear=linearfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
+    #LinearFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
+    ## DAM Power    
+    DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam_zoom,c='g',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    #DAM HEC-RAS Model and Rating Curve
+    PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower '+r'$r^2$'+"%.2f"%DAM_HEC_r2) ## rating from DAM_HEC
+    site_dam.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
+    PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam_zoom,c='b',ls='--',label='DAM_HECpower '+r'$r^2$'+"%.2f"%DAM_HEC_r2) ## rating from DAM_HEC
+    site_dam_zoom.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
+    ## DAM  FLUME
+    
+    ## DAM Mannings from stream survey
+    DAM_ManQ, DAM_Manstage = DAM_Man['Q']*1000,DAM_Man['stage']*100
+    site_dam.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM '+r'$r^2$'+"%.2f"%DAM_Man_r2)   
+    site_dam_zoom.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM')   
+    ## Label point-click
+    labelindex_subplot(site_dam, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
+    labelindex_subplot(site_dam_zoom, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
+    ## Storm Thresholds
+    site_dam.axhline(46,ls='--',linewidth=0.6,c='g',label='Channel top')
+    site_dam.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='g',label='Storm threshold')
+    site_dam_zoom.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='g',label='Storm threshold')
+    ## Label subplots    
+    site_dam.set_ylabel('Stage(cm)'),site_dam.set_xlabel('Q(L/sec)'),site_dam_zoom.set_xlabel('Q(L/sec)')
+    ## Format subplots
+    site_dam.set_ylim(0,PT3['stage'].max()+10)#,site_dam.set_xlim(0,HEC_piecewise(PT3['stage'].max()+10).values)
+    site_dam_zoom.set_ylim(0,20),site_dam_zoom.set_xlim(0,500)
+    ## Legends
+    site_dam.legend(loc='best',fancybox=True)    
+    fig.canvas.manager.set_window_title('Figure : '+title) 
+    logaxes(log,fig)
+    for ax in fig.axes:
+        ax.autoscale_view(True,True,True)
+    plt.tight_layout(pad=0.1)
+    show_plot(show,fig)
+    savefig(save,title)
+    return
+plotQratingDAM(show=True,log=False,save=False)
+#plotQratingDAM(show=True,log=False,save=True)
+#plotQratingDAM(show=True,log=True,save=True)
+#plotQratingDAM(show=True,log=True,save=False)
 
 #### CALCULATE DISCHARGE
 ## Calculate Q for LBJ
@@ -1777,24 +1896,28 @@ def NTU_SSCrating(TurbidimeterData,SSCdata,TurbidimeterName,location='LBJ',sampl
 #T_SSC_Lab= pd.ols(y=SSC[SSC['Location']=='LBJ']['SSC (mg/L)'],x=SSC[SSC['Location']=='LBJ']['NTU'])
 T_SSC_Lab= pd.ols(y=SSC['SSC (mg/L)'],x=SSC['NTU'],intercept=False)
 ### NTU ratings
-## LBJ YSIQuarryGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, QUARRYgrab,60)
-T_SSC_LBJ_YSI=NTU_SSCrating(LBJ_YSI,SSC,'LBJ-YSI','LBJ','15Min',log=False)
-LBJ_YSIrating = T_SSC_LBJ_YSI[0]
 ## DAM TS3K
 T_SSC_DAM_TS3K=NTU_SSCrating(DAM_TS3K,SSC,'DAM-TS3K','DAM',log=False) ## Use 5minute data for NTU/SSC relationship
 DAM_TS3Krating = T_SSC_DAM_TS3K[0]
 ## DAM YSI
 T_SSC_DAM_YSI=NTU_SSCrating(DAM_YSI,SSC,'DAM-YSI','DAM',log=False) ## Won't work until there are some overlapping grab samples
 DAM_YSIrating= T_SSC_DAM_YSI[0]
-### NTU ratings
-## LBJ
-T_SSC_LBJ_OBS_2013=NTU_SSCrating(LBJ_OBSa,SSC,'LBJ-OBS','LBJ','5Min',log=False)
-LBJ_OBS_2013rating = T_SSC_LBJ_OBS_2013[0]
-T_SSC_LBJ_OBS_2014=NTU_SSCrating(LBJ_OBSb,SSC,'LBJ-OBS','LBJ','15Min',log=False)
-LBJ_OBS_2014rating = T_SSC_LBJ_OBS_2014[0]
 ## QUARRY
 T_SSC_QUARRY_OBS=NTU_SSCrating(QUARRY_OBS,SSC,'QUARRY-OBS','R2','15Min',log=False)
 QUARRY_OBSrating = T_SSC_QUARRY_OBS[0]
+## LBJ YSI
+T_SSC_LBJ_YSI=NTU_SSCrating(LBJ_YSI,SSC,'LBJ-YSI','LBJ','15Min',log=False)
+LBJ_YSIrating = T_SSC_LBJ_YSI[0]
+## LBJ OBS 2013
+T_SSC_LBJ_OBS_2013=NTU_SSCrating(LBJ_OBSa,SSC,'LBJ-OBS','LBJ','5Min',log=False)
+LBJ_OBS_2013rating = T_SSC_LBJ_OBS_2013[0]
+## LBJ OBS 2014
+T_SSC_LBJ_OBS_2014=NTU_SSCrating(LBJ_OBSb,SSC,'LBJ-OBS','LBJ','15Min',log=False)
+LBJ_OBS_2014rating = T_SSC_LBJ_OBS_2014[0]
+## LBJ OBS ALL
+T_SSC_LBJ_OBS_2014=NTU_SSCrating(LBJ_OBSb,SSC,'LBJ-OBS','LBJ','15Min',log=False)
+LBJ_OBSrating = T_SSC_LBJ_OBS_2014[0]
+
 
 ## Plot ALL T-SSC
 ## LAB
@@ -1830,13 +1953,13 @@ def T_SSC_ALL(show=False):
 #T_SSC_SSC= pd.concat([T_SSC_LBJ_YSI[1]['SSC (mg/L)'],T_SSC_DAM_TS3K[1]['SSC (mg/L)'],T_SSC_DAM_YSI[1]['SSC (mg/L)']])
 #T_SSC_ALL_NTU_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_NTU,'SSCmeasured':T_SSC_SSC})
 
-## LBJ YSI
-T_SSC_LBJ_YSI_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],'SSCmeasured':T_SSC_LBJ_YSI[1]['SSC (mg/L)']})
-T_SSC_LBJ_YSI_RMSE['SSC_LBJ_YSIpredicted']= T_SSC_LBJ_YSI_RMSE['NTUmeasured']*LBJ_YSIrating.beta[0]
-T_SSC_LBJ_YSI_RMSE['SSC_diff'] = T_SSC_LBJ_YSI_RMSE['SSCmeasured']-T_SSC_LBJ_YSI_RMSE['SSC_LBJ_YSIpredicted']
-T_SSC_LBJ_YSI_RMSE['SSC_diffsquared'] = (T_SSC_LBJ_YSI_RMSE['SSC_diff'])**2
-T_SSC_LBJ_YSI_RMSE['SSC_RMSE'] = T_SSC_LBJ_YSI_RMSE['SSC_diffsquared']**0.5
-T_SSC_LBJ_YSI_RMSE_Value = (T_SSC_LBJ_YSI_RMSE['SSC_RMSE'].mean())
+## DAM TS3K
+T_SSC_DAM_TS3K_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_DAM_TS3K[1]['DAM-TS3K-NTU'],'SSCmeasured':T_SSC_DAM_TS3K[1]['SSC (mg/L)']})
+T_SSC_DAM_TS3K_RMSE['SSC_DAM_TS3Kpredicted']= T_SSC_DAM_TS3K_RMSE['NTUmeasured']*DAM_TS3Krating.beta[0]
+T_SSC_DAM_TS3K_RMSE['SSC_diff'] = T_SSC_DAM_TS3K_RMSE['SSCmeasured']-T_SSC_DAM_TS3K_RMSE['SSC_DAM_TS3Kpredicted']
+T_SSC_DAM_TS3K_RMSE['SSC_diffsquared'] = (T_SSC_DAM_TS3K_RMSE['SSC_diff'])**2
+T_SSC_DAM_TS3K_RMSE['SSC_RMSE'] = T_SSC_DAM_TS3K_RMSE['SSC_diffsquared']**0.5
+T_SSC_DAM_TS3K_RMSE_Value = (T_SSC_DAM_TS3K_RMSE['SSC_RMSE'].mean())
 
 ## DAM YSI
 T_SSC_DAM_YSI_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_DAM_YSI[1]['DAM-YSI-NTU'],'SSCmeasured':T_SSC_DAM_YSI[1]['SSC (mg/L)']})
@@ -1846,28 +1969,44 @@ T_SSC_DAM_YSI_RMSE['SSC_diffsquared'] = (T_SSC_DAM_YSI_RMSE['SSC_diff'])**2
 T_SSC_DAM_YSI_RMSE['SSC_RMSE'] = T_SSC_DAM_YSI_RMSE['SSC_diffsquared']**0.5
 T_SSC_DAM_YSI_RMSE_Value = (T_SSC_DAM_YSI_RMSE['SSC_RMSE'].mean())
 
-## LBJ OBS
-T_SSC_LBJ_OBS_2013_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_LBJ_OBS_2013[1]['LBJ-OBS-NTU'],'SSCmeasured':T_SSC_LBJ_OBS_2013[1]['SSC (mg/L)']})
-T_SSC_LBJ_OBS_2013_RMSE['SSC_LBJ_OBSpredicted']= T_SSC_LBJ_OBS_2013_RMSE['NTUmeasured']*LBJ_OBS_2013rating.beta[0]
-T_SSC_LBJ_OBS_2013_RMSE['SSC_diff'] = T_SSC_LBJ_OBS_2013_RMSE['SSCmeasured']-T_SSC_LBJ_OBS_2013_RMSE['SSC_LBJ_OBSpredicted']
-T_SSC_LBJ_OBS_2013_RMSE['SSC_diffsquared'] = (T_SSC_LBJ_OBS_2013_RMSE['SSC_diff'])**2
-T_SSC_LBJ_OBS_2013_RMSE['SSC_RMSE'] = T_SSC_LBJ_OBS_2013_RMSE['SSC_diffsquared']**0.5
-T_SSC_LBJ_OBS_2013_RMSE_Value = (T_SSC_LBJ_OBS_2013_RMSE['SSC_RMSE'].mean())
+## LBJ YSI
+T_SSC_LBJ_YSI_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_LBJ_YSI[1]['LBJ-YSI-NTU'],'SSCmeasured':T_SSC_LBJ_YSI[1]['SSC (mg/L)']})
+T_SSC_LBJ_YSI_RMSE['SSC_LBJ_YSIpredicted']= T_SSC_LBJ_YSI_RMSE['NTUmeasured']*LBJ_YSIrating.beta[0]
+T_SSC_LBJ_YSI_RMSE['SSC_diff'] = T_SSC_LBJ_YSI_RMSE['SSCmeasured']-T_SSC_LBJ_YSI_RMSE['SSC_LBJ_YSIpredicted']
+T_SSC_LBJ_YSI_RMSE['SSC_diffsquared'] = (T_SSC_LBJ_YSI_RMSE['SSC_diff'])**2
+T_SSC_LBJ_YSI_RMSE['SSC_RMSE'] = T_SSC_LBJ_YSI_RMSE['SSC_diffsquared']**0.5
+T_SSC_LBJ_YSI_RMSE_Value = (T_SSC_LBJ_YSI_RMSE['SSC_RMSE'].mean())
 
-T_SSC_LBJ_OBS_2014_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_LBJ_OBS_2014[1]['LBJ-OBS-NTU'],'SSCmeasured':T_SSC_LBJ_OBS_2014[1]['SSC (mg/L)']})
-T_SSC_LBJ_OBS_2014_RMSE['SSC_LBJ_OBSpredicted']= T_SSC_LBJ_OBS_2014_RMSE['NTUmeasured']*LBJ_OBS_2014rating.beta[0]
-T_SSC_LBJ_OBS_2014_RMSE['SSC_diff'] = T_SSC_LBJ_OBS_2014_RMSE['SSCmeasured']-T_SSC_LBJ_OBS_2014_RMSE['SSC_LBJ_OBSpredicted']
-T_SSC_LBJ_OBS_2014_RMSE['SSC_diffsquared'] = (T_SSC_LBJ_OBS_2014_RMSE['SSC_diff'])**2
-T_SSC_LBJ_OBS_2014_RMSE['SSC_RMSE'] = T_SSC_LBJ_OBS_2014_RMSE['SSC_diffsquared']**0.5
-T_SSC_LBJ_OBS_2014_RMSE_Value = (T_SSC_LBJ_OBS_2014_RMSE['SSC_RMSE'].mean())
-
-## LBJ OBS
+## QUARRY OBS
 T_SSC_QUARRY_OBS_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_QUARRY_OBS[1]['QUARRY-OBS-NTU'],'SSCmeasured':T_SSC_QUARRY_OBS[1]['SSC (mg/L)']})
 T_SSC_QUARRY_OBS_RMSE['SSC_QUARRY_OBSpredicted']= T_SSC_QUARRY_OBS_RMSE['NTUmeasured']*QUARRY_OBSrating.beta[0]
 T_SSC_QUARRY_OBS_RMSE['SSC_diff'] = T_SSC_QUARRY_OBS_RMSE['SSCmeasured']-T_SSC_QUARRY_OBS_RMSE['SSC_QUARRY_OBSpredicted']
 T_SSC_QUARRY_OBS_RMSE['SSC_diffsquared'] = (T_SSC_QUARRY_OBS_RMSE['SSC_diff'])**2
 T_SSC_QUARRY_OBS_RMSE['SSC_RMSE'] = T_SSC_QUARRY_OBS_RMSE['SSC_diffsquared']**0.5
 T_SSC_QUARRY_OBS_RMSE_Value = (T_SSC_QUARRY_OBS_RMSE['SSC_RMSE'].mean())
+
+## LBJ OBS 2013
+T_SSC_LBJ_OBS_2013_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_LBJ_OBS_2013[1]['LBJ-OBS-NTU'],'SSCmeasured':T_SSC_LBJ_OBS_2013[1]['SSC (mg/L)']})
+T_SSC_LBJ_OBS_2013_RMSE['SSC_LBJ_OBSpredicted']= T_SSC_LBJ_OBS_2013_RMSE['NTUmeasured']*LBJ_OBS_2013rating.beta[0]
+T_SSC_LBJ_OBS_2013_RMSE['SSC_diff'] = T_SSC_LBJ_OBS_2013_RMSE['SSCmeasured']-T_SSC_LBJ_OBS_2013_RMSE['SSC_LBJ_OBSpredicted']
+T_SSC_LBJ_OBS_2013_RMSE['SSC_diffsquared'] = (T_SSC_LBJ_OBS_2013_RMSE['SSC_diff'])**2
+T_SSC_LBJ_OBS_2013_RMSE['SSC_RMSE'] = T_SSC_LBJ_OBS_2013_RMSE['SSC_diffsquared']**0.5
+T_SSC_LBJ_OBS_2013_RMSE_Value = (T_SSC_LBJ_OBS_2013_RMSE['SSC_RMSE'].mean())
+## LBJ OBS 2014
+T_SSC_LBJ_OBS_2014_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_LBJ_OBS_2014[1]['LBJ-OBS-NTU'],'SSCmeasured':T_SSC_LBJ_OBS_2014[1]['SSC (mg/L)']})
+T_SSC_LBJ_OBS_2014_RMSE['SSC_LBJ_OBSpredicted']= T_SSC_LBJ_OBS_2014_RMSE['NTUmeasured']*LBJ_OBS_2014rating.beta[0]
+T_SSC_LBJ_OBS_2014_RMSE['SSC_diff'] = T_SSC_LBJ_OBS_2014_RMSE['SSCmeasured']-T_SSC_LBJ_OBS_2014_RMSE['SSC_LBJ_OBSpredicted']
+T_SSC_LBJ_OBS_2014_RMSE['SSC_diffsquared'] = (T_SSC_LBJ_OBS_2014_RMSE['SSC_diff'])**2
+T_SSC_LBJ_OBS_2014_RMSE['SSC_RMSE'] = T_SSC_LBJ_OBS_2014_RMSE['SSC_diffsquared']**0.5
+T_SSC_LBJ_OBS_2014_RMSE_Value = (T_SSC_LBJ_OBS_2014_RMSE['SSC_RMSE'].mean())
+## LBJ OBS ALL
+T_SSC_LBJ_OBS_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_LBJ_OBS[1]['LBJ-OBS-NTU'],'SSCmeasured':T_SSC_LBJ_OBS[1]['SSC (mg/L)']})
+T_SSC_LBJ_OBS_RMSE['SSC_LBJ_OBSpredicted']= T_SSC_LBJ_OBS_RMSE['NTUmeasured']*LBJ_OBSrating.beta[0]
+T_SSC_LBJ_OBS_RMSE['SSC_diff'] = T_SSC_LBJ_OBS_RMSE['SSCmeasured']-T_SSC_LBJ_OBS_RMSE['SSC_LBJ_OBSpredicted']
+T_SSC_LBJ_OBS_RMSE['SSC_diffsquared'] = (T_SSC_LBJ_OBS_RMSE['SSC_diff'])**2
+T_SSC_LBJ_OBS_RMSE['SSC_RMSE'] = T_SSC_LBJ_OBS_RMSE['SSC_diffsquared']**0.5
+T_SSC_LBJ_OBS_RMSE_Value = (T_SSC_LBJ_OBS_RMSE['SSC_RMSE'].mean())
+
 
 #### ..
 #### TURBIDITY TO SSC to SEDFLUX
@@ -1986,7 +2125,7 @@ def plot_T_BOTH(show=False,lwidth=0.5):
     if show==True:
         plt.show()
     return
-plot_T_BOTH(True,lwidth=0.5)
+#plot_T_BOTH(True,lwidth=0.5)
 
 def plotNTUratingstable(show=False,save=False):
     ## NTU

@@ -18,7 +18,7 @@ def baroCheck(show=False):
     if show==True:
         plt.show()
     return
-baroCheck(True)
+#baroCheck(True)
     
 
 def plot_AirportWind(show=False):
@@ -67,6 +67,119 @@ def plotSTAGE(show=False):
     show_plot(show)
     return
 #plotSTAGE(True)
+    
+### Compare Discharg Ratings
+def plotStageDischargeRatings(show=False,log=False,save=False): ## Rating Curves
+    fig =plt.figure()
+    ax = plt.subplot(2,2,1)
+    site_lbj = plt.subplot2grid((2,2),(0,0))
+    site_dam = plt.subplot2grid((2,2),(1,0))
+    both = plt.subplot2grid((2,2),(0,1),rowspan=2)
+    #mpl.rc('lines',markersize=15)
+    
+    title="Discharge Ratings for LBJ and DAM"
+    xy = np.linspace(0,8000,8000)
+    
+    #LBJ AV Measurements and Rating Curve
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='LBJ_AV 12') 
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='LBJ_AV 13') 
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='LBJ_AV 14') 
+    #LBJ A*ManningV Measurements and Rating Curves
+    #site_lbj.plot(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='grey',markeredgecolor='k',label='LBJ A*ManningsV')
+
+    ## LBJ MODELS
+    ## LBJ Linear    
+    #LBJ_AVlinear= linearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
+    #LinearFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
+    ## LBJ Power
+    LBJ_AVpower = powerfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    ## LBJ NonLinear
+    #LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)  
+    #site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='-',label='LBJ_AVnonLinear')    
+    ## LBJ Mannings Linear    
+    #LBJ_MANlinear=linearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])
+    #LinearFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
+    ## LBJ Manning Power    
+    #LBJ_MANpower =powerfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])    
+    #PowerFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='-.',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
+    ## LBJ Manning NonLinear   
+    #LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)
+    #site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
+    ## LBJ Mannings from stream survey
+    LBJ_ManQ, LBJ_Manstage = LBJ_Man['Q']*1000, LBJ_Man['stage']*100
+    site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'.',markersize=2,c='b',label='Mannings')
+    labelindex_subplot(site_lbj, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
+    site_lbj.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
+    
+    
+    #DAM AV Measurements and Rating Curve
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+
+    ### DAM Linear
+    #DAM_AVlinear=linearfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
+    #LinearFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
+    ## DAM Power    
+    DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    #DAM HEC-RAS Model and Rating Curve
+    #LinearFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='-',label='DAM_HEClinear') ## rating from DAM_HEC
+    #PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower') ## rating from DAM_HEC
+    #site_dam.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS Model')
+    ## DAM Mannings from stream survey
+    site_dam.plot(DAM_Man['Q']*1000,DAM_Man['stage']*100,'.',markersize=2,color='g',label='Mannings DAM')   
+    site_dam.axhline(DAM_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
+    labelindex_subplot(site_dam, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
+
+    ## Plot selected rating curves for LBJ and DAM
+    ## AV measurements
+    both.plot(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',color='r',markeredgecolor='k',label='VILLAGE A-V')  
+    both.plot(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],'.',color='g',markeredgecolor='k',label='FOREST A-V')    
+    
+    ##LBJ Power
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,both,c='r',ls='-.',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    ## LBJ Nonlinear Model
+    #both.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='--',label='LBJ_AVnonLinear')    
+    #both.plot(xy,LBJ_AManningVnonLinear(xy),color='r',ls='-',label='LBJ_AManningVnonLinear')
+    #both.plot(LBJ_Man['Q']*1000,LBJ_Man['stage']*100,'.',markersize=2,color='y',label='Mannings LBJ')
+    #PowerFit(DAM_Man['Q']*1000,DAM_Man['stage']*100,xy,both,c='g',ls='-.',label='DAM_Mannings Power')    
+    both.plot(DAM_Man['Q']*1000,DAM_Man['stage']*100,'.',markersize=2,color='g',label='Mannings DAM')   
+    ## DAM Power    
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,both,c='g',ls='-.', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+
+    ## DAM HEC-RAS Model 
+    #both.plot(xy, HEC_piecewise(xy),'-',color='g',label='DAM HEC-RAS piecewise')
+    
+    ## Storm Thresholds
+    both.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='r',label='Storm threshold')
+    both.axhline(DAM_storm_threshold,ls='--',linewidth=0.2,c='g',label='Storm threshold')
+
+    ## Label subplots    
+    site_lbj.set_title('VILLLAGE'),site_lbj.set_ylabel('Stage(cm)'),site_lbj.set_xlabel('Q(L/sec)')
+    site_dam.set_title('FOREST'),site_dam.set_ylabel('Stage(cm)'),site_dam.set_xlabel('Q(L/sec)')
+    both.set_title('Selected Ratings'),both.set_ylabel('Stage(cm)'),both.set_xlabel('Q(L/sec)'),both.yaxis.tick_right(),both.yaxis.set_label_position('right')
+    ## Format subplots
+    site_lbj.set_ylim(0,PT1['stage'].max()+10)#,site_lbj.set_xlim(0,LBJ_AVnonLinear(PT1['stage'].max()+10))
+    site_dam.set_ylim(0,PT3['stage'].max()+10)#,site_dam.set_xlim(0,HEC_piecewise(PT3['stage'].max()+10).values)
+    both.set_ylim(0,PT1['stage'].max()+10)
+    ## Legends
+    site_lbj.legend(loc='lower right',fancybox=True),site_dam.legend(loc='lower right',fancybox=True),both.legend(loc='best',ncol=2,fancybox=True)
+    plt.legend(loc='best')    
+    ## Figure title
+    #plt.suptitle(title,fontsize=16)
+    fig.canvas.manager.set_window_title('Figure : '+title) 
+    logaxes(log,fig)
+    for ax in fig.axes:
+        ax.autoscale_view(True,True,True)
+    show_plot(show,fig)
+    savefig(save,title)
+    return
+#plotStageDischargeRatings(show=True,log=False,save=False)
+#plotStageDischargeRatings(show=True,log=False,save=True)
+#plotStageDischargeRatings(show=True,log=True,save=True)
+#plotStageDischargeRatings(show=True,log=True,save=False)
  
  
 def plotPRECIP(show=False):
@@ -212,32 +325,45 @@ def plotStageYears(show=False):
     return
 #plotStageYears(True)
 
-def plotPTstageYears(Pt,show=False):
+def plotPT1stageYears(Pt,show=False):
     fig, (stage2012, stage2013, stage2014) = plt.subplots(3,figsize=(10,8))
 
     ## Plot Uncorrected stage data
-    Pt['Uncorrected_stage'][start2012:stop2012].plot(ax=stage2012,color='g',x_compat=True)
-    Pt['Uncorrected_stage'][start2013:stop2013].plot(ax=stage2013,color='g',x_compat=True)
-    Pt['Uncorrected_stage'][start2014:stop2014].plot(ax=stage2014,color='g',x_compat=True)
+    Pt['Uncorrected_stage'][start2012:stop2012].plot(ax=stage2012,color='g',alpha=.5,x_compat=True)
+    Pt['Uncorrected_stage'][start2013:stop2013].plot(ax=stage2013,color='g',alpha=.5,x_compat=True)
+    Pt['Uncorrected_stage'][start2014:stop2014].plot(ax=stage2014,color='g',alpha=.5,x_compat=True)
     ## Plot Corrected stage data
-    Pt['stage_corrected_Manual'][start2012:stop2012].plot(ax=stage2012,color='r',x_compat=True)
-    Pt['stage_corrected_Manual'][start2013:stop2013].plot(ax=stage2013,color='r',x_compat=True)
-    Pt['stage_corrected_Manual'][start2014:stop2014].plot(ax=stage2014,color='r',x_compat=True)
+    #Pt['stage_corrected_Manual'][start2012:stop2012].plot(ax=stage2012,color='r',x_compat=True)
+    #Pt['stage_corrected_Manual'][start2013:stop2013].plot(ax=stage2013,color='r',x_compat=True)
+    #Pt['stage_corrected_Manual'][start2014:stop2014].plot(ax=stage2014,color='r',x_compat=True)
     ## Plotstage data
-    Pt['stage'][start2012:stop2012].plot(ax=stage2012,color='grey',ls='--',x_compat=True)
-    Pt['stage'][start2013:stop2013].plot(ax=stage2013,color='grey',ls='--',x_compat=True)
-    Pt['stage'][start2014:stop2014].plot(ax=stage2014,color='grey',ls='--',x_compat=True)
-    
+    Pt['stage'][start2012:stop2012].plot(ax=stage2012,color='r',ls='-',x_compat=True)
+    Pt['stage'][start2013:stop2013].plot(ax=stage2013,color='r',ls='-',x_compat=True)
+    Pt['stage'][start2014:stop2014].plot(ax=stage2014,color='r',ls='-',x_compat=True)
+    ## Plot storm thresholds
+    stage2012.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
+    stage2013.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
+    stage2014.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
+    ## Baseflow level
+    stage2012.axhline(6,ls='-',c='b',label='Baseflow')
+    stage2013.axhline(6,ls='-',c='b',label='Baseflow')
+    stage2014.axhline(6,ls='-',c='b',label='Baseflow')
     ## Reference Staff Gage Height
     LBJfieldnotesStage['RefGageHeight(cm)'][start2012:stop2012].plot(ax=stage2012,marker='o',markersize=6,ls='None',color='r',label='LBJ Field Notes')
+    LBJfieldnotesStage['RefGageHeight(cm)'][LBJfieldnotesStage['Corrected_stage']<LBJ_storm_threshold][start2012:stop2012].plot(ax=stage2012,marker='o',markersize=6,ls='None',color='b',label='LBJ Field Notes')
+    
     LBJfieldnotesStage['RefGageHeight(cm)'][start2013:stop2013].plot(ax=stage2013,marker='o',markersize=6,ls='None',color='r',label='LBJ Field Notes')
+    LBJfieldnotesStage['RefGageHeight(cm)'][LBJfieldnotesStage['Corrected_stage']<LBJ_storm_threshold][start2013:stop2013].plot(ax=stage2013,marker='o',markersize=6,ls='None',color='b',label='LBJ Field Notes')
+    
     LBJfieldnotesStage['RefGageHeight(cm)'][start2014:stop2014].plot(ax=stage2014,marker='o',markersize=6,ls='None',color='r',label='LBJ Field Notes')
+    LBJfieldnotesStage['RefGageHeight(cm)'][LBJfieldnotesStage['Corrected_stage']<LBJ_storm_threshold][start2014:stop2014].plot(ax=stage2014,marker='o',markersize=6,ls='None',color='b',label='LBJ Field Notes')
     
     
-    stage2012.bar(LBJfieldnotesStage['GH-PT'][start2012:stop2012].index,LBJfieldnotesStage['GH-PT'][start2012:stop2012],width=0.1,align='center',color='r')
-    stage2013.bar(LBJfieldnotesStage['GH-PT'][start2013:stop2013].index,LBJfieldnotesStage['GH-PT'][start2013:stop2013],width=0.1,align='center',color='r')
-    stage2014.bar(LBJfieldnotesStage['GH-PT'][start2014:stop2014].index,LBJfieldnotesStage['GH-PT'][start2014:stop2014],width=0.1,align='center',color='r')
+    stage2012.bar(LBJfieldnotesStage['GH-Corrected_stage'][start2012:stop2012].index,LBJfieldnotesStage['GH-Corrected_stage'][start2012:stop2012],width=0.1,align='center',color='r')
+    stage2013.bar(LBJfieldnotesStage['GH-Corrected_stage'][start2013:stop2013].index,LBJfieldnotesStage['GH-Corrected_stage'][start2013:stop2013],width=0.1,align='center',color='r')
+    stage2014.bar(LBJfieldnotesStage['GH-Corrected_stage'][start2014:stop2014].index,LBJfieldnotesStage['GH-Corrected_stage'][start2014:stop2014],width=0.1,align='center',color='r')
     
+    ## Shade field seasons
     shade_color='grey'
     stage2012.axvspan(fieldstart2012,fieldstop2012,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
     stage2013.axvspan(fieldstart2013,fieldstop2013,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
@@ -257,8 +383,125 @@ def plotPTstageYears(Pt,show=False):
     if show==True:
         plt.show()
     return
-plotPTstageYears(PT1,show=True)
+#plotPT1stageYears(PT1,show=True)
+
+def plotPT3stageYears(Pt,storm_threshold,show=False):
+    fig, (stage2012, stage2013, stage2014) = plt.subplots(3,figsize=(10,8))
+
+    ## Plot Uncorrected stage data
+    Pt['Uncorrected_stage'][start2012:stop2012].plot(ax=stage2012,color='g',alpha=.5,x_compat=True)
+    Pt['Uncorrected_stage'][start2013:stop2013].plot(ax=stage2013,color='g',alpha=.5,x_compat=True)
+    Pt['Uncorrected_stage'][start2014:stop2014].plot(ax=stage2014,color='g',alpha=.5,x_compat=True)
+    ## Plot Corrected stage data
+    #Pt['stage_corrected_Manual'][start2012:stop2012].plot(ax=stage2012,color='r',x_compat=True)
+    #Pt['stage_corrected_Manual'][start2013:stop2013].plot(ax=stage2013,color='r',x_compat=True)
+    #Pt['stage_corrected_Manual'][start2014:stop2014].plot(ax=stage2014,color='r',x_compat=True)
+    ## Plotstage data
+    Pt['stage'][start2012:stop2012].plot(ax=stage2012,color='r',ls='-',x_compat=True)
+    Pt['stage'][start2013:stop2013].plot(ax=stage2013,color='r',ls='-',x_compat=True)
+    Pt['stage'][start2014:stop2014].plot(ax=stage2014,color='r',ls='-',x_compat=True)
+    ## Plot storm thresholds
+    stage2012.axhline(storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
+    stage2013.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
+    stage2014.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
+    ## Baseflow level
+    stage2012.axhline(6,ls='-',c='b',label='Baseflow')
+    stage2013.axhline(6,ls='-',c='b',label='Baseflow')
+    stage2014.axhline(6,ls='-',c='b',label='Baseflow')
+
+    ## Shade field seasons
+    shade_color='grey'
+    stage2012.axvspan(fieldstart2012,fieldstop2012,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    stage2013.axvspan(fieldstart2013,fieldstop2013,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    stage2014.axvspan(fieldstart2014a,fieldstop2014a,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    stage2014.axvspan(fieldstart2014b,fieldstop2014b,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
     
+    #stage2012.xaxis.set_major_locator(matplotlib.dates.MonthLocator(interval=2))
+    #stage2013.xaxis.set_major_locator(matplotlib.dates.MonthLocator(interval=2))
+    #stage2014.xaxis.set_major_locator(matplotlib.dates.MonthLocator(interval=4))
+    
+    ## Format
+    y0, y1 = 0, 150
+    stage2012.set_ylim(y0,y1),stage2013.set_ylim(y0,y1),stage2014.set_ylim(y0,y1)
+    stage2012.set_xlabel(''),stage2013.set_xlabel(''),stage2014.set_xlabel('')
+    stage2012.legend()
+    fig.tight_layout(pad=0.1)
+    if show==True:
+        plt.show()
+    return
+plotPT3stageYears(PT3,DAM_storm_threshold,show=True)
+
+### Compare Discharg Ratings
+def plotQratingDAM_ALL(show=False,log=False,save=False): ## Rating Curves
+    fig, ((dam_power,dam_model), (dam_All, dam_zoom)) = plt.subplots(2,2)
+    
+    title="Discharge Ratings for FOREST (DAM)"
+    xy = np.linspace(0,8000,8000)
+    
+    #DAM AV Measurements and Rating Curve
+    dam_power.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
+    dam_power.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
+    dam_power.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+    #DAM AV Measurements and Rating Curve
+    dam_model.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
+    dam_model.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
+    dam_model.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+    #DAM AV Measurements and Rating Curve
+    dam_All.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
+    dam_All.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
+    dam_All.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+    #DAM AV Measurements and Rating Curve
+    dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
+    dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
+    dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+
+    ## DAM Power    
+    DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,dam_power,c='g',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,dam_All,c='g',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV    
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,dam_zoom,c='g',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    #DAM HEC-RAS Model and Rating Curve
+    DAM_HECpower=powerfunction(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'])
+    PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,dam_model,c='b',ls='--',label='DAM_HECpower '+r'$r^2$'+"%.2f"%DAM_HEC_r2) ## rating from DAM_HEC
+    dam_model.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
+    PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,dam_All,c='b',ls='--',label='DAM_HECpower '+r'$r^2$'+"%.2f"%DAM_HEC_r2) ## rating from DAM_HEC
+    dam_All.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
+    PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,dam_zoom,c='b',ls='--',label='DAM_HECpower '+r'$r^2$'+"%.2f"%DAM_HEC_r2) ## rating from DAM_HEC
+    dam_zoom.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
+    ## DAM  FLUME
+    
+    ## DAM Mannings from stream survey
+    DAM_ManQ, DAM_Manstage = DAM_Man['Q']*1000,DAM_Man['stage']*100
+    dam_model.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM '+r'$r^2$'+"%.2f"%DAM_Man_r2)   
+    dam_All.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM '+r'$r^2$'+"%.2f"%DAM_Man_r2)   
+    dam_zoom.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM '+r'$r^2$'+"%.2f"%DAM_Man_r2)   
+    ## Label point-click
+    labelindex_subplot(dam_power, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
+    labelindex_subplot(dam_zoom, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
+    ## Storm Thresholds
+    for ax in fig.axes:
+        ax.axhline(46,ls='-.',linewidth=0.6,c='g',label='Channel top')
+        ax.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='g',label='Storm threshold')
+    ## Label subplots    
+    dam_power.set_ylabel('Stage(cm)'),dam_All.set_ylabel('Stage(cm)'), dam_All.set_xlabel('Q(L/sec)'), dam_zoom.set_xlabel('Q(L/sec)')
+    ## Format subplots
+    for ax in fig.axes:
+        ax.set_ylim(0,PT3['stage'].max()+10)#,site_dam.set_xlim(0,HEC_piecewise(PT3['stage'].max()+10).values)
+    dam_zoom.set_ylim(0,20),dam_zoom.set_xlim(0,500)
+    ## Legends
+    dam_model.legend(loc='best',fancybox=True)    
+    fig.canvas.manager.set_window_title('Figure : '+title) 
+    logaxes(log,fig)
+    for ax in fig.axes:
+        ax.autoscale_view(True,True,True)
+    plt.tight_layout(pad=0.1)
+    show_plot(show,fig)
+    savefig(save,title)
+    return
+#plotQratingDAM_ALL(show=True,log=False,save=False)
+#plotQratingDAM_ALL(show=True,log=False,save=True)
+#plotQratingDAM_ALL(show=True,log=True,save=True)
+#plotQratingDAM_ALL(show=True,log=True,save=False)
     
 def plotdischargeintervals(fig,ax,start,stop):
     LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AV PowerLaw)')

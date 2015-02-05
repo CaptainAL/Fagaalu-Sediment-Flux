@@ -33,7 +33,7 @@ elif git!=True: ## Local folders
     savedir = datadir+'samoa/WATERSHED_ANALYSIS/GoodFigures/'
     figdir = datadir+'samoa/WATERSHED_ANALYSIS/GoodFigures/rawfigoutput/'
     
-def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display=True):    
+def Mannings(XSfile,sheetname,Slope,Manning_n,k=1,stage_start=.01,stage_end=None,display=True):    
     ## Open and parse file; drop NA  
     print XSfile+' '+sheetname
     print 'Slope: '+str(Slope)+' Mannings n: '+str(Manning_n)
@@ -86,6 +86,7 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
         ## n = 0.32*(S**0.30)*(R**-0.16)
         if Manning_n == 'Jarrett':
             n = 0.32*(S**0.30)*(R**-0.16)
+            n= n *k
         ## Mannings = (1R^2/3 * S^1/2)/n
         ManningV = (1*(R**(2.0/3.0))*(S**0.5))/n
         ManningQ = ManningV * Area ## M3/s
@@ -96,14 +97,14 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
             ax1.plot(df['Dist'],df['y1'],'-o',c='k')
             ax1.fill_between(df['Dist'], df['y1'], stage,where = df['y1']<=stage,alpha=.5, interpolate=True)
             
-            ax1.annotate('stage: '+'%.2f'%stage+'m',xy=(2,stage+.45))
-            ax1.annotate('Mannings n: '+'%.3f'%n,xy=(2,stage+.03))
-            ax1.annotate('Area: '+'%.3f'%Area+'m2',xy=(2,stage+.25))
-            ax1.annotate('WP: '+'%.2f'%WP+'m',xy=(df['Dist'].mean(),stage+.03))
-            ax1.annotate('Manning V: '+'%.2f'%ManningV+'m/s ',xy=(df['Dist'].mean(),stage+.25))
-            ax1.annotate('Manning Q: '+'%.3f'%ManningQ+'m3/s',xy=(df['Dist'].mean(),stage+.45))
+            ax1.annotate('stage: '+'%.2f'%stage+'m',xy=(0,1.5+.45))
+            ax1.annotate('Mannings n: '+'%.3f'%n,xy=(0,1.5+.03))
+            ax1.annotate('Area: '+'%.3f'%Area+'m2',xy=(0,1.5+.25))
+            ax1.annotate('WP: '+'%.2f'%WP+'m',xy=(df['Dist'].mean(),1.5+.03))
+            ax1.annotate('Manning V: '+'%.2f'%ManningV+'m/s ',xy=(df['Dist'].mean(),1.5+.25))
+            ax1.annotate('Manning Q: '+'%.3f'%ManningQ+'m3/s',xy=(df['Dist'].mean(),1.5+.45))
             plt.axes().set_aspect('equal')
-            plt.xlim(-1,df['Dist'].max()+1),plt.ylim(-1,stage + 1.)
+            plt.xlim(-1,df['Dist'].max()+1),plt.ylim(-1,2 + 1.)
     
         areas.append(Area)
         wp.append(WP)
@@ -114,13 +115,18 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,stage_start,stage_end=None,display
         
     DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r, 'Man_n':Man_n,'vel':v,'Q':q})
     return DF,df
-#XSfile, sheetname, Slope, Manning_n =   datadir+'Q/LBJ_cross_section.xlsx', 'LBJ_m', .01, .05
+## LBJ
 #max_LBJ = Fagaalu_stage_data['LBJ'].max()/100 #cm to m
+#min_LBJ = Fagaalu_stage_data['LBJ'].min()/100 #cm to m
+XSfile, sheetname, slope, Manning_n = datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx', 'LBJ_m', .016, 'Jarrett'
+Man_stages, df = Mannings(XSfile,sheetname,Slope=0.016,Manning_n='Jarrett',k=.06/.08,stage_start=1.4)
+## DAM
 #max_DAM = Fagaalu_stage_data['Dam'].max()/100 #cm to m
 #min_DAM = Fagaalu_stage_data['Dam'].min()/100 #cm to m
-#Man_stages, df = Mannings(datadir+'Q/LBJ_cross_section.xlsx','DAM_m',Slope=0.044,Manning_n='Jarrett',stage_start=min_DAM)
+XSfile, sheetname, slope, Manning_n = datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx', 'DAM_m', .03, 'Jarrett'
+Man_stages, df = Mannings(XSfile,sheetname,Slope=0.016,Manning_n='Jarrett',k=.04/.07,stage_start=.46)
 
-def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):    
+def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):    
     ## Open and parse file; drop NA  
     print XSfile+' '+sheetname
     print 'Slope: '+str(Slope)+' Mannings n: '+str(Manning_n)
@@ -161,7 +167,7 @@ def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):
         ## n = 0.32*(S**0.30)*(R**-0.16)
         if Manning_n == 'Jarrett':
             n = 0.32*(S**0.30)*(R**-0.16)        
-        
+            n = n * k
         ## Mannings = (1R^2/3 * S^1/2)/n
         ManningV = (1*(R**(2.0/3.0))*(S**0.5))/n
         ManningQ = ManningV * Area ## M3/s
@@ -175,7 +181,8 @@ def Mannings_Series(XSfile,sheetname,Slope,Manning_n,stage_series):
         
     DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r,'Man_n':Man_n,'vel':v,'Q':q},index=stage_series.index)
     return DF
-#Man = Mannings_Series(datadir+'Q/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',stage_series=Fagaalu_stage_data['LBJ'])
+LBJ_stage_reduced =Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
+Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',stage_series=LBJ_stage_reduced,Slope=0.016,Manning_n='Jarrett',k=.06/.08)
     
 def Man_plot(Man_Series,location=''):
     
@@ -194,7 +201,7 @@ def Man_plot(Man_Series,location=''):
     vel.set_ylabel('Velocity (m/s)')
     
     n.plot(Man_Series['stage'],Man_Series['Man_n'],'o')
-    n.set_ylim(0,1.)
+    n.set_xlim(-.01,1.5), n.set_ylim(0,0.21)
     n.set_ylabel('Mannings n (Jarrett)')
     n.set_xlabel('STREAM STAGE (m)')
     
@@ -205,7 +212,7 @@ def Man_plot(Man_Series,location=''):
     plt.show()
     
     return
-#Man_plot(LBJ_Man,'LBJ')
+Man_plot(Man,'LBJ')
 #Man_plot(DAM_Man,'DAM')
 
 def Man_plot_compare(Man_Series1,Man_Series2,locations=('','')):

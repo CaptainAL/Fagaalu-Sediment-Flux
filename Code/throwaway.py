@@ -5,6 +5,19 @@ Created on Wed Dec 03 20:32:00 2014
 @author: Alex
 """
 
+## PT3 DAM
+# tshift in 15Min(or whatever the timestep is), zshift in cm
+PT3aa = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3aa',12,zshift=-3.75)
+PT3ab = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3ab',12,zshift=-3.75)
+PT3b = PT_Levelogger(allbaro,'PT3b Dam',XL,'PT-Fagaalu3b',0,zshift=-23)
+PT3c = PT_Levelogger(allbaro,'PT3c Dam',XL,'PT-Fagaalu3c',0,zshift=-19.5)
+PT3d = PT_Levelogger(allbaro,'PT3d Dam',XL,'PT-Fagaalu3d',0,zshift=-17.1)
+PT3e = PT_Levelogger(allbaro,'PT3e Dam',XL,'PT-Fagaalu3e',0,zshift=-18.4)
+PT3f = PT_Levelogger(allbaro,'PT3f Dam',XL,'PT-Fagaalu3f',0,zshift=-17)
+PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0,zshift=-10.5)
+PT3 = pd.concat([PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
+PT3 = PT3[PT3>0]
+
 #storm_data=pd.DataFrame(columns=['DAM-Sed','DAM-Sed-cum','DAMgrab','DAMgrabSed','DAMgrabssc', 
     'DAMntu','DAMq','DAMssc','DAMtSed','DAMtssc','LBJ-Sed','LBJ-Sed-cum','LBJfnu','LBJgrab',
     'LBJgrabSed','LBJgrabssc','LBJntu','LBJq','LBJssc','LBJtSed','LBJtssc','Precip',
