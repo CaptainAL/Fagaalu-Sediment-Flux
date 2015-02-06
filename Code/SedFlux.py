@@ -731,7 +731,7 @@ PT3c = PT_Levelogger(allbaro,'PT3c Dam',XL,'PT-Fagaalu3c',0)
 PT3d = PT_Levelogger(allbaro,'PT3d Dam',XL,'PT-Fagaalu3d',0)
 PT3e = PT_Levelogger(allbaro,'PT3e Dam',XL,'PT-Fagaalu3e',0)
 PT3f = PT_Levelogger(allbaro,'PT3f Dam',XL,'PT-Fagaalu3f',0)
-PT3g = PT_Levelogger(allbaro,'PT3g Dam',XL,'PT-Fagaalu3g',0)
+PT3g = PT_Levelogger(allbaro-1.5,'PT3g Dam',XL,'PT-Fagaalu3g',0)
 PT3 = pd.concat([PT3aa,PT3ab,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g])
 PT3 = PT3[PT3>0]
 
@@ -813,7 +813,7 @@ def correct_Stage(StageCorrXL,location,PTdata):
     Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     PTdata['Manual_Correction'] = Correction['z']
     PTdata['stage_corrected_Manual'] = PTdata['Uncorrected_stage']+PTdata['Manual_Correction']
-    PTdata['stage']=PTdata['stage_corrected_Manual'].where(PTdata['stage_corrected_Manual']>0,PTdata['stage']).round(0)
+    PTdata['stage']=PTdata['stage_corrected_Manual'].where(PTdata['stage_corrected_Manual']>0,PTdata['stage'])#.round(0)
     return PTdata
 StageCorrXL = pd.ExcelFile(datadir+'Q/StageCorrection.xlsx')    
 PT1 = correct_Stage(StageCorrXL,'LBJ',PT1)
@@ -1915,7 +1915,7 @@ LBJ_OBS_2013rating = T_SSC_LBJ_OBS_2013[0]
 T_SSC_LBJ_OBS_2014=NTU_SSCrating(LBJ_OBSb,SSC,'LBJ-OBS','LBJ','15Min',log=False)
 LBJ_OBS_2014rating = T_SSC_LBJ_OBS_2014[0]
 ## LBJ OBS ALL
-T_SSC_LBJ_OBS_2014=NTU_SSCrating(LBJ_OBSb,SSC,'LBJ-OBS','LBJ','15Min',log=False)
+T_SSC_LBJ_OBS=NTU_SSCrating(LBJ_OBSb,SSC,'LBJ-OBS','LBJ','15Min',log=False)
 LBJ_OBSrating = T_SSC_LBJ_OBS_2014[0]
 
 

@@ -405,9 +405,9 @@ def plotPT3stageYears(Pt,storm_threshold,show=False):
     stage2013.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
     stage2014.axhline(LBJ_storm_threshold,ls='--',linewidth=0.2,c='k',label='Storm threshold')
     ## Baseflow level
-    stage2012.axhline(6,ls='-',c='b',label='Baseflow')
-    stage2013.axhline(6,ls='-',c='b',label='Baseflow')
-    stage2014.axhline(6,ls='-',c='b',label='Baseflow')
+    stage2012.axhline(4,ls='-',c='b',label='Baseflow')
+    stage2013.axhline(4,ls='-',c='b',label='Baseflow')
+    stage2014.axhline(4,ls='-',c='b',label='Baseflow')
 
     ## Shade field seasons
     shade_color='grey'
@@ -429,7 +429,7 @@ def plotPT3stageYears(Pt,storm_threshold,show=False):
     if show==True:
         plt.show()
     return
-plotPT3stageYears(PT3,DAM_storm_threshold,show=True)
+#plotPT3stageYears(PT3,DAM_storm_threshold,show=True)
 
 ### Compare Discharg Ratings
 def plotQratingDAM_ALL(show=False,log=False,save=False): ## Rating Curves
