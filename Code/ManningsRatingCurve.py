@@ -182,7 +182,7 @@ def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):
     DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r,'Man_n':Man_n,'vel':v,'Q':q},index=stage_series.index)
     return DF
 LBJ_stage_reduced =Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
-Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',stage_series=LBJ_stage_reduced,Slope=0.016,Manning_n='Jarrett',k=.06/.08)
+Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',stage_series=LBJ_stage_reduced,Slope=0.016,Manning_n='Jarrett',k=1)
     
 def Man_plot(Man_Series,location=''):
     

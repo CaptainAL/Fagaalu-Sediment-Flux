@@ -884,6 +884,49 @@ def SeparateHydrograph(hydrodata='stage',minimum_length=8):
 LBJ_storm_threshold = PT1['stage'].describe()[1]+PT1['stage'].describe()[2] 
 DAM_storm_threshold = PT3['stage'].describe()[1]+PT3['stage'].describe()[2]
 
+### SAVE Storm Intervals for LATER
+LBJ_StormIntervals.to_excel(datadir+'Q/StormIntervals/LBJ_StormIntervals.xlsx')
+QUARRY_StormIntervals.to_excel(datadir+'Q/StormIntervals/QUARRY_StormIntervals.xlsx')
+DAM_StormIntervals.to_excel(datadir+'Q/StormIntervals/DAM_StormIntervals.xlsx')
+
+### Check PT against reference staff gage at LBJ
+LBJfieldnotes = FieldNotes('LBJstage',1,fieldbookdata)
+LBJfieldnotesStage = pd.DataFrame(LBJfieldnotes['RefGageHeight(cm)'].resample('5Min',how='first').dropna(),columns=['RefGageHeight(cm)'])
+LBJfieldnotesStage =LBJfieldnotesStage.shift(0)
+LBJfieldnotesStage['Uncorrected_stage']=PT1['Uncorrected_stage']
+LBJfieldnotesStage['GH-Uncorrected_stage']=LBJfieldnotesStage['RefGageHeight(cm)']-LBJfieldnotesStage['Uncorrected_stage']
+LBJfieldnotesStage['Corrected_stage']=PT1['stage']
+LBJfieldnotesStage['GH-Corrected_stage']=LBJfieldnotesStage['RefGageHeight(cm)']-LBJfieldnotesStage['Corrected_stage']
+
+PT1['GH Correction']=LBJfieldnotesStage['GH-Uncorrected_stage']
+PT1['GH Correction Int']= PT1['GH Correction'].interpolate()
+PT1['stage_corrected_RefGage'] = PT1['Uncorrected_stage']+PT1['GH Correction Int']
+
+def compare_PT_Ref():
+    fig, (uncorr, corr) = plt.subplots(2,1,sharex=True,sharey=True)
+    LBJfieldnotesStage['GH-Uncorrected_stage'].plot(ax=uncorr,ls='None',marker='.',c='r',label='All Gage Height Readings (uncorrected)')
+    LBJfieldnotesStage['GH-Uncorrected_stage'][LBJfieldnotesStage['Uncorrected_stage']<LBJ_storm_threshold].plot(ax=uncorr,ls='None',marker='.',c='b',label='Baseflow Gage Height Readings (uncorrected)')
+    uncorr.legend(loc='best'), uncorr.set_title('Uncorrected PT stage')
+    LBJfieldnotesStage['GH-Corrected_stage'].plot(ax=corr, ls='None',marker='.',c='r',label='All Gage Height Readings (corrected)')
+    LBJfieldnotesStage['GH-Corrected_stage'][LBJfieldnotesStage['Corrected_stage']<LBJ_storm_threshold].plot(ax=corr,ls='None',marker='.',c='b',label='Baseflow Gage Height Readings (corrected)')
+    corr.legend(loc='best'), corr.set_title('Corrected PT stage')
+    return
+
+def press_diff():   
+    fig, (baro, pt, diff) = plt.subplots(3,1,sharex=True)
+    allbaro['Baropress'].plot(ax=baro,c='k')
+    allbaro['NDBCbaro'].plot(ax=baro,c='r')
+    allbaro['FPbaro'].plot(ax=baro,c='g')
+    
+    PT1['Pressure'].plot(ax=baro,c='b')
+    PT1['stage'].plot(ax=pt,c='b')
+    press_diff_baseflow = PT1['Pressure'][PT1['stage']<10]-PT1['barodata']
+    m.rolling_mean(press_diff_baseflow,window=96).plot(ax=diff)
+    diff.axhline(0.63,ls='--',linewidth=1,c='b',label='Baseflow')
+    plt.legend()
+    return
+
+
 ## Take just one definition of Storm Intervals....
 if StormIntervalDef=='LBJ':
     print 'Storm intervals defined at LBJ'
@@ -952,50 +995,6 @@ if StormIntervalDef=='User':
     DAMstormintervalsXL = pd.ExcelFile(datadir+'DAM_StormIntervals_filtered.xlsx')
     DAM_StormIntervals = DAMstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
     QUARRY_StormIntervals, DAM_StormIntervals = DAM_StormIntervals, DAM_StormIntervals
-
-
-### SAVE Storm Intervals for LATER
-LBJ_StormIntervals.to_excel(datadir+'Q/StormIntervals/LBJ_StormIntervals.xlsx')
-QUARRY_StormIntervals.to_excel(datadir+'Q/StormIntervals/QUARRY_StormIntervals.xlsx')
-DAM_StormIntervals.to_excel(datadir+'Q/StormIntervals/DAM_StormIntervals.xlsx')
-
-### Check PT against reference staff gage at LBJ
-LBJfieldnotes = FieldNotes('LBJstage',1,fieldbookdata)
-LBJfieldnotesStage = pd.DataFrame(LBJfieldnotes['RefGageHeight(cm)'].resample('5Min',how='first').dropna(),columns=['RefGageHeight(cm)'])
-LBJfieldnotesStage =LBJfieldnotesStage.shift(0)
-LBJfieldnotesStage['Uncorrected_stage']=PT1['Uncorrected_stage']
-LBJfieldnotesStage['GH-Uncorrected_stage']=LBJfieldnotesStage['RefGageHeight(cm)']-LBJfieldnotesStage['Uncorrected_stage']
-LBJfieldnotesStage['Corrected_stage']=PT1['stage']
-LBJfieldnotesStage['GH-Corrected_stage']=LBJfieldnotesStage['RefGageHeight(cm)']-LBJfieldnotesStage['Corrected_stage']
-
-PT1['GH Correction']=LBJfieldnotesStage['GH-Uncorrected_stage']
-PT1['GH Correction Int']= PT1['GH Correction'].interpolate()
-PT1['stage_corrected_RefGage'] = PT1['Uncorrected_stage']+PT1['GH Correction Int']
-
-def compare_PT_Ref():
-    fig, (uncorr, corr) = plt.subplots(2,1,sharex=True,sharey=True)
-    LBJfieldnotesStage['GH-Uncorrected_stage'].plot(ax=uncorr,ls='None',marker='.',c='r',label='All Gage Height Readings (uncorrected)')
-    LBJfieldnotesStage['GH-Uncorrected_stage'][LBJfieldnotesStage['Uncorrected_stage']<LBJ_storm_threshold].plot(ax=uncorr,ls='None',marker='.',c='b',label='Baseflow Gage Height Readings (uncorrected)')
-    uncorr.legend(loc='best'), uncorr.set_title('Uncorrected PT stage')
-    LBJfieldnotesStage['GH-Corrected_stage'].plot(ax=corr, ls='None',marker='.',c='r',label='All Gage Height Readings (corrected)')
-    LBJfieldnotesStage['GH-Corrected_stage'][LBJfieldnotesStage['Corrected_stage']<LBJ_storm_threshold].plot(ax=corr,ls='None',marker='.',c='b',label='Baseflow Gage Height Readings (corrected)')
-    corr.legend(loc='best'), corr.set_title('Corrected PT stage')
-    return
-
-def press_diff():   
-    fig, (baro, pt, diff) = plt.subplots(3,1,sharex=True)
-    allbaro['Baropress'].plot(ax=baro,c='k')
-    allbaro['NDBCbaro'].plot(ax=baro,c='r')
-    allbaro['FPbaro'].plot(ax=baro,c='g')
-    
-    PT1['Pressure'].plot(ax=baro,c='b')
-    PT1['stage'].plot(ax=pt,c='b')
-    press_diff_baseflow = PT1['Pressure'][PT1['stage']<10]-PT1['barodata']
-    m.rolling_mean(press_diff_baseflow,window=96).plot(ax=diff)
-    diff.axhline(0.63,ls='--',linewidth=1,c='b',label='Baseflow')
-    plt.legend()
-    return
-
 
 
 #### ..
@@ -1235,21 +1234,34 @@ def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):
 ## Read LBJ_Man Discharge from .csv, or calculate new if needed
 if 'LBJ_Man' not in locals():
     try:
-        print 'Calculate Mannings Q for LBJ'
+        print 'Loading Mannings Q for DAM from CSV'
+        LBJ_Man_reduced = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
         LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
     except:
+        print 'Calculate Mannings Q for LBJ and saving to CSV'
+        LBJ_S, LBJ_n, LBJ_k = 0.016, 'Jarrett', .06/.08
+        LBJ_S, LBJ_n, LBJ_k = 0.016, .075, 1
         LBJ_stage_reduced = Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
-        LBJ_Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=0.016,Manning_n='Jarrett',k=.06/.08,stage_series=LBJ_stage_reduced)
+        LBJ_Man_reduced = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_series=LBJ_stage_reduced)
+        LBJ_Man_reduced.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
+        LBJ_stage= Fagaalu_stage_data['LBJ']+5
+        LBJ_Man= Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_series=LBJ_stage)
         LBJ_Man.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
         pass
 ## Read DAM_Man Discharge from .csv, or calculate new if needed
 if 'DAM_Man' not in locals():
     try:
-        print 'Calculate Mannings Q for DAM'
+        print 'Loading Mannings Q for DAM from CSV'
+        DAM_Man_reduced = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/DAM_Man_reduced.csv')
         DAM_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/DAM_Man.csv')
     except:
+        print 'Calculate Mannings Q for DAM and saving to CSV'
+        DAM_S, DAM_n,  DAM_k = 0.03, 'Jarrett', .025/.06
         DAM_stage_reduced = Fagaalu_stage_data['Dam'].dropna().round(0).drop_duplicates().order()
-        DAM_Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',k=.025/.06,stage_series=DAM_stage_reduced)
+        DAM_Man_reduced = Mannings_Series(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=DAM_S,Manning_n=DAM_n,k=DAM_k,stage_series=DAM_stage_reduced)
+        DAM_Man_reduced.to_csv(datadir+'Q/Manning_Q_files/DAM_Man_reduced.csv')
+        DAM_stage = Fagaalu_stage_data['Dam']
+        DAM_Man= Mannings_Series(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',k=.025/.06,stage_series=DAM_stage)
         DAM_Man.to_csv(datadir+'Q/Manning_Q_files/DAM_Man.csv')
         pass 
 
@@ -1259,8 +1271,7 @@ if 'DAM_Man' not in locals():
 ## LBJ AV measurements
 ## Mannings parameters for A-ManningV
 Slope = 0.0161 # m/m
-LBJ_n=0.080 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
-LBJ_n='Jarrett'
+LBJ_n=0.075 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
 LBJstageDischarge = AV_RatingCurve(datadir+'Q/Flow_Files/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=LBJ_n,trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
 LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
 LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
@@ -1361,8 +1372,8 @@ def Manning_AV_r2(Man_Series,AV_Series):
     ss_res = y_res.sum()
     r2 = 1-(ss_res/ss_tot)
     return  r2
-LBJ_Man_r2 = Manning_AV_r2(LBJ_Man,LBJstageDischarge)
-DAM_Man_r2 = Manning_AV_r2(DAM_Man,DAMstageDischarge)
+LBJ_Man_r2 = Manning_AV_r2(LBJ_Man_reduced,LBJstageDischarge)
+DAM_Man_r2 = Manning_AV_r2(DAM_Man_reduced,DAMstageDischarge)
 
 def HEC_AV_r2(HEC_Series,AV_Series):
     # LBJ Mannings = y predicted
@@ -1417,7 +1428,7 @@ def plotQratingLBJ(show=False,log=False,save=False): ## Rating Curves
     #LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)
     #site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
     ## LBJ Mannings from stream survey
-    LBJ_ManQ, LBJ_Manstage = LBJ_Man['Q']*1000, LBJ_Man['stage']*100
+    LBJ_ManQ, LBJ_Manstage = LBJ_Man_reduced['Q']*1000, LBJ_Man_reduced['stage']*100
     site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='r',label='Mannings '+r'$r^2$'+"%.2f"%LBJ_Man_r2)
     site_lbj_zoom.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='r',label='Mannings')
     ## Storm Thresholds
@@ -1481,7 +1492,7 @@ def plotQratingDAM(show=False,log=False,save=False): ## Rating Curves
     ## DAM  FLUME
     
     ## DAM Mannings from stream survey
-    DAM_ManQ, DAM_Manstage = DAM_Man['Q']*1000,DAM_Man['stage']*100
+    DAM_ManQ, DAM_Manstage = DAM_Man_reduced['Q']*1000,DAM_Man_reduced['stage']*100
     site_dam.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM '+r'$r^2$'+"%.2f"%DAM_Man_r2)   
     site_dam_zoom.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM')   
     ## Label point-click
@@ -1543,10 +1554,10 @@ DAM['Q-AVLog']=(a)*(DAM['stage']**b)
 DAM['Q-HEC']= HEC_piecewise(DAM['stage'])
 
 #### CHOOSE Q RATING CURVE
-LBJ['Q']= LBJ['Q-AVLog']
-print 'LBJ Q from AV Power Law'
-DAM['Q']= DAM['Q-AVLog']
-print 'DAM Q from Mannings and Surveyed Cross Section'
+LBJ['Q']= LBJ['Q-Mannings']
+print 'LBJ Q from Mannings and Surveyed Cross Section'
+DAM['Q']= DAM['Q-HEC']
+print 'DAM Q from HEC-RAS and Surveyed Cross Section'
 
 #### Calculate Q for QUARRY TODO
 QUARRY = pd.DataFrame((DAM['Q']/.9)*1.17) ## Q* from DAM x Area Quarry
@@ -1564,9 +1575,9 @@ DAMq= (DAM*900)## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
 DAMq['stage']=PT3['stage'] ## put unaltered stage back in
 
 def plotdischargeintervals(fig,ax,start,stop):
-    LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-AV PowerLaw)')
+    LBJ['Q'][start:stop].dropna().plot(ax=ax,c='r',label='LBJ (Q-Mannings)')
     ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='r')
-    DAM['Q'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-Mannings)')
+    DAM['Q'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-HEC-RAS)')
     ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='g')
     ax.set_ylim(0,2600)
     return
@@ -1585,7 +1596,7 @@ def QYears(show=False):
     if show==True:
         plt.show()
     return
-#QYears(True)
+QYears(True)
     
     
 ### ..
