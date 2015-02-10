@@ -302,6 +302,8 @@ fieldstart2012, fieldstop2012 =  dt.datetime(2012,1,5,0,0), dt.datetime(2012,3,2
 fieldstart2013, fieldstop2013 =  dt.datetime(2013,2,4,0,0), dt.datetime(2013,7,17,11,59)    
 fieldstart2014a, fieldstop2014a =  dt.datetime(2014,1,10,0,0), dt.datetime(2014,3,7,11,59)
 fieldstart2014b, fieldstop2014b =  dt.datetime(2014,9,29,0,0), dt.datetime(2015,1,12,11,59)     
+## Mitigation
+Mitigation = dt.datetime(2014,10,1,0,0)
 
 if 'XL' not in locals():
     print 'opening MASTER_DATA excel file...'+dt.datetime.now().strftime('%H:%M:%S')
@@ -884,11 +886,6 @@ def SeparateHydrograph(hydrodata='stage',minimum_length=8):
 LBJ_storm_threshold = PT1['stage'].describe()[1]+PT1['stage'].describe()[2] 
 DAM_storm_threshold = PT3['stage'].describe()[1]+PT3['stage'].describe()[2]
 
-### SAVE Storm Intervals for LATER
-LBJ_StormIntervals.to_excel(datadir+'Q/StormIntervals/LBJ_StormIntervals.xlsx')
-QUARRY_StormIntervals.to_excel(datadir+'Q/StormIntervals/QUARRY_StormIntervals.xlsx')
-DAM_StormIntervals.to_excel(datadir+'Q/StormIntervals/DAM_StormIntervals.xlsx')
-
 ### Check PT against reference staff gage at LBJ
 LBJfieldnotes = FieldNotes('LBJstage',1,fieldbookdata)
 LBJfieldnotesStage = pd.DataFrame(LBJfieldnotes['RefGageHeight(cm)'].resample('5Min',how='first').dropna(),columns=['RefGageHeight(cm)'])
@@ -996,6 +993,10 @@ if StormIntervalDef=='User':
     DAM_StormIntervals = DAMstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
     QUARRY_StormIntervals, DAM_StormIntervals = DAM_StormIntervals, DAM_StormIntervals
 
+### SAVE Storm Intervals for LATER
+LBJ_StormIntervals.to_excel(datadir+'Q/StormIntervals/LBJ_StormIntervals.xlsx')
+QUARRY_StormIntervals.to_excel(datadir+'Q/StormIntervals/QUARRY_StormIntervals.xlsx')
+DAM_StormIntervals.to_excel(datadir+'Q/StormIntervals/DAM_StormIntervals.xlsx')
 
 #### ..
 #### STAGE TO DISCHARGE ####
@@ -1286,41 +1287,10 @@ LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDisch
 ## Power with Mannings and measured Area
 LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
 
-### Fit nonlinear wiht intercept zero
-#for _ in range(3):## add zero/zero intercept
-#    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AV(L/sec)':0},index=[np.random.rand()])) 
-#LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=3,interceptZero=False)  
-#LBJstageDischarge=LBJstageDischarge.dropna() ## get rid of zero/zero interctp
-#
-#for _ in range(3):## add zero/zero intercept
-#    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AManningV(L/sec)':0},index=[np.random.rand()])) 
-#LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],order=3,interceptZero=False)
-#LBJstageDischarge=LBJstageDischarge.dropna() ## get rid of zero/zero interctp
-
-## LBJ: Q from OrangePeel method 
-#from notebook import OrangePeel
-def OrangePeel(sheet,headerrow,Book):
-    def my_parser(x,y):
-        y = str(int(y))
-        hour=y[:-2]
-        minute=y[-2:]
-        time=dt.time(int(hour),int(minute))
-        parsed=dt.datetime.combine(x,time)
-        #print parsed
-        return parsed
-    opfile = pd.ExcelFile(Book)
-    orangepeel = opfile.parse(sheet,header=headerrow,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
-    orangepeel = orangepeel.drop(orangepeel.columns[16:],1)
-    orangepeel = orangepeel[orangepeel['AVG L/sec']>=0]
-    return orangepeel
-orangepeel = OrangePeel('OrangePeel',1,datadir+'Q/Fagaalu-StageDischarge.xlsx')
-orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT]))
-
-
 #### DAM Stage-Discharge
 Slope= 0.3
-DAM_n=.033
 DAM_n = 'Jarrett'
+DAM_k = 1
 ## DAM AV Measurements
 DAMstageDischarge = AV_RatingCurve(datadir+'Q/Flow_Files/','Dam',Fagaalu_stage_data,slope=Slope,Mannings_n=DAM_n).dropna() ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
 #DAMstageDischarge = DAMstageDischarge[10:]# throw out measurements when I didn't know how to use the flow meter very well
@@ -1408,25 +1378,10 @@ def plotQratingLBJ(show=False,log=False,save=False): ## Rating Curves
     site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='LBJ_AV 14') 
 
     ## LBJ MODELS
-    ## LBJ Linear    
-    #LBJ_AVlinear= linearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
-    #LinearFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_AVlinear '+r'$r^2$'+"%.2f"%LBJ_AVlinear['r2'])
     ## LBJ Power
     LBJ_AVpower = powerfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
     PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='g',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
     PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj_zoom,c='g',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])        
-    ## LBJ NonLinear
-    #LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)  
-    #site_lbj.plot(xy,LBJ_AVnonLinear(xy),color='r',ls='-',label='LBJ_AVnonLinear')    
-    ## LBJ Mannings Linear    
-    #LBJ_MANlinear=linearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])
-    #LinearFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='--',label='LBJ_MANlinear') ## rating from LBJ_AManningV
-    ## LBJ Manning Power    
-    #LBJ_MANpower =powerfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'])    
-    #PowerFit(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='-.',label='LBJ_MANpower') ## rating from LBJ_AManningVLog
-    ## LBJ Manning NonLinear   
-    #LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],order=2,interceptZero=False)
-    #site_lbj.plot(xy,LBJ_AManningVnonLinear(xy),color='grey',ls='-',label='LBJ_AManningVnonLinear')
     ## LBJ Mannings from stream survey
     LBJ_ManQ, LBJ_Manstage = LBJ_Man_reduced['Q']*1000, LBJ_Man_reduced['stage']*100
     site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='r',label='Mannings '+r'$r^2$'+"%.2f"%LBJ_Man_r2)
@@ -1454,7 +1409,7 @@ def plotQratingLBJ(show=False,log=False,save=False): ## Rating Curves
     show_plot(show,fig)
     savefig(save,title)
     return
-plotQratingLBJ(show=True,log=False,save=False)
+#plotQratingLBJ(show=True,log=False,save=False)
 #plotQratingLBJ(show=True,log=False,save=True)
 #plotQratingLBJ(show=True,log=True,save=True)
 #plotQratingLBJ(show=True,log=True,save=False)
@@ -1478,8 +1433,6 @@ def plotQratingDAM(show=False,log=False,save=False): ## Rating Curves
     site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
     
     ### DAM Linear
-    #DAM_AVlinear=linearfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
-    #LinearFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='--',label='DAM_AVlinear '+r'$r^2$'+"%.2f"%DAM_AVlinear['r2']) ## rating from DAM_AVLog
     ## DAM Power    
     DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
     PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
@@ -1517,7 +1470,7 @@ def plotQratingDAM(show=False,log=False,save=False): ## Rating Curves
     show_plot(show,fig)
     savefig(save,title)
     return
-plotQratingDAM(show=True,log=False,save=False)
+#plotQratingDAM(show=True,log=False,save=False)
 #plotQratingDAM(show=True,log=False,save=True)
 #plotQratingDAM(show=True,log=True,save=True)
 #plotQratingDAM(show=True,log=True,save=False)
@@ -1528,17 +1481,11 @@ plotQratingDAM(show=True,log=False,save=False)
 LBJ = DataFrame(PT1,columns=['stage']) ## Build DataFrame with all stage records for location (cm)
 ## Mannings
 LBJ['Q-Mannings'] = LBJ_Man['Q']*1000
-## Linear Models
-LBJ['Q-AV']=(LBJ['stage']*LBJ_AV.beta[0]) + LBJ_AV.beta[1] ## Calculate Q from AV rating (L/sec)
-LBJ['Q-AManningV']= (LBJ['stage']*LBJ_AManningV.beta[0]) + LBJ_AManningV.beta[1] ## Calculate Q from A-Mannings rating (L/sec)
 ## Power Models
 a,b = 10**LBJ_AVLog.beta[1], LBJ_AVLog.beta[0]# beta[1] is the intercept = log10(a), so a = 10**beta[1] # beta[0] is the slope = b
 LBJ['Q-AVLog'] = a * (LBJ['stage']**b)
 a,b = 10**LBJ_AManningVLog.beta[1], LBJ_AManningVLog.beta[0]
 LBJ['Q-AManningVLog'] = a*(LBJ['stage']**b)
-## NonLinear Models
-#LBJ['Q-AVnonLinear'] = LBJ_AVnonLinear(LBJ['stage'])
-#LBJ['Q-AManningVnonLinear']= LBJ_AManningVnonLinear(LBJ['stage'])
 
 ## Calculate Q for DAM
 ## Stage
@@ -1579,7 +1526,7 @@ def plotdischargeintervals(fig,ax,start,stop):
     ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='r')
     DAM['Q'][start:stop].dropna().plot(ax=ax,c='g',ls='-',label='DAM (Q-HEC-RAS)')
     ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='g')
-    ax.set_ylim(0,2600)
+    ax.set_ylim(0,LBJ['Q'].max())
     return
     
 def QYears(show=False):
@@ -1596,7 +1543,7 @@ def QYears(show=False):
     if show==True:
         plt.show()
     return
-QYears(True)
+#QYears(True)
     
     
 ### ..
@@ -1618,10 +1565,12 @@ def loadSSC(SSCXL,sheet='ALL_MASTER'):
         return parsed
             
     SSC= SSCXL.parse(sheet,header=0,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
+    SSC['NTU'] = SSC['NTU'].round(0)
     return SSC
 SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
 SSC = loadSSC(SSCXL,'ALL_MASTER')
 SSC= SSC[SSC['SSC (mg/L)']>0]
+SSC = SSC[SSC.index<Mitigation]
 
 #### SSC Grab sample ANALYSIS
 SampleCounts = DataFrame(data=[str(val) for val in pd.unique(SSC['Location'])],columns=['Location'])
@@ -1636,45 +1585,98 @@ SampleCounts= SampleCounts.drop(SampleCounts[SampleCounts['Location'].str.starts
 SampleCounts.index=range(1,len(SampleCounts)+1)
 
 ## SSC Boxplots and Discharge Concentration
-LBJgrab = SSC[SSC['Location'].isin(['LBJ'])].resample('15Min',fill_method='pad',limit=0)
-QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])].resample('15Min',fill_method='pad',limit=0)
-R2grab =SSC[SSC['Location'].isin(['R2'])].resample('15Min',fill_method='pad',limit=0)
-DAMgrab = SSC[SSC['Location'].isin(['DAM'])].resample('15Min',fill_method='pad',limit=0)
-GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'],LBJgrab['SSC (mg/L)']],axis=1)
-GrabSamples.columns = ['DAM','QUARRY','LBJ']
-GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
-GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
-GrabSampleCategories = np.concatenate([[1]*len(DAMgrab['SSC (mg/L)']),[2]*len(QUARRYgrab['SSC (mg/L)']),[3]*len(LBJgrab['SSC (mg/L)'])])
+## LBJ
+LBJgrab = SSC[SSC['Location'].isin(['LBJ'])].resample('5Min',fill_method='pad',limit=0)
+LBJ_grab_count = SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='LBJ'].ix[2] ## the # in .ix[#] is the row number in SampleCounts above
+#LBJ_R2 = SSC[SSC['Location'].isin(['LBJ R2'])].resample('5Min',fill_method='pad',limit=0)
+#LBJ_R2_grab_count = SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='LBJ R2'].ix[12] ## the # in .ix[#] is the row number in SampleCounts above
+## QUARRY (DT)
+QUARRYgrab =SSC[SSC['Location'].isin(['DT'])].resample('5Min',fill_method='pad',limit=0)
+QUARRY_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DT'].ix[3] ## the # in .ix[#] is the row number in SampleCounts above
+QUARRY_R2 =SSC[SSC['Location'].isin(['R2'])].resample('5Min',fill_method='pad',limit=0)
+QUARRY_R2_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='R2'].ix[5] ## the # in .ix[#] is the row number in SampleCounts above
+## DAM
+DAMgrab = SSC[SSC['Location'].isin(['DAM'])].resample('5Min',fill_method='pad',limit=0)
+DAM_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DAM'].ix[1] ## the # in .ix[#] is the row number in SampleCounts above
+
 
 def plotSSCboxplots(show=False):
-    mpl.rc('lines',markersize=300)
-    font = {'family' : 'normal','weight' : 'normal','size'   : 20}
-    mpl.rc('font', **font)  
-    fig, (ax1,ax2)=plt.subplots(1,2)
-    GrabSamples.columns = ['FOREST','QUARRY','VILLAGE']
-    GrabSamples.boxplot(ax=ax1)
-    GrabSamples.boxplot(ax=ax2)
+    ## Concatenate
+    GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'],LBJgrab['SSC (mg/L)']],axis=1)
+    GrabSamples.columns = ['DAM','QUARRY','LBJ']
+    GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
+    GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
+    GrabSampleCategories = np.concatenate([[1]*len(DAMgrab['SSC (mg/L)']),[2]*len(QUARRYgrab['SSC (mg/L)']),[3]*len(LBJgrab['SSC (mg/L)'])])
     
-    ax1.scatter(GrabSampleCategories,GrabSampleVals,s=40,marker='+',label='SSC (mg/L)')
+    #mpl.rc('lines',markersize=300)
+    fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,4))
+    GrabSamples.columns = ['FOREST','QUARRY','VILLAGE']
+    bp1 = GrabSamples.boxplot(ax=ax1)
+    bp2 = GrabSamples.boxplot(ax=ax2)
+    plt.setp(bp1['boxes'], color='black'), plt.setp(bp2['boxes'], color='black')
+    plt.setp(bp1['whiskers'], color='black'), plt.setp(bp2['whiskers'], color='black')
+    plt.setp(bp1['fliers'], color='grey', marker='+'), plt.setp(bp2['fliers'], color='grey', marker='+') 
+    plt.setp(bp1['medians'], color='black', marker='+'), plt.setp(bp2['medians'], color='black', marker='+') 
+        
+    ax1.scatter(GrabSampleCategories,GrabSampleVals,s=40,marker='+',c='grey',label='SSC (mg/L)')
     ax1.legend()
     ax2.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')
-    ax1.set_ylim(0,4000), ax2.set_ylim(0,300)    
+    ax1.set_ylim(0,4000), ax2.set_ylim(0,500)    
     ax1.set_ylabel('SSC (mg/L)'),ax1.set_xlabel('Location'),ax2.set_xlabel('Location')
-    plt.suptitle("Suspended Sediment Concentrations at sampling locations in Fag'alu",fontsize=16)
+    #plt.suptitle("Suspended Sediment Concentrations at sampling locations in Fag'alu",fontsize=16)
     plt.legend()
+    plt.tight_layout(pad=0.1)
     plt.draw()
     if show==True:
         plt.show()
     return
 #plotSSCboxplots(True)
 
-### Build data for Sediment Rating Curve    
+
+    
+def plotSSCboxplots_with_R2(show=False):
+    ## Add R2 to Quarry
+    ## Add samples from Autosampler at QUARRY
+    QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])].resample('5Min',fill_method='pad',limit=0)
+    ## Concatenate
+    GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'],LBJgrab['SSC (mg/L)']],axis=1)
+    GrabSamples.columns = ['DAM','QUARRY','LBJ']
+    GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
+    GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
+    GrabSampleCategories = np.concatenate([[1]*len(DAMgrab['SSC (mg/L)']),[2]*len(QUARRYgrab['SSC (mg/L)']),[3]*len(LBJgrab['SSC (mg/L)'])])
+    
+    #mpl.rc('lines',markersize=300)
+    fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,4))
+    GrabSamples.columns = ['FOREST','QUARRY','VILLAGE']
+    bp1 = GrabSamples.boxplot(ax=ax1)
+    bp2 = GrabSamples.boxplot(ax=ax2)
+    plt.setp(bp1['boxes'], color='black'), plt.setp(bp2['boxes'], color='black')
+    plt.setp(bp1['whiskers'], color='black'), plt.setp(bp2['whiskers'], color='black')
+    plt.setp(bp1['fliers'], color='grey', marker='+'), plt.setp(bp2['fliers'], color='grey', marker='+') 
+    plt.setp(bp1['medians'], color='black', marker='+'), plt.setp(bp2['medians'], color='black', marker='+') 
+        
+    ax1.scatter(GrabSampleCategories,GrabSampleVals,s=40,marker='+',c='grey',label='SSC (mg/L)')
+    ax1.legend()
+    ax2.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')
+    ax1.set_ylim(0,4000), ax2.set_ylim(0,500)    
+    ax1.set_ylabel('SSC (mg/L)'),ax1.set_xlabel('Location'),ax2.set_xlabel('Location')
+    #plt.suptitle("Suspended Sediment Concentrations at sampling locations in Fag'alu",fontsize=16)
+    plt.legend()
+    plt.tight_layout(pad=0.1)
+    plt.draw()
+    if show==True:
+        plt.show()
+    return
+#plotSSCboxplots_with_R2(True)
+
+
+### Build data for Discharge/Concentration Rating Curve    
 dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM']['SSC (mg/L)']).resample('15Min')
 dam_ssc['Q']=DAM['Q']
 dam_ssc = dam_ssc.dropna()
 dam_ssc2012,dam_ssc2013,dam_ssc2014 = dam_ssc[start2012:stop2012],dam_ssc[start2013:stop2013],dam_ssc[start2014:stop2014]
 
-quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])]['SSC (mg/L)']).resample('15Min')
+quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT'])]['SSC (mg/L)']).resample('15Min')
 quarry_ssc['Q']=QUARRY['Q']
 quarry_ssc =quarry_ssc.dropna()
 quarry2012,quarry2013,quarry2014 = quarry_ssc[start2012:stop2012],quarry_ssc[start2013:stop2013],quarry_ssc[start2014:stop2014]
@@ -1685,14 +1687,15 @@ lbj_ssc=lbj_ssc.dropna()
 lbj_ssc2012,lbj_ssc2013,lbj_ssc2014 = lbj_ssc[start2012:stop2012],lbj_ssc[start2013:stop2013],lbj_ssc[start2014:stop2014]
 
 damQC = pd.ols(y=dam_ssc['SSC (mg/L)'],x=dam_ssc['Q'])
+quarQC =  pd.ols(y=quarry_ssc['SSC (mg/L)'],x=quarry_ssc['Q'])
 lbjQC = pd.ols(y=lbj_ssc['SSC (mg/L)'],x=lbj_ssc['Q'])
 
 def plotQvsC(ms=6,show=False,log=False,save=True):
     #fig, ((down_ex,up_ex),(down,up)) = plt.subplots(2,2,sharey='row',sharex='col') 
-    fig=plt.figure()
-    gs = gridspec.GridSpec(2,2,height_ratios=[1,3])
-    up_ex,down_ex = plt.subplot(gs[0]),plt.subplot(gs[1])
-    up,down = plt.subplot(gs[2],sharex=up_ex),plt.subplot(gs[3],sharex=down_ex)
+    fig=plt.figure(figsize=(8,4))
+    gs = gridspec.GridSpec(2,3,height_ratios=[1,2])
+    up_ex, quar_ex, down_ex = plt.subplot(gs[0]),plt.subplot(gs[1]),plt.subplot(gs[2])
+    up, quar, down = plt.subplot(gs[3],sharex=up_ex),plt.subplot(gs[4],sharex=quar_ex),plt.subplot(gs[5],sharex=down_ex)
     mpl.rc('lines',markersize=ms)
     ## plot LBJ samples
     down.plot(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'.',c='r',label='VILLAGE 2012')
@@ -1702,12 +1705,12 @@ def plotQvsC(ms=6,show=False,log=False,save=True):
     down_ex.plot(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'.',c='y',label='VILLAGE 2013')    
     down_ex.plot(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'.',c='g',label='VILLAGE 2014')
     ## plot quarry samples
-    down.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'^',markersize=ms/2,c='r',label='QUARRY 2012')
-    down.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',markersize=ms/2,c='y',label='QUARRY 2013')
-    down.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'^',markersize=ms/2,c='g',label='QUARRY 2014')
-    down_ex.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'^',markersize=ms/2,c='r',label='QUARRY 2012')
-    down_ex.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',markersize=ms/2,c='y',label='QUARRY 2013')    
-    down_ex.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'^',markersize=ms/2,c='g',label='QUARRY 2014')
+    quar.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'.',c='r',label='QUARRY 2012')
+    quar.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'.',c='y',label='QUARRY 2013')
+    quar.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'.',c='g',label='QUARRY 2014')
+    quar_ex.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'.',c='r',label='QUARRY 2012')
+    quar_ex.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'.',c='y',label='QUARRY 2013')    
+    quar_ex.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'.',c='g',label='QUARRY 2014')
     ## plot DAM samples
     up.plot(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'.',c='r',label='FOREST2012')
     up.plot(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'.',c='y',label='FOREST 2013')
@@ -1716,39 +1719,39 @@ def plotQvsC(ms=6,show=False,log=False,save=True):
     up_ex.plot(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'.',c='y',label='FOREST 2013')
     up_ex.plot(dam_ssc2014['Q'],dam_ssc2014['SSC (mg/L)'],'.',c='g',label='FOREST 2014')
     ## plot a line marking storm threshold and label it
-    up.axvline(x=54,ls='--',color='k'),down.axvline(x=150,ls='--',color='k')  
-    up_ex.axvline(x=54,ls='--',color='k'),down_ex.axvline(x=150,ls='--',color='k')  
-    up.text(54,800,'storm threshold',rotation='vertical'), down.text(150,800,'storm threshold',rotation='vertical')      
-
-    plotregressionline(lbj_ssc2013['Q'],lbjQC,down,'k--')
-    plotregressionline(dam_ssc2013['Q'],damQC,up,'k--')
-       
-    down.set_ylim(0,1200),up.set_ylim(0,1200)
-    down.set_xlim(0,lbj_ssc['Q'].max()+100),up.set_xlim(0,lbj_ssc['Q'].max()+100)
-    down_ex.set_xlim(0,2000),up_ex.set_xlim(0,2000)
-    down_ex.set_ylim(1500,13000),up_ex.set_ylim(1500,13000)
+    up.axvline(x=54,ls='--',color='k'),quar.axvline(x=54,ls='--',color='k'),down.axvline(x=150,ls='--',color='k')  
+    up_ex.axvline(x=54,ls='--',color='k'),quar_ex.axvline(x=54,ls='--',color='k'),down_ex.axvline(x=150,ls='--',color='k')  
+    up.text(54,800,'storm threshold',rotation='vertical'), quar.text(54,800,'storm threshold',rotation='vertical'), down.text(150,800,'storm threshold',rotation='vertical')      
+    ## Regression 
+    plotregressionline(lbj_ssc['Q'],lbjQC,down,'k--')
+    plotregressionline(quarry_ssc['Q'],quarQC,quar,'k--')
+    plotregressionline(dam_ssc['Q'],damQC,up,'k--')
+    ## Limits
+    down.set_ylim(0,1200), quar.set_ylim(0,1200), up.set_ylim(0,1200)
+    down.set_xlim(0,lbj_ssc['Q'].max()+100),quar.set_xlim(0,lbj_ssc['Q'].max()+100),up.set_xlim(0,lbj_ssc['Q'].max()+100)
+    down_ex.set_xlim(0,lbj_ssc['Q'].max()+100),quar_ex.set_xlim(0,lbj_ssc['Q'].max()+100),up_ex.set_xlim(0,lbj_ssc['Q'].max()+100)
+    down_ex.set_ylim(1500,13000),quar_ex.set_ylim(1500,13000),up_ex.set_ylim(1500,13000)
     
-    down_ex.xaxis.set_visible(False),up_ex.xaxis.set_visible(False)
-    up.set_ylabel('SSC (mg/L)'), up.set_xlabel('Q (L/sec)'), down.set_xlabel('Q (L/sec)')
-    up.grid(True),up_ex.grid(True),up_ex.legend(),down.grid(True),down_ex.grid(True),down_ex.legend(ncol=2)
+    down_ex.xaxis.set_visible(False),quar_ex.xaxis.set_visible(False),up_ex.xaxis.set_visible(False)
+    up.set_ylabel('SSC (mg/L)'), up.set_xlabel('Q (L/sec)'), quar.set_xlabel('Q (L/sec)'), down.set_xlabel('Q (L/sec)')
+    up.grid(True),up_ex.grid(True),up_ex.legend()
+    quar.grid(True),quar_ex.grid(True),quar_ex.legend()
+    down.grid(True),down_ex.grid(True),down_ex.legend()
 
-    up_ex.set_title('Upstream (FOREST)'), down_ex.set_title('Downstream (QUARRY,VILLAGE)')
-
-    title='Instantaneous Q vs SSC in Fagaalu Upstream and Downstream'
-    plt.suptitle(title,fontsize=16)
+    plt.tight_layout(pad=0.1)
     logaxes(log,fig)
     show_plot(show,fig)
     savefig(save,title)
     return
-#plotQvsC(ms=20,show=True,log=False,save=False)
+#plotQvsC(ms=6,show=True,log=False,save=False)
 #plotQvsC(ms=20,show=True,log=False,save=True)
     
 ### Grab samples to SSYev   
-def InterpolateGrabSamples(Stormslist,Data,offset=0):
+def InterpolateGrabSamples(Stormslist,Data,storm_offset=0):
     Events=pd.DataFrame()
     for storm_index,storm in Stormslist.iterrows():
         #print storm
-        start = storm['start']-dt.timedelta(minutes=offset) ##if Storms are defined by stream response you have to grab the preceding precip data
+        start = storm['start']-dt.timedelta(minutes=storm_offset) ##if Storms are defined by stream response you have to grab the preceding precip data
         end= storm['end']
         #print str(start)+' '+str(end)
         try:
@@ -1762,12 +1765,12 @@ def InterpolateGrabSamples(Stormslist,Data,offset=0):
             pass
         elif len(event.dropna())>=3:
             #print 'Interpolating data for storm '+str(start)
-            event.ix[start] = 0
-            event.ix[end]=0
-            Event=pd.DataFrame({'Grab':event})
-            Event['GrabInterpolated']=Event['Grab'].interpolate('linear')
+            event.ix[start] = 1
+            event.ix[end]= 1
+            Event=pd.DataFrame({'Grab':event}).resample('15Min')
+            ## interpolation methods: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.Series.interpolate.html
+            Event['GrabInterpolated']=Event['Grab'].interpolate('time')
             Events = Events.append(Event)
-    Events = Events.resample('15Min')
         #Events = Events.drop_duplicates().reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     return Events
     
@@ -1779,9 +1782,14 @@ LBJ['Grab-SedFlux-tons/sec']=LBJ['Grab-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 
 LBJ['Grab-SedFlux-tons/15min']=LBJ['Grab-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
  
 ## QUARRY
+# Grab only
 QuarryGrabSampleSSC=InterpolateGrabSamples(QUARRY_StormIntervals, QUARRYgrab,60)   
-R2GrabSampleSSC=InterpolateGrabSamples(QUARRY_StormIntervals, R2grab,60) 
-QUARRY['Grab-SSC-mg/L'] = QuarryGrabSampleSSC['GrabInterpolated']
+# R2 only
+R2GrabSampleSSC=InterpolateGrabSamples(QUARRY_StormIntervals, QUARRY_R2,60) 
+# Combined Grab and R2
+QUARRY_grab_and_R2 = SSC[SSC['Location'].isin(['DT','R2'])].resample('5Min',fill_method='pad',limit=0)
+QUARRY_grab_and_R2_SSC = InterpolateGrabSamples(QUARRY_StormIntervals, QUARRY_grab_and_R2,60)   
+QUARRY['Grab-SSC-mg/L'] = QUARRY_grab_and_R2_SSC['GrabInterpolated']
 QUARRY['Grab-SedFlux-mg/sec']=QUARRY['Q'] * QUARRY['Grab-SSC-mg/L']# Q(L/sec) * C (mg/L)
 QUARRY['Grab-SedFlux-tons/sec']=QUARRY['Grab-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 = tons
 QUARRY['Grab-SedFlux-tons/15min']=QUARRY['Grab-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min  
@@ -1794,15 +1802,19 @@ DAM['Grab-SedFlux-tons/sec']=DAM['Grab-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 
 DAM['Grab-SedFlux-tons/15min']=DAM['Grab-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min  
 
 def plot_eventSSCinterpolated(GrabSamples,show=False):
-    mpl.rc('lines',markersize=10,linewidth=2)
-    fig, ax = plt.subplots(1)
-
-    ## Plot all grab samples
-    ax.plot_date(QUARRYgrab.index,QUARRYgrab['SSC (mg/L)'],marker='o',ls='None',color='grey', label='All Grab Samples')
-    ## Plot samples that are interpolated    
-    ax.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['Grab'],marker='o',ls='None',color='k',label='Interpolated Grab Samples')
+    mpl.rc('lines',markersize=6,linewidth=2)
+    fig, ax = plt.subplots(1,figsize=(8,6))
+    ## PLOT THE INTERPOLATION (cont. SSC)    
     ## Plot continuous SSC    
-    ax.plot_date(QuarryGrabSampleSSC.index,QuarryGrabSampleSSC['GrabInterpolated'],marker='None',ls='-',color='y',label='Interpolation')
+    ax.plot_date(QUARRY_grab_and_R2_SSC.index,QUARRY_grab_and_R2_SSC['GrabInterpolated'],marker='.',ls='-',color='y',label='Interpolated SSC')
+    ## PLOT GRAB SAMPLES
+    ## Plot all grab samples from DT
+    ax.plot_date(QUARRYgrab.index,QUARRYgrab['SSC (mg/L)'],marker='o',ls='None',color='k', label='QUARRY Grab Samples')
+    ## Plot samples from Autosampler R2
+    ax.plot_date(QUARRY_R2.index,QUARRY_R2['SSC (mg/L)'],marker='o',ls='None',color='grey', label='QUARRY AutoSampler')
+    ## PLOT  ONES USED FOR INTERPOLATION
+    ## Plot samples that are interpolated    
+    ax.plot_date(QUARRY_grab_and_R2_SSC.index,QUARRY_grab_and_R2_SSC['Grab'],marker='.',ls='None',color='r',label='Samples for Interpolation')
     
     ax.legend(loc='best'), ax.set_ylabel('SSC (mg/L)')    
     ## Shade Storms    
@@ -1832,20 +1844,51 @@ def OBS(XL,sheet='LBJ-OBS'):
     OBS=XL.parse(sheet,header=4,parse_cols='A:L',parse_dates=True,index_col=0)
     return OBS
     
+def correct_Turbidity(TurbidityCorrXL,location,Tdata):
+    print 'Correcting turbidity for '+location
+    def my_parser(x,y):
+        try:
+            y = str(int(y))
+            hour=y[:-2]
+            minute=y[-2:]
+            time=dt.time(int(hour),int(minute))
+        except:
+            time=dt.time(0,0)
+        parsed=dt.datetime.combine(x,time)
+        #print parsed
+        return parsed
+    TurbidityCorr = TurbidityCorrXL.parse(location,parse_dates=False)
+    Correction=pd.DataFrame()
+    for correction in TurbidityCorr.iterrows():
+        t1_date = correction[1]['T1_date']
+        t1_time = correction[1]['T1_time']
+        t1 = my_parser(t1_date,t1_time)
+        t2_date = correction[1]['T2_date']
+        t2_time = correction[1]['T2_time']
+        t2 = my_parser(t2_date,t2_time)
+        ntu = correction[1]['NTU']    
+        print t1,t2, ntu
+        Correction = Correction.append(pd.DataFrame({'NTU':ntu},index=pd.date_range(t1,t2,freq='15Min')))
+    Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    Tdata['Manual_Correction'] = Correction['NTU']
+    Tdata['NTU_corrected_Manual'] = Tdata['NTU']+Tdata['Manual_Correction']
+    Tdata['NTU']=Tdata['NTU_corrected_Manual'].where(Tdata['NTU_corrected_Manual']>0,Tdata['NTU'])#.round(0)
+    return Tdata
+TurbidityCorrXL = pd.ExcelFile(datadir+'T/TurbidityCorrection.xlsx')    
+  
 ## Turbidimeter Data DAM
 DAM_TS3K = TS3000(XL,'DAM-TS3K')
 DAM_TS3K = DAM_TS3K[DAM_TS3K>=0]
 DAM_YSI = YSI(XL,'DAM-YSI')
 ## Correct negative NTU values
-DAM_YSI['NTU'][dt.datetime(2013,6,1):dt.datetime(2013,12,31)]=6+DAM_YSI['NTU'][dt.datetime(2013,6,1):dt.datetime(2013,12,31)]
-DAM_YSI['NTU'][dt.datetime(2014,10,10):dt.datetime(2014,12,31)]=2+DAM_YSI['NTU'][dt.datetime(2014,10,10):dt.datetime(2014,12,31)]
+DAM_YSI = correct_Turbidity(TurbidityCorrXL,'DAM-YSI',DAM_YSI)
 
 ## Turbidimeter Data QUARRY
 #QUARRYxl = pd.ExcelFile(datadir+'QUARRY-OBS.xlsx')
 #QUARRY_OBS = QUARRYxl.parse('QUARRY-OBS',header=4,parse_cols='A:L',parse_dates=True,index_col=0)
-QUARRY_OBS = OBS(XL,'QUARRY-OBS')
-QUARRY_OBS['NTU']=QUARRY_OBS['Turb_SS_Mean']
-QUARRY_OBS['NTU'] = QUARRY_OBS['NTU'][QUARRY_OBS['NTU']<=4000]
+#QUARRY_OBS = OBS(XL,'QUARRY-OBS')
+#QUARRY_OBS['NTU']=QUARRY_OBS['Turb_SS_Mean']
+#QUARRY_OBS['NTU'] = QUARRY_OBS['NTU'][QUARRY_OBS['NTU']<=4000]
 
 ## Turbidimeter Data LBJ
 LBJ_YSI = YSI(XL,'LBJ-YSI').resample('15Min',closed='right')
@@ -1854,10 +1897,7 @@ LBJ_OBSa = pd.concat([LBJ_OBSa[:dt.datetime(2013,4,1)],LBJ_OBSa[dt.datetime(2013
 LBJ_OBSa['NTU']=LBJ_OBSa['Turb_SS_Avg']
 LBJ_OBSb = OBS(XL,'LBJ-OBSb')
 
-LBJ_OBSb['NTU']=LBJ_OBSb['Turb_SS_Min']
-LBJ_OBS=LBJ_OBSa.append(LBJ_OBSb)
-LBJ_OBS['NTU'] = LBJ_OBS['NTU'][LBJ_OBS['NTU']<=4000]
-LBJ_OBS['NTU'] = LBJ_OBS['NTU'].interpolate(limit=2)
+
 
 def plotOBSss(df,SSCloc,show=True):
     fig, (ssmedian,ssmean,ssstd,ssmax,ssmin,comb) = plt.subplots(6,1,sharex=True,sharey=True)
@@ -1875,12 +1915,14 @@ def plotOBSss(df,SSCloc,show=True):
     ##combined plot
     df['Turb_SS_Median'].plot(ax=comb,label='SS Median',color='b')
     df['NTU'].plot(ax=comb,label='SS Mean (NTU)',color='k')
+    
     df['Turb_SS_Max'].plot(ax=comb,label='SS Max',color='r')
     df['Turb_SS_Min'].plot(ax=comb,label='SS Min',color='g')
     ## legends
     for ax in fig.axes:
         showstormintervals(ax,LBJ_storm_threshold,LBJ_StormIntervals)
         SSCloc['SSC (mg/L)'].plot(ax=ax,ls='none',marker='.',color='r')
+    plt.tight_layout(pad=0.1)
     if show== True:
         plt.show()
     return
@@ -1891,43 +1933,60 @@ def plotOBSss(df,SSCloc,show=True):
 
 #### TURBIDITY
 #### T to SSC rating curve for FIELD INSTRUMENTS
-def NTU_SSCrating(TurbidimeterData,SSCdata,TurbidimeterName,location='LBJ',sampleinterval='5Min',log=False):
+def NTU_SSCrating(SSCdata,TurbidimeterData,TurbidimeterName,location='LBJ',sampleinterval='5Min',log=False):
     T_name = TurbidimeterName+'-NTU'
     SSCsamples = SSCdata[SSCdata['Location'].isin([location])].resample(sampleinterval,fill_method = 'pad',limit=0) ## pulls just the samples matching the location name and roll to 5Min.
     SSCsamples = SSCsamples[pd.notnull(SSCsamples['SSC (mg/L)'])] ## gets rid of ones that mg/L is null
     #print SSCsamples[40:]    
-    SSCsamples[T_name]=TurbidimeterData['NTU']## grabs turbidimeter NTU data 
+    SSCsamples[T_name]=TurbidimeterData## grabs turbidimeter NTU data 
     SSCsamples = SSCsamples[pd.notnull(SSCsamples[T_name])]
     #print SSCsamples[20:]
     T_SSCrating = pd.ols(y=SSCsamples['SSC (mg/L)'],x=SSCsamples[T_name],intercept=False)
     return T_SSCrating,SSCsamples## Rating, Turbidity and Grab Sample SSC data
+    
+def OBS_compare_rating():
+    fig, ((bs_med,bs_mean,bs_min,bs_max),(ss_med,ss_mean,ss_min,ss_max)) = plt.subplots(2,4)
+    xy = np.linspace(0,2000)
+    ## BS Median
+    bs_median=NTU_SSCrating(SSC,LBJ_OBSb['Turb_BS_Median'],'LBJ-OBS','LBJ','15Min',log=False)
+    bs_med.scatter(bs_median[1]['SSC (mg/L)'],bs_median[1]['LBJ-OBS-NTU'])
+    bs_med.plot(xy,xy*bs_median[0].beta[0],ls='-',label='BS_Median'+r'$r^2$'+"%.2f"%bs_median[0].r2)
+    plt.show()
+    return
+OBS_compare_rating()   
 
+### Choose OBS parameters
+LBJ_OBSb['NTU']=LBJ_OBSb['Turb_SS_Mean'] ## choose which OBS parameter == NTU
+LBJ_OBS=LBJ_OBSa.append(LBJ_OBSb) ## append NTU's
+LBJ_OBS['NTU'] = LBJ_OBS['NTU'][LBJ_OBS['NTU']<=4000]
+LBJ_OBS['NTU'] = LBJ_OBS['NTU'].interpolate(limit=2)
 
 #### NTU to SSC rating curve from LAB ANALYSIS
 #T_SSC_Lab= pd.ols(y=SSC[SSC['Location']=='LBJ']['SSC (mg/L)'],x=SSC[SSC['Location']=='LBJ']['NTU'])
 T_SSC_Lab= pd.ols(y=SSC['SSC (mg/L)'],x=SSC['NTU'],intercept=False)
 ### NTU ratings
 ## DAM TS3K
-T_SSC_DAM_TS3K=NTU_SSCrating(DAM_TS3K,SSC,'DAM-TS3K','DAM',log=False) ## Use 5minute data for NTU/SSC relationship
+T_SSC_DAM_TS3K=NTU_SSCrating(SSC,DAM_TS3K['NTU'],'DAM-TS3K','DAM',log=False) ## Use 5minute data for NTU/SSC relationship
 DAM_TS3Krating = T_SSC_DAM_TS3K[0]
 ## DAM YSI
-T_SSC_DAM_YSI=NTU_SSCrating(DAM_YSI,SSC,'DAM-YSI','DAM',log=False) ## Won't work until there are some overlapping grab samples
+T_SSC_DAM_YSI=NTU_SSCrating(SSC,DAM_YSI['NTU'],'DAM-YSI','DAM',log=False) ## Won't work until there are some overlapping grab samples
 DAM_YSIrating= T_SSC_DAM_YSI[0]
 ## QUARRY
-T_SSC_QUARRY_OBS=NTU_SSCrating(QUARRY_OBS,SSC,'QUARRY-OBS','R2','15Min',log=False)
-QUARRY_OBSrating = T_SSC_QUARRY_OBS[0]
+#T_SSC_QUARRY_OBS=NTU_SSCrating(QUARRY_OBS,SSC,'QUARRY-OBS','R2','15Min',log=False)
+#QUARRY_OBSrating = T_SSC_QUARRY_OBS[0]
 ## LBJ YSI
-T_SSC_LBJ_YSI=NTU_SSCrating(LBJ_YSI,SSC,'LBJ-YSI','LBJ','15Min',log=False)
+T_SSC_LBJ_YSI=NTU_SSCrating(SSC,LBJ_YSI['NTU'],'LBJ-YSI','LBJ','15Min',log=False)
 LBJ_YSIrating = T_SSC_LBJ_YSI[0]
 ## LBJ OBS 2013
-T_SSC_LBJ_OBS_2013=NTU_SSCrating(LBJ_OBSa,SSC,'LBJ-OBS','LBJ','5Min',log=False)
+T_SSC_LBJ_OBS_2013=NTU_SSCrating(SSC,LBJ_OBSa['NTU'],'LBJ-OBS','LBJ','5Min',log=False)
 LBJ_OBS_2013rating = T_SSC_LBJ_OBS_2013[0]
 ## LBJ OBS 2014
-T_SSC_LBJ_OBS_2014=NTU_SSCrating(LBJ_OBSb,SSC,'LBJ-OBS','LBJ','15Min',log=False)
+T_SSC_LBJ_OBS_2014=NTU_SSCrating(SSC,LBJ_OBSb['NTU'],'LBJ-OBS','LBJ','15Min',log=False)
 LBJ_OBS_2014rating = T_SSC_LBJ_OBS_2014[0]
 ## LBJ OBS ALL
-T_SSC_LBJ_OBS=NTU_SSCrating(LBJ_OBSb,SSC,'LBJ-OBS','LBJ','15Min',log=False)
+T_SSC_LBJ_OBS=NTU_SSCrating(SSC,LBJ_OBSb['NTU'],'LBJ-OBS','LBJ','15Min',log=False)
 LBJ_OBSrating = T_SSC_LBJ_OBS_2014[0]
+
 
 
 ## Plot ALL T-SSC
@@ -2517,6 +2576,7 @@ def stormdata(StormIntervals,print_stats=False):
         count+=1
         start = storm[1]['start']
         end =  storm[1]['end']
+        print start, end
         ## Slice data from storm start to start end
         data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end].dropna(),
         'LBJq':LBJ['Q'][start:end],'QUARRYq':QUARRY['Q'][start:end],'DAMq':DAM['Q'][start:end],
@@ -2534,7 +2594,7 @@ def stormdata(StormIntervals,print_stats=False):
         #print data.index[0], data.index[-1]     
         ## add each storm to each other
         storm_data = storm_data.append(data) ## add each storm to each other
-    storm_data = storm_data.drop_duplicates().reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    #storm_data = storm_data.drop_duplicates().reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     return storm_data
 storm_data_LBJ = stormdata(LBJ_StormIntervals)
 #storm_data_LBJ = storm_data_LBJ.reindex(pd.date_range(start2012,stop2014,freq='15Min'))

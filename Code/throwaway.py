@@ -93,3 +93,16 @@ data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end].dropna(),
             data['LBJ-Sed'] = np.nan
         if data['LBJ-Sed'].sum() < 0:
             data['LBJ-Sed'] = np.nan
+            
+            
+
+### Fit nonlinear wiht intercept zero
+#for _ in range(3):## add zero/zero intercept
+#    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AV(L/sec)':0},index=[np.random.rand()])) 
+#LBJ_AVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AV(L/sec)'],order=3,interceptZero=False)  
+#LBJstageDischarge=LBJstageDischarge.dropna() ## get rid of zero/zero interctp
+#
+#for _ in range(3):## add zero/zero intercept
+#    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AManningV(L/sec)':0},index=[np.random.rand()])) 
+#LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],order=3,interceptZero=False)
+#LBJstageDischarge=LBJstageDischarge.dropna() ## get rid of zero/zero interctp

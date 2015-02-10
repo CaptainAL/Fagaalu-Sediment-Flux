@@ -427,6 +427,26 @@ def plotPT3stageYears(Pt,storm_threshold,show=False):
     return
 #plotPT3stageYears(PT3,DAM_storm_threshold,show=True)
     
+
+## LBJ: Q from OrangePeel method 
+#from notebook import OrangePeel
+def OrangePeel(sheet,headerrow,Book):
+    def my_parser(x,y):
+        y = str(int(y))
+        hour=y[:-2]
+        minute=y[-2:]
+        time=dt.time(int(hour),int(minute))
+        parsed=dt.datetime.combine(x,time)
+        #print parsed
+        return parsed
+    opfile = pd.ExcelFile(Book)
+    orangepeel = opfile.parse(sheet,header=headerrow,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
+    orangepeel = orangepeel.drop(orangepeel.columns[16:],1)
+    orangepeel = orangepeel[orangepeel['AVG L/sec']>=0]
+    return orangepeel
+orangepeel = OrangePeel('OrangePeel',1,datadir+'Q/Fagaalu-StageDischarge.xlsx')
+orangepeel=orangepeel.append(pd.DataFrame({'stage cm':0,'L/sec':0},index=[pd.NaT]))
+    
 ### Calibrate Jarrett's n kfactor at LBJ
 def plotManningCalibrate_k(show=False,log=False,save=False): ## Rating Curves
     fig, (site_lbj, site_lbj_zoom)= plt.subplots(1,2,figsize=(8,4))
