@@ -1,0 +1,19 @@
+DAM YSI 600OMS
+SEDIMENT RATING CURVE
+12/31/14 1330
+Clear water, no sediment
+-.5
+Natural Sediment 1
+78, then down to 58 as it settled
+
+Natural Sediment 2
+302, 275 at sample, down to 235 a minute later
+
+Natural Sediment 3
+658, 582 at sample, down to 555 a minute later
+
+Natural Sediment 4
+1139, 1124 at sample, down to 1042 a minute later
+
+Natural Sediment 5
+1368, 1355 at sample, down to 1262 a minute later

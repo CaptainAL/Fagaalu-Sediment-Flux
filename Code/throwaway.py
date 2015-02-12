@@ -106,3 +106,73 @@ data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end].dropna(),
 #    LBJstageDischarge=LBJstageDischarge.append(pd.DataFrame({'stage(cm)':0,'Q-AManningV(L/sec)':0},index=[np.random.rand()])) 
 #LBJ_AManningVnonLinear = nonlinearfunction(LBJstageDischarge['stage(cm)'],LBJstageDischarge['Q-AManningV(L/sec)'],order=3,interceptZero=False)
 #LBJstageDischarge=LBJstageDischarge.dropna() ## get rid of zero/zero interctp
+
+
+
+### Calibrate Mannings n factor at LBJ
+def plotManningCalibrate_n(show=False,log=False,save=False): ## Rating Curves
+    fig, (site_lbj, site_lbj_zoom)= plt.subplots(1,2,figsize=(8,4))
+    xy = np.linspace(0,8000,8000)
+    title="Discharge Ratings for VILLAGE (LBJ)"
+    #LBJ AV Measurements and Rating Curve
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='LBJ_AV 12') 
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='LBJ_AV 13') 
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='LBJ_AV 14') 
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='LBJ_AV 12') 
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='LBJ_AV 13') 
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='LBJ_AV 14') 
+
+    ## LBJ MODELS
+    ## LBJ Power
+    LBJ_AVpower = powerfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='g',ls='--',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj_zoom,c='g',ls='--',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])        
+    ## LBJ Mannings from stream survey
+    LBJ_Manstage = LBJ_Man_reduced['stage']*100
+    LBJ_S, LBJ_n, LBJ_k = 0.016, np.append(np.arange(0.035,.13,.02),np.array(.06)), 1
+    for n in LBJ_n:
+        print str(n)
+        LBJ_Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=n,k=LBJ_k,stage_series=LBJ_Manstage)
+        LBJ_Man['Q'] = LBJ_Man['Q']*1000        
+        site_lbj.plot(LBJ_Man['Q'],LBJ_Manstage,'-',markersize=2,label='n='+str(n))
+        site_lbj_zoom.plot(LBJ_Man['Q'],LBJ_Manstage,'-',markersize=2,label='n='+str(n))
+    ## 0 to 15
+    LBJ_n, LBJ_k = .055, 1
+    LBJ_0_15 = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_series=LBJ_Manstage[LBJ_Manstage<=15])
+    LBJ_0_15['Q'] = LBJ_0_15['Q']*1000        
+    site_lbj.plot(LBJ_0_15['Q'],LBJ_Manstage[LBJ_Manstage<=15],'-',markersize=2,label='n='+str(LBJ_n))
+    site_lbj_zoom.plot(LBJ_0_15['Q'],LBJ_Manstage[LBJ_Manstage<=15],'-',c='k',markersize=4,label='n='+str(LBJ_n))
+    ## 15 to 40
+    LBJ_n, LBJ_k = .095, 1
+    LBJ_15_40 = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_series=LBJ_Manstage[(LBJ_Manstage>15) & (LBJ_Manstage<=40)])
+    LBJ_15_40['Q'] = LBJ_15_40['Q']*1000        
+    site_lbj.plot(LBJ_15_40['Q'],LBJ_Manstage[(LBJ_Manstage>15) & (LBJ_Manstage<=40)],'-',markersize=2,label='n='+str(LBJ_n))
+    site_lbj_zoom.plot(LBJ_15_40['Q'],LBJ_Manstage[(LBJ_Manstage>15) & (LBJ_Manstage<=40)],'-',c='k',markersize=4,label='n='+str(LBJ_n))    
+    ## 40 and up    
+    LBJ_n, LBJ_k = .07, 1
+    LBJ_40 = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_series=LBJ_Manstage[LBJ_Manstage>40])
+    LBJ_40['Q'] = LBJ_40['Q']*1000        
+    site_lbj.plot(LBJ_40['Q'],LBJ_Manstage[LBJ_Manstage>40],'-',markersize=2,label='n='+str(LBJ_n))
+    site_lbj_zoom.plot(LBJ_40['Q'],LBJ_Manstage[LBJ_Manstage>40],'-',c='k',markersize=4,label='n='+str(LBJ_n))   
+    
+    ## Storm Thresholds
+    site_lbj.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='r',label='Storm threshold')
+    site_lbj_zoom.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='r',label='Storm threshold')
+    ## Label subplots    
+    site_lbj.set_ylabel('Stage(cm)'),site_lbj.set_xlabel('Q(L/sec)'),site_lbj_zoom.set_xlabel('Q(L/sec)')
+    ## Format subplots
+    site_lbj.set_ylim(0,PT1['stage'].max()+10)#,site_lbj.set_xlim(0,LBJ_AVnonLinear(PT1['stage'].max()+10))
+    site_lbj_zoom.set_ylim(0,45), site_lbj_zoom.set_xlim(0,1600)
+    ## Legends
+    site_lbj.legend(loc='lower right',fancybox=True)  
+    ## Figure title
+    #plt.suptitle(title,fontsize=16)
+    fig.canvas.manager.set_window_title('Figure : '+title) 
+    logaxes(log,fig)
+    for ax in fig.axes:
+        ax.autoscale_view(True,True,True)
+    plt.tight_layout(pad=0.1)
+    show_plot(show,fig)
+    savefig(save,title)
+    return
+plotManningCalibrate_n(show=True,log=False,save=False)
