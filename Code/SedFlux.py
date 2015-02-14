@@ -43,7 +43,7 @@ plt.ion()
 ## Set Pandas display options
 pd.set_option('display.large_repr', 'truncate')
 pd.set_option('display.width', 180)
-pd.set_option('display.max_rows', 50)
+pd.set_option('display.max_rows', 25)
 pd.set_option('display.max_columns', 10)
 
 #### DIRECTORIES
@@ -1555,7 +1555,7 @@ def QYears(show=False):
     
 ### ..
 ## Import SSC Data
-def loadSSC(SSCXL,sheet='ALL_MASTER'):
+def loadSSC(SSCXL,sheet='ALL_MASTER',round_to_5=False,round_to_15=False):
     print 'loading SSC...'
     def my_parser(x,y):
         try:
@@ -1569,6 +1569,10 @@ def loadSSC(SSCXL,sheet='ALL_MASTER'):
             #print parsed
             if parsed > fieldstart2014b:
                 parsed = parsed + dt.timedelta(minutes=15)
+            if round_to_5==True:
+                parsed = misc_time.RoundTo5(parsed)
+            if round_to_15==True:
+                parsed = misc_time.RoundTo15(parsed)
             else:
                 pass
         except:
@@ -1576,12 +1580,15 @@ def loadSSC(SSCXL,sheet='ALL_MASTER'):
         return parsed
             
     SSC= SSCXL.parse(sheet,header=0,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
-    SSC['NTU'] = SSC['NTU'].round(0)
+    SSC['NTU'], SSC['SSC (mg/L)'] = SSC['NTU'].round(0), SSC['SSC (mg/L)'].round(0)
     return SSC
 SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
-SSC = loadSSC(SSCXL,'ALL_MASTER')
+SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
 SSC= SSC[SSC['SSC (mg/L)']>0]
 SSC = SSC[SSC.index<Mitigation]
+
+SSC_raw_time = loadSSC(SSCXL,'ALL_MASTER')
+SSC_raw_time[SSC_raw_time['Location'].isin(['LBJ'])]['SSC (mg/L)'].plot(ls='None',marker='.',c='g')
 
 #### SSC Grab sample ANALYSIS
 SampleCounts = DataFrame(data=[str(val) for val in pd.unique(SSC['Location'])],columns=['Location'])
@@ -1597,19 +1604,19 @@ SampleCounts.index=range(1,len(SampleCounts)+1)
 
 ## SSC Boxplots and Discharge Concentration
 ## LBJ
-LBJgrab = SSC[SSC['Location'].isin(['LBJ'])].resample('5Min',fill_method='pad',limit=0)
+LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]#.resample('5Min',fill_method='pad',limit=0)
 LBJgrab['stage']=LBJ['stage'] ## add stage data
 LBJ_grab_count = SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='LBJ'].ix[2] ## the # in .ix[#] is the row number in SampleCounts above
 #LBJ_R2 = SSC[SSC['Location'].isin(['LBJ R2'])].resample('5Min',fill_method='pad',limit=0)
 #LBJ_R2_grab_count = SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='LBJ R2'].ix[12] ## the # in .ix[#] is the row number in SampleCounts above
 ## QUARRY (DT)
-QUARRYgrab =SSC[SSC['Location'].isin(['DT'])].resample('5Min',fill_method='pad',limit=0)
+QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]#.resample('5Min',fill_method='pad',limit=0)
 QUARRYgrab['stage'] = QUARRY['stage']
 QUARRY_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DT'].ix[3] ## the # in .ix[#] is the row number in SampleCounts above
-QUARRY_R2 =SSC[SSC['Location'].isin(['R2'])].resample('5Min',fill_method='pad',limit=0)
+QUARRY_R2 =SSC[SSC['Location'].isin(['R2'])]#.resample('5Min',fill_method='pad',limit=0)
 QUARRY_R2_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='R2'].ix[5] ## the # in .ix[#] is the row number in SampleCounts above
 ## DAM
-DAMgrab = SSC[SSC['Location'].isin(['DAM'])].resample('5Min',fill_method='pad',limit=0)
+DAMgrab = SSC[SSC['Location'].isin(['DAM'])]#.resample('5Min',fill_method='pad',limit=0)
 DAMgrab['stage'] = DAM['stage']
 DAM_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DAM'].ix[1] ## the # in .ix[#] is the row number in SampleCounts above
 
@@ -1618,10 +1625,10 @@ def plotSSCboxplots(storm_samples_only=False,withR2=False,show=False):
         ## Add R2 to Quarry
         ## Add samples from Autosampler at QUARRY
         print 'Adding R2 samples to QUARRY Grab (DT)'
-        QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])].resample('5Min',fill_method='pad',limit=0)
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])]
         QUARRYgrab['stage'] = QUARRY['stage']
     elif withR2==False:
-        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])].resample('5Min',fill_method='pad',limit=0)
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
         QUARRYgrab['stage'] = QUARRY['stage']
     ## Concatenate
     if storm_samples_only==True:
@@ -1662,15 +1669,15 @@ def plotSSCboxplots(storm_samples_only=False,withR2=False,show=False):
 ### Build data for Discharge/Concentration Rating Curve   
    
 def plotQvsC(include_nonstorm_samples=False,ms=6,show=False,log=False,save=True):    
-    dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM']['SSC (mg/L)']).resample('15Min')
+    dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM']['SSC (mg/L)'])
     dam_ssc['Q']=DAM['Q']
     dam_ssc['stage']=DAM['stage']
     dam_ssc = dam_ssc.dropna()
-    quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])]['SSC (mg/L)']).resample('15Min')
+    quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])]['SSC (mg/L)'])
     quarry_ssc['Q']=QUARRY['Q']
     quarry_ssc['stage']=QUARRY['stage']
     quarry_ssc =quarry_ssc.dropna()
-    lbj_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ']['SSC (mg/L)']).resample('15Min')
+    lbj_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ']['SSC (mg/L)'])
     lbj_ssc['Q']=LBJ['Q']
     lbj_ssc['stage']=LBJ['stage']
     lbj_ssc=lbj_ssc.dropna()
@@ -1832,10 +1839,11 @@ def TS3000(XL,sheet='DAM-TS3K'):
     TS3K = XL.parse(sheet,header=0,parse_cols='A,F',index_col=0,parse_dates=True)
     TS3K.columns=['NTU']
     return TS3K
-def YSI(XL,sheet='LBJ-YSI'):
+def YSI(XL,resample_interval,sheet='LBJ-YSI'):
     print 'loading : '+sheet+'...'
     YSI = XL.parse(sheet,header=4,parse_cols='A:H',parse_dates=[['Date','Time']],index_col=['Date_Time'])
-    YSI=YSI.resample('5Min')
+    YSI=YSI.resample(resample_interval,closed='right')
+    YSI['NTU raw']=YSI['NTU']
     return YSI
 def OBS(XL,sheet='LBJ-OBS'):
     print 'loading : '+sheet+'...'
@@ -1866,18 +1874,19 @@ def correct_Turbidity(TurbidityCorrXL,location,Tdata):
         t2 = my_parser(t2_date,t2_time)
         ntu = correction[1]['NTU']    
         print t1,t2, ntu
-        Correction = Correction.append(pd.DataFrame({'NTU':ntu},index=pd.date_range(t1,t2,freq='15Min')))
-    Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+        Correction = Correction.append(pd.DataFrame({'NTU':ntu},index=pd.date_range(t1,t2,freq='5Min')))
+    Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='5Min'))
     Tdata['Manual_Correction'] = Correction['NTU']
-    Tdata['NTU_corrected_Manual'] = Tdata['NTU']+Tdata['Manual_Correction']
-    Tdata['NTU']=Tdata['NTU_corrected_Manual'].where(Tdata['NTU_corrected_Manual']>0,Tdata['NTU'])#.round(0)
+    Tdata['NTU_corrected_Manual'] = Tdata['NTU raw']+Tdata['Manual_Correction']
+    Tdata['NTU']=Tdata['NTU_corrected_Manual'].where(Tdata['NTU_corrected_Manual']>=0,Tdata['NTU raw'])#.round(0)
     return Tdata
 TurbidityCorrXL = pd.ExcelFile(datadir+'T/TurbidityCorrection.xlsx')    
   
 ## Turbidimeter Data DAM
 DAM_TS3K = TS3000(XL,'DAM-TS3K')
 DAM_TS3K = DAM_TS3K[DAM_TS3K>=0]
-DAM_YSI = YSI(XL,'DAM-YSI')
+DAM_YSI = YSI(XL,'5Min','DAM-YSI')
+DAM_YSI = DAM_YSI.resample('15Min',closed='right').shift(1)
 ## Correct negative NTU values
 DAM_YSI = correct_Turbidity(TurbidityCorrXL,'DAM-YSI',DAM_YSI)
 
@@ -1885,7 +1894,7 @@ def plotYSI(df,SSCloc,end_time,show=True):
     fig, ntu = plt.subplots(1,1,figsize=(8,4),sharex=True,sharey=True)
     ## NTU
     df['NTU'].plot(ax=ntu,label='NTU',c='b')
-    ntu.set_ylim(0,2000)
+    ntu.set_ylim(0,4000)
     ## legends
     for ax in fig.axes:
         ax.legend()
@@ -1896,8 +1905,8 @@ def plotYSI(df,SSCloc,end_time,show=True):
     if show== True:
         plt.show()
     return
-plotYSI(DAM_YSI,SSC[SSC['Location']=='DAM'],end_time=stop2014,show=True)
-    
+#plotYSI(DAM_YSI,SSC[SSC['Location']=='DAM'],end_time=stop2014,show=True)
+plotYSI(DAM_YSI,SSC[SSC['Location']=='DAM'],dt.datetime(2015,1,10),show=True)
 ## Turbidimeter Data QUARRY
 #QUARRYxl = pd.ExcelFile(datadir+'T/QUARRY-OBS.xlsx')
 #QUARRY_OBS = QUARRYxl.parse('QUARRY-OBS',header=4,parse_cols='A:L',parse_dates=True,index_col=0)
@@ -1907,8 +1916,10 @@ plotYSI(DAM_YSI,SSC[SSC['Location']=='DAM'],end_time=stop2014,show=True)
 
 ## Turbidimeter Data LBJ
 ## LBJ YSI
-LBJ_YSI = YSI(XL,'LBJ-YSI').resample('15Min',closed='right')
-
+LBJ_YSIa = YSI(XL,'5Min','LBJ-YSIa')
+LBJ_YSIa_15Min = LBJ_YSIa.resample('15Min',closed='right').shift(1)
+LBJ_YSIb = YSI(XL,'15Min','LBJ-YSIb')
+LBJ_YSI = pd.concat([LBJ_YSIa_15Min,LBJ_YSIb])
 #plotYSI(LBJ_YSI,SSC[SSC['Location']=='LBJ'],end_time=stop2012,show=True)
 
 ## LBJ OBS
@@ -1939,7 +1950,7 @@ def plotOBSa(df,SSCloc,show=True):
     if show== True:
         plt.show()
     return
-plotOBSa(LBJ_OBSa,SSC[SSC['Location']=='LBJ'],show=True)
+#plotOBSa(LBJ_OBSa,SSC[SSC['Location']=='LBJ'],show=True)
     
 def plotOBSb_BS(df,SSCloc,show=True):
     fig, (bsmedian,bsmean,bsstd,bsmax,bsmin,comb) = plt.subplots(6,1,sharex=True,sharey=True)
@@ -1969,7 +1980,7 @@ def plotOBSb_BS(df,SSCloc,show=True):
     if show== True:
         plt.show()
     return
-plotOBSb_BS(LBJ_OBSb,SSC[SSC['Location']=='LBJ'],show=True)
+#plotOBSb_BS(LBJ_OBSb,SSC[SSC['Location']=='LBJ'],show=True)
     
 def plotOBSb_SS(df,SSCloc,show=True):
     fig, (ssmedian,ssmean,ssstd,ssmax,ssmin,comb) = plt.subplots(6,1,sharex=True,sharey=True)
@@ -2000,7 +2011,7 @@ def plotOBSb_SS(df,SSCloc,show=True):
     if show== True:
         plt.show()
     return
-plotOBSb_SS(LBJ_OBSb,SSC[SSC['Location']=='LBJ'],show=True)
+#plotOBSb_SS(LBJ_OBSb,SSC[SSC['Location']=='LBJ'],show=True)
 #plotOBSb_SS(QUARRY_OBS,SSC[SSC['Location']=='R2'],show=True)
 
 ## Despike turbidity data
@@ -2008,7 +2019,7 @@ plotOBSb_SS(LBJ_OBSb,SSC[SSC['Location']=='LBJ'],show=True)
 
 #### TURBIDITY
 #### T to SSC rating curve for FIELD INSTRUMENTS
-def NTU_SSCrating(SSCdata,TurbidimeterData,TurbidimeterName,location='LBJ',sampleinterval='5Min',Intercept=False,log=False):
+def NTU_SSCrating(SSCdata,TurbidimeterData,TurbidimeterName,location='LBJ',sampleinterval='15Min',Intercept=False,log=False):
     T_name = TurbidimeterName+'-NTU'
     SSCsamples = SSCdata[SSCdata['Location'].isin([location])].resample(sampleinterval,fill_method = 'pad',limit=0) ## pulls just the samples matching the location name and roll to 5Min.
     SSCsamples = SSCsamples[pd.notnull(SSCsamples['SSC (mg/L)'])] ## gets rid of ones that mg/L is null
@@ -2017,23 +2028,23 @@ def NTU_SSCrating(SSCdata,TurbidimeterData,TurbidimeterName,location='LBJ',sampl
     SSCsamples = SSCsamples[pd.notnull(SSCsamples[T_name])]
     #print SSCsamples[20:]
     T_SSCrating = pd.ols(y=SSCsamples['SSC (mg/L)'],x=SSCsamples[T_name],intercept=Intercept)
-    return T_SSCrating,SSCsamples## Rating, Turbidity and Grab Sample SSC data
+    return T_SSCrating,SSCsamples[['T-NTU','SSC (mg/L)']]## Rating, Turbidity and Grab Sample SSC data
 
 SRC_File = pd.ExcelFile(datadir+'T/SyntheticRatingCurve/SyntheticRatingCurve.xlsx')
-LBJ_SRC = SRC_File.parse('LBJ')
+LBJ_SRC = SRC_File.parse('LBJ')[0:5]
 QUARRY_SRC = SRC_File.parse('QUARRY')
 DAM_SRC = SRC_File.parse('DAM')
 N1_SRC = SRC_File.parse('N1')
-N2_SRC = SRC_File.parse('N2')
+N2_SRC = SRC_File.parse('N2')[0:5]
 
-def plotYSI_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False):
+def plotYSI_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False):
     if Use_All_SSC==True:
         SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
-        SSC = loadSSC(SSCXL,'ALL_MASTER')
+        SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
         SSC= SSC[SSC['SSC (mg/L)']>0]
     elif Use_All_SSC==False:
         SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
-        SSC = loadSSC(SSCXL,'ALL_MASTER')
+        SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
         SSC= SSC[SSC['SSC (mg/L)']>0]
         SSC = SSC[SSC.index<Mitigation]
     
@@ -2042,7 +2053,7 @@ def plotYSI_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False):
     xy = np.linspace(0,max_y)  
 
     ## NTU
-    NTU=NTU_SSCrating(SSC,df['NTU'],'T',SSC_loc,'15Min',Intercept=False,log=False)
+    NTU=NTU_SSCrating(SSC,df['NTU'],'T',SSC_loc,'5Min',Intercept=False,log=False)
     ntu.scatter(NTU[1]['T-NTU'],NTU[1]['SSC (mg/L)'])
     ntu.plot(xy,xy*NTU[0].beta[0],ls='-',label='NTU '+r'$r^2$'+"%.2f"%NTU[0].r2)
     ntu.set_title(SSC_loc+' NTU '+r'$r^2=$'+"%.2f"%NTU[0].r2)
@@ -2069,18 +2080,68 @@ def plotYSI_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False):
     plt.show()
     return
 ## DAM YSI rating
-plotYSI_compare_ratings(df=DAM_YSI,df_SRC=DAM_SRC,SSC_loc='DAM',Use_All_SSC=True)
+plotYSI_ratings(df=DAM_YSI,df_SRC=DAM_SRC,SSC_loc='DAM',Use_All_SSC=True)
 ## LBJ YSI rating
-plotYSI_compare_ratings(LBJ_YSI,df_SRC=None,SSC_loc='LBJ',Use_All_SSC=False)   
+plotYSI_ratings(LBJ_YSI,df_SRC=None,SSC_loc='LBJ',Use_All_SSC=False)   
+
+def plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,Use_All_SSC=False):
+    if Use_All_SSC==True:
+        SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
+        SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
+        SSC= SSC[SSC['SSC (mg/L)']>0]
+    elif Use_All_SSC==False:
+        SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
+        SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
+        SSC= SSC[SSC['SSC (mg/L)']>0]
+        SSC = SSC[SSC.index<Mitigation]
+    
+    fig, (ntu,ntu_zoom) = plt.subplots(1,2,figsize=(8,4))
+    max_y, max_x = LBJ_YSI['NTU'].max(),LBJ_YSI['NTU'].max()
+    xy = np.linspace(0,max_y)  
+    ## LBJ
+    lbj=NTU_SSCrating(SSC,LBJ_YSI['NTU'],'T','LBJ','15Min',Intercept=False,log=False)
+    ntu.scatter(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],c='r')
+    ntu.plot(xy,xy*lbj[0].beta[0],ls='-',c='r',label='LBJ '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    labelindex_subplot(ntu,lbj[1].index,lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'])    
+    ## DAM
+    dam=NTU_SSCrating(SSC,DAM_YSI['NTU'],'T','DAM','15Min',Intercept=False,log=False)
+    ntu.scatter(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],c='g')
+    ntu.plot(xy,xy*dam[0].beta[0],ls='-',c='g',label='DAM '+r'$r^2$'+"%.2f"%dam[0].r2)
+    ntu.legend()
+    labelindex_subplot(ntu,dam[1].index,dam[1]['T-NTU'],dam[1]['SSC (mg/L)'])    
+    ## Zoom in
+    ntu_zoom.scatter(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],c='g')
+    ntu_zoom.plot(xy,xy*dam[0].beta[0],ls='-',c='g',label='DAM '+r'$r^2$'+"%.2f"%dam[0].r2)    
+    ntu_zoom.scatter(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],c='r')
+    ntu_zoom.plot(xy,xy*lbj[0].beta[0],ls='-',c='r',label='LBJ '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    try:
+        DAM_SRC==None
+    except:
+        dam_SRC = pd.ols(y=DAM_SRC['SSC(mg/L)'],x=DAM_SRC['SS_Mean'],intercept=False)
+        ntu.scatter(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],c='grey')
+        ntu.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC '+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')  
+        ntu_zoom.scatter(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],c='grey')
+        ntu_zoom.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC '+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')  
+        
+    ntu.set_xlabel('NTU')
+    ntu.set_xlim(0,4000), ntu.set_ylim(0,4000)
+    ntu_zoom.set_xlim(0,1200), ntu_zoom.set_ylim(0,1200)    
+    ntu.legend()
+    plt.tight_layout(pad=0.1)
+    for ax in fig.axes:
+        ax.locator_params(nbins=4)
+    plt.show()
+    return
+plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,Use_All_SSC=True)
 
 def OBSa_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False):
     if Use_All_SSC==True:
         SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
-        SSC = loadSSC(SSCXL,'ALL_MASTER')
+        SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
         SSC= SSC[SSC['SSC (mg/L)']>0]
     elif Use_All_SSC==False:
         SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
-        SSC = loadSSC(SSCXL,'ALL_MASTER')
+        SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
         SSC= SSC[SSC['SSC (mg/L)']>0]
         SSC = SSC[SSC.index<Mitigation]
         
@@ -2121,11 +2182,11 @@ OBSa_compare_ratings(df=LBJ_OBSa,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False)
 def OBSb_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False):
     if Use_All_SSC==True:
         SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
-        SSC = loadSSC(SSCXL,'ALL_MASTER')
+        SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
         SSC= SSC[SSC['SSC (mg/L)']>0]
     elif Use_All_SSC==False:
         SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
-        SSC = loadSSC(SSCXL,'ALL_MASTER')
+        SSC = loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
         SSC= SSC[SSC['SSC (mg/L)']>0]
         SSC = SSC[SSC.index<Mitigation]
         pass
@@ -2215,8 +2276,8 @@ def OBSb_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False):
     plt.tight_layout(pad=0.1)
     plt.show()
     return
-OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC[0:3],SSC_loc='LBJ',Use_All_SSC=True)   
-OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC[0:3],SSC_loc='LBJ R2',Use_All_SSC=True)  
+OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=True)   
+OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ R2',Use_All_SSC=True)  
 #OBSb_compare_ratings(df=QUARRY_OBS,df_SRC=QUARRY_SRC,SSC_loc='R2',Use_All_SSC=True)   
 
 def Synthetic_Rating_Curves(param):
