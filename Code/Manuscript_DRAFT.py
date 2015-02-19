@@ -16,18 +16,18 @@ def add_figure_caption(caption):
     return
     
 def dataframe_to_table(df=pd.DataFrame(),caption=''):
-    table = document.add_table(rows=1, cols=len(df.columns[1:])) #df.columns[0] is the index from reset_index()  method above
+    table = document.add_table(rows=1, cols=len(df.columns)) 
     ## Merge all cells in top row and add caption text
-    table_caption = table.rows[0].cells[0].merge(table.rows[0].cells[len(df.columns[1:])-1])
-    table_caption.text = caption
+    table_caption = table.rows[0].cells[0].merge(table.rows[0].cells[len(df.columns)-1])
+    table_caption.text = "Table "+str(len(document.tables)+1)+". "+caption
     ## Add  header
     header_row = table.add_row().cells
     col_count =0 ## counter  to iterate over columns
     for col in  header_row:
-        col.text = df.columns[1:][col_count] #df.columns[0] is the index
+        col.text = df.columns[col_count] #df.columns[0] is the index
         col_count+=1
     ## Add data by  iterating over the DataFrame rows, then using a dictionary of DataFrame column labels to extract data
-    col_labels = dict(zip(range(len(landcover.columns[1:])),landcover.columns[1:].tolist())) ## create dictionary where '1  to  n' is key for DataFrame columns
+    col_labels = dict(zip(range(len(df.columns)),df.columns.tolist())) ## create dictionary where '1  to  n' is key for DataFrame columns
     for row in df.iterrows():  ## iterate over  rows in  DataFrame
         #print row[1]
         row_cells = table.add_row().cells ## Add a row to the  table
@@ -41,6 +41,8 @@ def dataframe_to_table(df=pd.DataFrame(),caption=''):
     table.autofit
     return table
 ###################################################################################################################################################################    
+
+    
     
     
 ##  Create Document
@@ -82,8 +84,10 @@ for column in landcover.columns:
     except:
         pass
 landcover = landcover[landcover['Subwatershed'].isin(['FOREST(UPPER)','QUARRY','VILLAGE(TOTAL)','Fagaalu Stream'])==True].reset_index()
+landcover = landcover[['Subwatershed','Cumulative Area km2','%','% High Intensity Developed','% Developed Open Space',
+                       '% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Bare Land']]
 ## Create table and Caption
-dataframe_to_table(df=landcover,caption="Table "+str(len(document.tables)+1)+". Land use categories in Fag'alu and Nu'uuli watersheds CITATION")
+dataframe_to_table(df=landcover,caption="Land use categories in Fag'alu and Nu'uuli watersheds CITATION")
 
 ## Quarry description
 quarry_text = document.add_paragraph('Quarry description text goes here...')
@@ -117,6 +121,11 @@ plotQratingDAM(show=False,log=False,save=True,filename=fig_filename)
 document.add_picture(fig_filename+'.png',width=Inches(6))
 add_figure_caption("Stage-Discharge relationships for stream gaging site at FOREST.")
 
+## Storm Water Discharge
+## Prepare table data
+Q_Diff = Q_storm_diff_table() ## function to create table data
+dataframe_to_table(df=Q_Diff,caption="Water discharge from subwatersheds in Faga'alu")
+
 #### Suspended Sediment Concentration
 document.add_heading('Suspended Sediment Concentration',level=4)
 ## SSC boxplots
@@ -129,6 +138,7 @@ fig_filename = figdir+'SSC/Water discharge vs Sediment concentration'
 plotQvsC(include_nonstorm_samples=True,ms=6,show=False,log=False,save=True,filename=fig_filename)
 document.add_picture(fig_filename+'.png',width=Inches(6))
 add_figure_caption("Water Discharge vs Suspended Sediment concentration at FOREST, QUARRY, and VILLAGE during baseflow and stormflow.")
+
 
 #### Turbidity
 document.add_heading('Turbidity', level=4)
@@ -162,6 +172,10 @@ document.add_heading('Storm Events',level=3)
 
 #### Comparing SSY from disturbed and undisturbed subwatersheds
 document.add_heading('Comparing SSY from disturbed and undisturbed subwatersheds',level=3)
+## Prepare table data
+S_Diff = S_storm_diff_table() ## function to create table data
+dataframe_to_table(df=S_Diff,caption="Sediment discharge from subwatersheds in Faga'alu")
+
 
 #### Disturbance Ratio 
 document.add_heading('Disturbance Ratio', level=3)
