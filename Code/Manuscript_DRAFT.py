@@ -111,7 +111,7 @@ SSC_Boxplots = {'filename':figdir+'SSC/Grab sample boxplots','fig_num':str(fig_c
 plotSSCboxplots(storm_samples_only=True,withR2=False,show=False,save=True,filename=SSC_Boxplots['filename'])
 ## Discharge vs Sediment Concentration
 Discharge_Concentration = {'filename':figdir+'SSC/Water discharge vs Sediment concentration','fig_num':str(fig_count())}
-plotQvsC(include_nonstorm_samples=True,ms=6,show=False,log=False,save=True,filename=fig_filename)
+plotQvsC(storm_samples_only=False,ms=6,show=False,log=False,save=True,filename=fig_filename)
 ### T-SSC Rating Curves
 ## LBJ and DAM YSI T-SSC rating curves
 LBJ_and_DAM_YSI_Rating_Curve = {'filename':figdir+'T/T-SSC rating LBJ and DAM YSI','fig_num':str(fig_count())}
@@ -141,10 +141,10 @@ introduction_title = document.add_heading('Introduction',level=2)
 introduction = document.add_paragraph('Introduction text goes here....')
 introduction.style='BodyText'
 Intro_Text = Document(maindir+'/Manuscript/Introduction.docx')
-for paragraph in Intro_Text.paragraphs:
-    txt = document.add_paragraph(paragraph.text)
-    txt.paragraph_format.left_indent = 0
-    txt.paragraph_format.first_line_indent = Inches(.4)
+#for paragraph in Intro_Text.paragraphs:
+#    txt = document.add_paragraph(paragraph.text)
+#    txt.paragraph_format.left_indent = 0
+#    txt.paragraph_format.first_line_indent = Inches(.4)
 
 #### STUDY AREA
 study_area_title = document.add_heading('Study Area',level=2)
@@ -203,11 +203,11 @@ document.add_heading('Suspended Sediment Concentration',level=4)
 ## SSC boxplots
 if 'SSC_Boxplots' in locals():
     document.add_picture(SSC_Boxplots['filename']+'.png',width=Inches(6))
-    add_figure_caption(SSC_Boxplots['fig_num'],"Boxplots of Suspended Sediment Concentration (SSC) at FOREST, QUARRY, and VILLAGE during storm periods.")
+    add_figure_caption(SSC_Boxplots['fig_num'],"Boxplots of Suspended Sediment Concentration (SSC) from grab samples only (no Autosampler) at FOREST, QUARRY, and VILLAGE during storm periods.")
 ## Water Discharge vs Sediment Concentration
 if 'Discharge_Concentration' in locals():
     document.add_picture(Discharge_Concentration['filename']+'.png',width=Inches(6))
-    add_figure_caption(Discharge_Concentration['fig_num'],"Water Discharge vs Suspended Sediment concentration at FOREST, QUARRY, and VILLAGE during baseflow and stormflow.")
+    add_figure_caption(Discharge_Concentration['fig_num'],"Water Discharge vs Suspended Sediment concentration at FOREST, QUARRY, and VILLAGE during baseflow and stormflow periods.")
 
 
 #### Turbidity
