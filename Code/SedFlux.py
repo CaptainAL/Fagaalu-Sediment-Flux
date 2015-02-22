@@ -69,8 +69,8 @@ def show_plot(show=False,fig=figure):
 def logaxes(log=False,fig=figure):
     if log==True:
         print 'log axes'
-        for sub in fig.axes:
-            sub.set_yscale('log'),sub.set_xscale('log')
+        for ax in fig.axes:
+            ax.set_yscale('log'), ax.set_xscale('log')
     return
 def savefig(save=True,filename=''):
     if save==True:
@@ -1539,7 +1539,7 @@ DAM['Q-HEC']= HEC_piecewise(DAM['stage'])
 LBJ['Q']= LBJ['Q-Mannings']
 LBJ['Q-RMSE'] = LBJ_Man_rmse
 print 'LBJ Q from Mannings and Surveyed Cross Section'
-DAM['Q']= DAM['Q-HEC']
+DAM['Q']= DAM['Q-HEC'].round(0)
 DAM['Q-RMSE'] = DAM_HEC_rmse
 print 'DAM Q from HEC-RAS and Surveyed Cross Section'
 
@@ -1994,11 +1994,12 @@ for column in LBJ_YSI.columns:
 ## LBJ OBS
 # OBS with only Avg BS and SS at 15Min 
 LBJ_OBSa = OBS(XL,'LBJ-OBSa')
-LBJ_OBSa = pd.concat([LBJ_OBSa[:dt.datetime(2013,4,1)],LBJ_OBSa[dt.datetime(2013,5,5):]]) ## remove junk data
+LBJ_OBSa =pd.concat([LBJ_OBSa[:dt.datetime(2013,4,1)],LBJ_OBSa[dt.datetime(2013,5,5):dt.datetime(2013,6,4)],LBJ_OBSa[dt.datetime(2013,6,7):]]) ## remove junk data
 for column in LBJ_OBSa.columns:
     LBJ_OBSa[column] = LBJ_OBSa[column].round(0)
 # OBS with BS and SS 100 times at 15Min
 LBJ_OBSb = OBS(XL,'LBJ-OBSb')
+LBJ_OBSb = pd.concat([LBJ_OBSb[:dt.datetime(2014,11,3,0)],LBJ_OBSb[dt.datetime(2014,11,5):]])
 for column in LBJ_OBSb.columns: ##remove junk data
     #print column
     LBJ_OBSb[column] = LBJ_OBSb[column][LBJ_OBSb[column]<=4000]  
@@ -2926,9 +2927,9 @@ def StormPrecipAnalysis(storms=LBJ_StormIntervals):
                 print "Can't analyze Storm Precip for storm:"+str(start)
                 pass
     return Stormdf
-#LBJ_Stormdf = StormPrecipAnalysis(storms=LBJ_StormIntervals)
-#QUARRY_Stormdf = StormPrecipAnalysis(storms=QUARRY_StormIntervals)
-#DAM_Stormdf = StormPrecipAnalysis(storms=DAM_StormIntervals)
+LBJ_Stormdf = StormPrecipAnalysis(storms=LBJ_StormIntervals)
+QUARRY_Stormdf = StormPrecipAnalysis(storms=QUARRY_StormIntervals)
+DAM_Stormdf = StormPrecipAnalysis(storms=DAM_StormIntervals)
 
  
 #### Integrate over P and Q over Storm Event
@@ -3229,8 +3230,7 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     showstormintervals(SED,storm_threshold,storm_intervals)
     
     #plt.suptitle(title)
-    if show==True:
-        plt.show()
+    show_plot(show)
     return
 Storm_SedFlux(storm_data_LBJ,LBJ_storm_threshold,LBJ_StormIntervals,'LBJ_StormIntervals',show=True)
 #Storm_SedFlux(storm_data_DAM,DAM_storm_threshold,DAM_StormIntervals,'DAM_StormIntervals',show=True)
@@ -3401,7 +3401,7 @@ SedFluxStorms_DAM['T-SSC-model-RMSE'] = StormSums(DAM_StormIntervals,DAM['SSC-mg
 SedFluxStorms_DAM['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(SedFluxStorms_DAM['Stage-Q-model-RMSE']**2. + SedFluxStorms_DAM['T-SSC-model-RMSE']**2.))**0.5 ## Calculate Cumulative Probable Error Harmel  2009
 
 #### Calculate correlation coefficients and sediment rating curves    
-def compileALLStorms():
+def compileALLStorms(subset = 'pre'):
     ## Sediment Yield
     ALLStorms=pd.DataFrame({'Supper':SedFluxStorms_DAM['Ssum'],'Supper_PE':SedFluxStorms_DAM['PE'],
     'Slower':SedFluxStorms_LBJ['Ssum']-SedFluxStorms_DAM['Ssum'],
@@ -3409,17 +3409,20 @@ def compileALLStorms():
     ## Sediment Yield RMSE
     
     ## Qsum
-    ALLStorms['Qsumtotal']=SedFluxStorms_LBJ['Qsum']
-    ALLStorms['Qsumupper']=SedFluxStorms_DAM['Qsum']
+    ALLStorms['Qsumtotal']=SedFluxStorms_LBJ['Qsum']/1000 # L to m3
+    ALLStorms['Qsumupper']=SedFluxStorms_DAM['Qsum']/1000 # L to m3
     ALLStorms['Qsumlower']=SedFluxStorms_LBJ['Qsum']-SedFluxStorms_DAM['Qsum']
     ## Qmax
-    ALLStorms['Qmaxupper']=SedFluxStorms_DAM['Qmax']
-    ALLStorms['Qmaxlower']=SedFluxStorms_LBJ['Qmax']
-    ALLStorms['Qmaxtotal']=SedFluxStorms_LBJ['Qmax']
+    ALLStorms['Qmaxupper']=SedFluxStorms_DAM['Qmax']/1000 # L to m3
+    ALLStorms['Qmaxlower']=SedFluxStorms_LBJ['Qmax']/1000 # L to m3
+    ALLStorms['Qmaxtotal']=SedFluxStorms_LBJ['Qmax']/1000 # L to m3
     ## Add Event Precipitation and EI
     ALLStorms['Pstorms']=Pstorms_LBJ['Psum'] ## Add Event Precip
     ALLStorms['EI'] = LBJ_Stormdf['EI'][LBJ_Stormdf['EI']>1] ## Add Event Erosion Index
-    ALLStorms = ALLStorms[ALLStorms.index<Mitigation]
+    if subset == 'pre':
+        ALLStorms = ALLStorms[ALLStorms.index<Mitigation]
+    elif subset == 'post':
+        ALLStorms = ALLStorms[ALLStorms.index>Mitigation]
     return ALLStorms
 ALLStorms = compileALLStorms()
 
@@ -3500,9 +3503,9 @@ def plotS_storm_table_summary(fs=16,show=False):
     diff['% Lower'] = diff['Slower']/diff['Stotal']*100
     diff['% Lower'] = diff['% Lower'].apply(np.int)
     ## Q discharge
-    diff['Qupper']=diff['Qsumupper'].round(3)/1000
-    diff['Qlower']=diff['Qsumlower'].round(3)/1000
-    diff['Qtotal']=diff['Qsumtotal'].round(3)/1000
+    diff['Qupper']=diff['Qsumupper'].round(3)
+    diff['Qlower']=diff['Qsumlower'].round(3)
+    diff['Qtotal']=diff['Qsumtotal'].round(3)
     
     diff['Psum'] = diff['Pstorms'].apply(int)
     diff['Storm#']=range(1,len(diff)+1) 
@@ -3538,11 +3541,9 @@ def plotS_storm_table_summary(fs=16,show=False):
     'Q For(m3)','Q For-Vil (m3)','Q Vil(m3)','Q For(mm)','Q For-Vil (mm)','Q Vil(mm)','Upper (Mg)','Lower (Mg)','Total (Mg)','%Upper','%Lower'],loc='center')
     the_table.set_fontsize(fs)
     the_table.scale(1.5, 1.5)
-    plt.draw()
-    if show==True:
-        plt.show()
+    show_plot(show)
     return
-#plotS_storm_table_summary(fs=22,show=True)
+plotS_storm_table_summary(fs=22,show=True)
 
 def NormalizeSSYbyCatchmentArea(ALLStorms):
     ## DAM = 0.9 km2
@@ -3553,20 +3554,20 @@ def NormalizeSSYbyCatchmentArea(ALLStorms):
     ALLStorms['Slower']=ALLStorms['Slower']/.88
     ALLStorms['Stotal']=ALLStorms['Stotal']/1.78
     ## Add Event Discharge ad Normalize by catchment area
-    ALLStorms['Qsumlower']=SedFluxStorms_LBJ['Qsum']-SedFluxStorms_DAM['Qsum']
-    ALLStorms['Qsumupper']=SedFluxStorms_DAM['Qsum']/.9 
+    ALLStorms['Qsumlower']=ALLStorms['Qsumtotal']-ALLStorms['Qsumupper']
     ALLStorms['Qsumlower']=ALLStorms['Qsumlower']/.88
-    ALLStorms['Qsumtotal']=SedFluxStorms_LBJ['Qsum']/1.78
+    ALLStorms['Qsumupper']=ALLStorms['Qsumupper']/.9 
+    ALLStorms['Qsumtotal']=ALLStorms['Qsumtotal']/1.78
     ## Duvert (2012) Fig. 3 shows SSY (Qmax m3/s/km2 vs. Mg/km2); but shows correlation coefficients in Qmax m3/s vs SSY Mg (table )
-    ALLStorms['Qmaxupper']=SedFluxStorms_DAM['Qmax']/.9
-    ALLStorms['Qmaxlower']=SedFluxStorms_LBJ['Qmax']/.88
-    ALLStorms['Qmaxtotal']=SedFluxStorms_LBJ['Qmax']/1.78
+    ALLStorms['Qmaxupper']=ALLStorms['Qmaxupper']/.9
+    ALLStorms['Qmaxlower']=ALLStorms['Qmaxtotal']/.88
+    ALLStorms['Qmaxtotal']=ALLStorms['Qmaxtotal']/1.78
     ## Add Event Precipitation and EI
     ALLStorms['Pstorms']=Pstorms_LBJ['Psum'] ## Add Event Precip
     ALLStorms['EI'] = LBJ_Stormdf['EI'][LBJ_Stormdf['EI']>1] ## Add Event Erosion Index
     return ALLStorms
 
-def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms,pval=0.05,show=False):
+def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms, pvalue=0.05,show=False):
     nrows, ncols = 3,4
     hcell, wcell=0.3,1
     hpad, wpad = 1,1
@@ -3579,7 +3580,7 @@ def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFl
     SedFluxStorms_LBJ= SedFluxStorms_LBJ.dropna()
     ALLStorms = ALLStorms[ALLStorms['Slower']>0].dropna()
     
-    pvalue=pval
+
     ## Psum vs. Ssum
     if pearson_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
         Upper_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[0]
@@ -3623,13 +3624,11 @@ def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFl
     QmaxS = [Upper_Qmax_Ssum_Pearson_r,Lower_Qmax_Ssum_Pearson_r,Total_Qmax_Ssum_Pearson_r]
     pearson.table(cellText = [PsumS,EIS,QsumS,QmaxS],rowLabels=['Psum','EI','Qsum','Qmax'],colLabels=['FOREST','FOR-VIL','VILLAGE'],loc='center left')
     plt.suptitle("Pearson's coefficients for each variable\n as compared to SSY (Mg), p<"+str(pvalue),fontsize=12)  
-    plt.draw()
-    if show==True:
-        plt.show()
+    show_plot(show)
     return
-#plotPearsonTable(pval=0.05,show=True)
+#plotPearsonTable(pvalue=0.05,show=True)
 
-def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms,pval=0.05,show=False):
+def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms, pvalue=0.05,show=False):
     nrows, ncols = 3,4
     hcell, wcell=0.3,1
     hpad, wpad = 1,1
@@ -3642,8 +3641,7 @@ def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedF
     SedFluxStorms_LBJ= SedFluxStorms_LBJ.dropna()
     ALLStorms = compileALLStorms()
     ALLStorms = ALLStorms[ALLStorms['Slower']>0].dropna()
-    
-    pvalue=pval
+
     ## Psum vs. Ssum
     if spearman_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
         Upper_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[0]
@@ -3693,13 +3691,13 @@ def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedF
     if show==True:
         plt.show()
     return
-#plotSpearmanTable(pval=0.05,show=True)
+#plotSpearmanTable(pvalue=0.05,show=True)
     
 def plotCoeffTable(show=False,norm=False):
     if norm==True:
         ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
-        Upper = powerfunction(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'])
-        Total = powerfunction(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'])    
+        Upper = powerfunction(ALLStorms['Qmaxupper'],ALLStorms['Supper'])
+        Total = powerfunction(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'])    
         
         Up = ['%.2f'%Upper['a'],'%.2f'%Upper['b'],'%.2f'%Upper['r2'],'%.2f'%Upper['pearson'],'%.2f'%Upper['spearman'],'%.2f'%Upper['rmse']]
         Tot = ['%.2f'%Total['a'],'%.2f'%Total['b'],'%.2f'%Total['r2'],'%.2f'%Total['pearson'],'%.2f'%Total['spearman'],'%.2f'%Total['rmse']]
@@ -3715,9 +3713,9 @@ def plotCoeffTable(show=False,norm=False):
    
     elif norm==False:
         ALLStorms = compileALLStorms()
-        Upper = powerfunction(ALLStorms['Qmaxupper']/1000,ALLStorms['Supper'])
-        Lower = powerfunction(ALLStorms['Qmaxlower']/1000,ALLStorms['Slower'])    
-        Total = powerfunction(ALLStorms['Qmaxtotal']/1000,ALLStorms['Stotal'])
+        Upper = powerfunction(ALLStorms['Qmaxupper'],ALLStorms['Supper'])
+        Lower = powerfunction(ALLStorms['Qmaxlower'],ALLStorms['Slower'])    
+        Total = powerfunction(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'])
         
         Up = ['%.2f'%Upper['a'],'%.2f'%Upper['b'],'%.2f'%Upper['r2'],'%.2f'%Upper['pearson'],'%.2f'%Upper['spearman'],'%.2f'%Upper['rmse']]
         Low = ['%.2f'%Lower['a'],'%.2f'%Lower['b'],'%.2f'%Lower['r2'],'%.2f'%Lower['pearson'],'%.2f'%Lower['spearman'],'%.2f'%Lower['rmse']]
@@ -3741,110 +3739,88 @@ def plotCoeffTable(show=False,norm=False):
 
 
 #### Sediment Rating Curves: on area-normalized SSY, Q and Qmax
-def plotALLStorms_ALLRatings(ms=10,show=False,log=False,save=False,norm=False):  
+def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,save=False,filename=''):  
     mpl.rc('lines',markersize=ms)
-    fig, ((ps,ei),(qsums,qmaxs)) = plt.subplots(2,2)
+    mpl.rc('grid',alpha=0)
+    fig, ((ps,ei),(qsums,qmaxs)) = plt.subplots(2,2,figsize=(8,6))
     title = 'All sediment rating curves for all predictors'
+    ## Normalize by area
     if norm==True:
-        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
-        ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = r'$SSY (Mg/km^2)$','Precip (mm)','Erosivity Index',r'$(L/km^2)$',r'$(L/sec/km^2)$'
+        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms(subset))
+        ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = r'$SSY (Mg/km^2)$','Precip (mm)','Erosivity Index', r'$(m^3/km^2)$', r'$(m^3/sec/km^2)$'
     else:
-        ALLStorms=compileALLStorms()
-        ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = 'SSY (Mg)','Precip (mm)','Erosivity Index','(L)','(L/sec)'
+        ALLStorms=compileALLStorms(subset)
+        ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = 'SSY (Mg)','Precip (mm)','Erosivity Index',r'$(m^3)$',r'$(m^3/sec)$'
     xy=None ## let the Fit functions plot their own lines
-    #mpl.rc('lines',markersize=ms)
-    ## P vs S at Upper,Lower,Total (power)
+    ## P vs S at Upper, Total
     ALLStorms_upper = ALLStorms[['Pstorms','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Pstorms','Stotal']].dropna() 
     ps.plot(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],'.',color='g',label='Upper')
-    ps.plot(ALLStorms['Pstorms'],ALLStorms['Stotal'],'.',color='r',label='Total')
+    ps.plot(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],'.',color='r',label='Total')
     ## Upper Watershed (=DAM)
     PS_upper_power = powerfunction(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],xy,ps,linestyle='-',color='g',label='PS_upper_power')
-    PS_upper_linear = linearfunction(ALLStorms['Pstorms'],ALLStorms['Supper'])
-    #LinearFit(ALLStorms['Pstorms'],ALLStorms['Supper'],xy,ps,linestyle='--',color='g',label='PS_upper_linear')  
+    PowerFit(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],xy,ps,linestyle='-',color='g', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
     ## Total Watershed (=LBJ)
     PS_total_power = powerfunction(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],xy,ps,linestyle='-',color='r',label='PS_total_power') 
-    PS_total_linear = linearfunction(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'])
-    #LinearFit(ALLStorms['Pstorms'],ALLStorms['Stotal'],xy,ps,linestyle='--',color='r',label='PS_total_linear') 
-
+    PowerFit(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],xy,ps,linestyle='-',color='r',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2) 
     ps.set_title('Total Event Precip (mm)')
     ps.set_ylabel(ylabel)
-    
-    ## EI vs S at Upper,Lower,Total (power)
+    ## EI vs S at Upper, Total  
     ALLStorms_upper = ALLStorms[['EI','Supper']].dropna()
     ALLStorms_total = ALLStorms[['EI','Stotal']].dropna() 
-    ei.plot(ALLStorms['EI'],ALLStorms['Supper'],'.',color='g',label='Upper')
-    ei.plot(ALLStorms['EI'],ALLStorms['Stotal'],'.',color='r',label='Total')
-    
+    ei.plot(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],'.',color='g',label='Upper')
+    ei.plot(ALLStorms_total['EI'],ALLStorms_total['Stotal'],'.',color='r',label='Total')
+    ## Upper Watershed (=DAM)
     EI_upper_power = powerfunction(ALLStorms_upper['EI'],ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],xy,ei,linestyle='-',color='g',label='EI_upper_power')
-    EI_upper_linear = linearfunction(ALLStorms_upper['EI'],ALLStorms_upper['Supper'])
-    #LinearFit(ALLStorms['EI'],ALLStorms['Supper'],xy,ei,linestyle='--',color='g',label='EI_upper_linear')  
-        
+    PowerFit(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],xy,ei,linestyle='-',color='g',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
+    ## Total Watershed (=LBJ)       
     EI_total_power = powerfunction(ALLStorms_total['EI'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'],xy,ei,linestyle='-',color='r',label='EI_total_power') 
-    EI_total_linear = linearfunction(ALLStorms_total['EI'],ALLStorms_total['Stotal'])
-    #LinearFit(ALLStorms['EI'],ALLStorms['Stotal'],xy,ei,linestyle='--',color='r',label='EI_total_linear') 
-    
+    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'],xy,ei,linestyle='-',color='r',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2) 
     ei.set_title('Event Erosivity Index (MJmm ha-1 h-1)')
-    ei.set_ylabel(ylabel)
-
-    ## Qsum vs S at Upper,Lower,Total (power)
+    #ei.set_ylabel(ylabel)
+    ## Qsum vs S at Upper, Total 
     ALLStorms_upper = ALLStorms[['Qsumupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qsumtotal','Stotal']].dropna() 
     qsums.plot(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],'.',color='g',label='Upper')
     qsums.plot(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],'.',color='r',label='Total')
-    
+    ## Upper Watershed (=DAM)    
     QsumS_upper_power = powerfunction(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],xy,qsums,linestyle='-',color='g',label='QsumS_upper_power')
-    QsumS_upper_linear = linearfunction(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'])
-    #LinearFit(ALLStorms['Qsumupper'],ALLStorms['Supper'],xy,qsums,linestyle='--',color='g',label='QsumS_upper_linear')  
-
+    PowerFit(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],xy,qsums,linestyle='-',color='g',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
+    ## Total Watershed (=LBJ)
     QsumS_total_power = powerfunction(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],xy,qsums,linestyle='-',color='r',label='QsumS_total_power') 
-    QsumS_total_linear = linearfunction(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'])
-    #LinearFit(ALLStorms['Qsumtotal'],ALLStorms['Stotal'],xy,qsums,linestyle='--',color='r',label='QsumS_total_linear') 
-    
-    qsums.set_title('Total Event Discharge '+r'$(L/km^2)$')
+    PowerFit(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],xy,qsums,linestyle='-',color='r',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2) 
+    qsums.set_title('Total Event Discharge '+xlabelQsum)
     qsums.set_ylabel(ylabel)
     #qsums.set_xlabel(xlabelQsum)
-
-    ## Qmax vs S at Upper,Lower,Total (power)
+    ## Qmax vs S at Upper, Total  
     ALLStorms_upper = ALLStorms[['Qmaxupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna() 
     qmaxs.plot(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],'.',color='g',label='Upper')
-    qmaxs.plot(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'],'.',color='r',label='Total')
-    
+    qmaxs.plot(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],'.',color='r',label='Total')
+    ## Upper Watershed (=DAM)       
     QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],xy,qmaxs,linestyle='-',color='g',label='QmaxS_upper_power')
-    QmaxS_upper_linear = linearfunction(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'])
-    #LinearFit(ALLStorms['Qmaxupper'],ALLStorms['Supper'],xy,qmaxs,linestyle='--',color='g',label='QmaxS_upper_linear')  
-    
+    PowerFit(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],xy,qmaxs,linestyle='-',color='g',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
+    ## Total Watershed (=LBJ)
     QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='r',label='QmaxS_total_power') 
-    QmaxS_total_linear = linearfunction(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'])
-    #LinearFit(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'],xy,qmaxs,linestyle='--',color='r',label='QmaxS_total_linear') 
-    
-    qmaxs.set_title('Event Peak Discharge '+r'$(L/sec/km^2)$')
-    qmaxs.set_ylabel(ylabel)
+    PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='r',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2)
+    qmaxs.set_title('Event Peak Discharge '+xlabelQmax)
+    #qmaxs.set_ylabel(ylabel)
     #qmaxs.set_xlabel(xlabelQmax)
 
     l1,l2,l3 = plt.plot(None,None,'g-',None,None,'y-',None,None,'r-')
     #fig.legend((l1,l2,l3),('UPPER','TOTAL'), 'upper left',fancybox=True)
-
-        #for ax in fig.axes:
-        #ax.legend(loc='best',ncol=2,fancybox=True)           
-            
-    logaxes(log,fig)
     for ax in fig.axes:
+        ax.legend(loc='best',fancybox=True) 
+        ax.grid(False)          
         ax.autoscale_view(True,True,True)
-    plt.tight_layout()
+    logaxes(log,fig) 
+    plt.grid(b=False,axis='both')
+    plt.tight_layout(pad=0.1)
     show_plot(show,fig)
-    savefig(save,title)
+    savefig(save,filename)
     return
-plotALLStorms_ALLRatings(show=True,log=True,norm=True,save=False)
+plotALLStorms_ALLRatings(subset='pre',norm=True,log=True,show=True,save=False,filename='')
+#plotALLStorms_ALLRatings(norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
 
