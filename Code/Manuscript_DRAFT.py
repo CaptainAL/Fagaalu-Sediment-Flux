@@ -111,7 +111,7 @@ SSC_Boxplots = {'filename':figdir+'SSC/Grab sample boxplots','fig_num':str(fig_c
 plotSSCboxplots(storm_samples_only=True,withR2=False,show=False,save=True,filename=SSC_Boxplots['filename'])
 ## Discharge vs Sediment Concentration
 Discharge_Concentration = {'filename':figdir+'SSC/Water discharge vs Sediment concentration','fig_num':str(fig_count())}
-plotQvsC(storm_samples_only=False,ms=6,show=False,log=False,save=True,filename=fig_filename)
+plotQvsC(storm_samples_only=False,ms=6,show=False,log=False,save=True,filename=Discharge_Concentration['filename'])
 ### T-SSC Rating Curves
 ## LBJ and DAM YSI T-SSC rating curves
 LBJ_and_DAM_YSI_Rating_Curve = {'filename':figdir+'T/T-SSC rating LBJ and DAM YSI','fig_num':str(fig_count())}
@@ -241,7 +241,7 @@ document.add_heading('Comparing SSY from disturbed and undisturbed subwatersheds
 ## Storm Sediment Table
 document.add_paragraph("Table "+S_Diff_table.table_num+" shows that lots of...")
 if 'S_Diff_table' in locals():
-    dataframe_to_table(df=S_Diff,table_num=S_Diff_table.table_num,caption="Sediment discharge from subwatersheds in Faga'alu")
+    dataframe_to_table(df=S_Diff_table,table_num=S_Diff_table.table_num,caption="Sediment discharge from subwatersheds in Faga'alu")
 
 
 #### Disturbance Ratio 

@@ -176,3 +176,32 @@ def plotManningCalibrate_n(show=False,log=False,save=False): ## Rating Curves
     savefig(save,title)
     return
 plotManningCalibrate_n(show=True,log=False,save=False)
+
+
+
+data = pd.DataFrame({
+        #Precip        
+        'Precip':Precip['Timu1-15'][start:end].dropna(),
+        #Discharge with RMSE
+        'LBJq':LBJ['Q'][start:end],'QUARRYq':QUARRY['Q'][start:end],'DAMq':DAM['Q'][start:end],
+        'LBJq-rmse':LBJ['Q-RMSE'][start:end],'QUARRYq-rmse':QUARRY['Q-RMSE'][start:end],'Damq-rmse':DAM['Q-RMSE'][start:end],
+        #SSC grab samples
+        'LBJgrab':LBJgrab[start:end].drop_duplicates(cols='index')['SSC (mg/L)'],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end],
+        #SSC grab samples interpolated to continuous SSC, with RMSE
+        'LBJgrabssc':LBJ['Grab-SSC-mg/L'][start:end],'QUARRYgrabssc':QUARRY['Grab-SSC-mg/L'][start:end],'DAMgrabssc':DAM['Grab-SSC-mg/L'][start:end],
+        'LBJgrabssc-rmse':LBJ['Grab-SSC-mg/L-RMSE'],'QUARRYgrabssc-rmse':QUARRY['Grab-SSC-mg/L-RMSE '],'DAMgrabssc-rmse':DAM['Grab-SSC-mg/L-RMSE'],       
+        #Turbidity     
+        'LBJntu':LBJ['NTU'][start:end],'QUARRYntu':QUARRY['NTU'][start:end],'DAMntu':DAM['NTU'][start:end],
+        #SSC from Turbidity, with RMSE
+        'LBJtssc':LBJ['T-SSC-mg/L'][start:end],'QUARRYtssc':QUARRY['T-SSC-mg/L'][start:end],'DAMtssc':DAM['T-SSC-mg/L'][start:end],
+        'LBJtssc-rmse':LBJ['T-SSC-mg/L-RMSE'][start:end],'QUARRYtssc-rmse':QUARRY['T-SSC-mg/L-RMSE'][start:end],'DAMtssc-rmse':DAM['T-SSC-mg/L-RMSE'][start:end],
+        #SSC from Grab samples, with RMSE
+        'LBJgrabSed':LBJ['Grab-SedFlux-tons/sec'][start:end],'QUARRYgrabSed':QUARRY['Grab-SedFlux-tons/sec'][start:end],'DAMgrabSed':DAM['Grab-SedFlux-tons/sec'][start:end],        
+        
+        'LBJtSed':LBJ['T-SedFlux-tons/sec'][start:end],'QUARRYtSed':QUARRY['T-SedFlux-tons/sec'][start:end],'DAMtSed':DAM['T-SedFlux-tons/sec'][start:end],
+
+
+        'LBJssc':LBJ['SSC-mg/L'][start:end],'QUARRYssc':QUARRY['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],
+        'LBJ-Sed':LBJ['SedFlux-tons/sec'][start:end],'QUARRY-Sed':QUARRY['SedFlux-tons/sec'][start:end],'DAM-Sed':DAM['SedFlux-tons/sec'][start:end],
+        'LBJ-Sed-cum':LBJ['SedFlux-tons/15min'][start:end].cumsum(),'QUARRY-Sed-cum':QUARRY['SedFlux-tons/15min'][start:end].cumsum(),
+        'DAM-Sed-cum':DAM['SedFlux-tons/15min'][start:end].cumsum()})

@@ -1662,9 +1662,17 @@ QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]#.resample('5Min',fill_method='pad'
 QUARRY_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DT'].ix[3] ## the # in .ix[#] is the row number in SampleCounts above
 QUARRY_R2 =SSC[SSC['Location'].isin(['R2'])]#.resample('5Min',fill_method='pad',limit=0)
 QUARRY_R2_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='R2'].ix[5] ## the # in .ix[#] is the row number in SampleCounts above
+QUARRY_DT_and_R2 = SSC[SSC['Location'].isin(['DT','R2'])]
+QUARRY_DT_and_R2['index'] = QUARRY_DT_and_R2.index
 ## DAM
 DAMgrab = SSC[SSC['Location'].isin(['DAM'])]#.resample('5Min',fill_method='pad',limit=0)
+DAMgrab['index'] = DAMgrab.index
 DAM_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DAM'].ix[1] ## the # in .ix[#] is the row number in SampleCounts above
+
+## ADD Grab samples to Site DataFrames
+LBJ['Grab-SSC-mg/L'] = LBJgrab.drop_duplicates(cols='index')['SSC (mg/L)']
+QUARRY['Grab-SSC-mg/L'] = QUARRY_DT_and_R2.drop_duplicates(cols='index')['SSC (mg/L)']
+DAM['Grab-SSC-mg/L'] = DAMgrab.drop_duplicates(cols='index')['SSC (mg/L)']
 
 def plotSSCboxplots(storm_samples_only=False,withR2=False,show=False,save=False,filename=figdir+''):
     ## Subset SSC
@@ -1831,10 +1839,11 @@ def InterpolateGrabSamples(Stormslist,Data,storm_offset=0):
     
 ## LBJ
 LBJGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, LBJgrab,60)      
-LBJ['Grab-SSC-mg/L'] = LBJGrabSampleSSC['GrabInterpolated']
-LBJ['Grab-SedFlux-mg/sec']=LBJ['Q'] * LBJ['Grab-SSC-mg/L']# Q(L/sec) * C (mg/L)
-LBJ['Grab-SedFlux-tons/sec']=LBJ['Grab-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 = tons
-LBJ['Grab-SedFlux-tons/15min']=LBJ['Grab-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
+LBJ['GrabInt-SSC-mg/L'] = LBJGrabSampleSSC['GrabInterpolated']
+LBJ['GrabInt-SSC-mg/L-RMSE'] = 0
+LBJ['GrabInt-SedFlux-mg/sec']=LBJ['Q'] * LBJ['GrabInt-SSC-mg/L']# Q(L/sec) * C (mg/L)
+LBJ['GrabInt-SedFlux-tons/sec']=LBJ['GrabInt-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 = tons
+LBJ['GrabInt-SedFlux-tons/15min']=LBJ['GrabInt-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
  
 ## QUARRY
 # Grab only
@@ -1844,17 +1853,19 @@ R2GrabSampleSSC=InterpolateGrabSamples(QUARRY_StormIntervals, QUARRY_R2,60)
 # Combined Grab and R2
 QUARRY_grab_and_R2 = SSC[SSC['Location'].isin(['DT','R2'])].resample('5Min',fill_method='pad',limit=0)
 QUARRY_grab_and_R2_SSC = InterpolateGrabSamples(QUARRY_StormIntervals, QUARRY_grab_and_R2,60)   
-QUARRY['Grab-SSC-mg/L'] = QUARRY_grab_and_R2_SSC['GrabInterpolated']
-QUARRY['Grab-SedFlux-mg/sec']=QUARRY['Q'] * QUARRY['Grab-SSC-mg/L']# Q(L/sec) * C (mg/L)
-QUARRY['Grab-SedFlux-tons/sec']=QUARRY['Grab-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 = tons
-QUARRY['Grab-SedFlux-tons/15min']=QUARRY['Grab-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min  
+QUARRY['GrabInt-SSC-mg/L'] = QUARRY_grab_and_R2_SSC['GrabInterpolated']
+QUARRY['GrabInt-SSC-mg/L-RMSE'] = 0
+QUARRY['GrabInt-SedFlux-mg/sec']=QUARRY['Q'] * QUARRY['GrabInt-SSC-mg/L']# Q(L/sec) * C (mg/L)
+QUARRY['GrabInt-SedFlux-tons/sec']=QUARRY['GrabInt-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 = tons
+QUARRY['GrabInt-SedFlux-tons/15min']=QUARRY['GrabInt-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min  
 
 ## DAM
 DAMGrabSampleSSC=InterpolateGrabSamples(DAM_StormIntervals, DAMgrab,60) 
-DAM['Grab-SSC-mg/L'] = DAMGrabSampleSSC['GrabInterpolated']
-DAM['Grab-SedFlux-mg/sec']=DAM['Q'] * DAM['Grab-SSC-mg/L']# Q(L/sec) * C (mg/L)
-DAM['Grab-SedFlux-tons/sec']=DAM['Grab-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 = tons
-DAM['Grab-SedFlux-tons/15min']=DAM['Grab-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min  
+DAM['GrabInt-SSC-mg/L'] = DAMGrabSampleSSC['GrabInterpolated']
+DAM['GrabInt-SSC-mg/L-RMSE'] = 0
+DAM['GrabInt-SedFlux-mg/sec']=DAM['Q'] * DAM['GrabInt-SSC-mg/L']# Q(L/sec) * C (mg/L)
+DAM['GrabInt-SedFlux-tons/sec']=DAM['GrabInt-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 = tons
+DAM['GrabInt-SedFlux-tons/15min']=DAM['GrabInt-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min  
 
 def plot_eventSSCinterpolated(GrabSamples,show=False):
     mpl.rc('lines',markersize=6,linewidth=2)
@@ -1870,11 +1881,9 @@ def plot_eventSSCinterpolated(GrabSamples,show=False):
     ## PLOT  ONES USED FOR INTERPOLATION
     ## Plot samples that are interpolated    
     ax.plot_date(QUARRY_grab_and_R2_SSC.index,QUARRY_grab_and_R2_SSC['Grab'],marker='.',ls='None',color='r',label='Samples for Interpolation')
-    
     ax.legend(loc='best'), ax.set_ylabel('SSC (mg/L)')    
     ## Shade Storms    
     showstormintervals(ax,LBJ_storm_threshold,LBJ_StormIntervals)
-    
     if show==True:
         plt.show()
     return
@@ -2504,9 +2513,10 @@ def calc_RMSE(T_SSC): ## uses the NTU_SSCrating object
     return T_SSC_RMSE_Value.round(0)
 
 ## DAM TS3K
-T_SSC_DAM_TS3K=NTU_SSCrating(SSC,DAM_TS3K['NTU'],location='DAM',T_interval='15Min',log=False) ## Use 5minute data for NTU/SSC relationship
+T_SSC_DAM_TS3K=NTU_SSCrating(SSC_dict['Pre-storm'],DAM_TS3K['NTU'],location='DAM',T_interval='15Min',log=False) ## Use 5minute data for NTU/SSC relationship
 DAM_TS3K_rating = T_SSC_DAM_TS3K[0]
 DAM_TS3K_rating_rmse = T_SSC_DAM_TS3K[2]
+DAM_TS3K['T-SSC-RMSE'] = DAM_TS3K_rating_rmse 
 #print DAM_TS3K_rating.rmse
 #print calc_RMSE(T_SSC_DAM_TS3K)
 
@@ -2514,6 +2524,7 @@ DAM_TS3K_rating_rmse = T_SSC_DAM_TS3K[2]
 T_SSC_DAM_YSI=NTU_SSCrating(SSC_dict['Pre-storm'],DAM_YSI['NTU'],location='DAM',T_interval='15Min',log=False) ## Won't work until there are some overlapping grab samples
 DAM_YSI_rating= T_SSC_DAM_YSI[0]
 DAM_YSI_rating_rmse= T_SSC_DAM_YSI[2]
+DAM_YSI['T-SSC-RMSE']= DAM_YSI_rating_rmse
 #print DAM_YSI_rating.rmse
 #print calc_RMSE(T_SSC_DAM_YSI)
 
@@ -2521,6 +2532,7 @@ DAM_YSI_rating_rmse= T_SSC_DAM_YSI[2]
 T_SSC_QUARRY_OBS=NTU_SSCrating(SSC_dict['ALL'],QUARRY_OBS['NTU'],location='R2',T_interval='15Min',log=False)
 QUARRY_OBS_rating = T_SSC_QUARRY_OBS[0]
 QUARRY_OBS_rating_rmse = T_SSC_QUARRY_OBS[2]
+QUARRY_OBS['T-SSC-RMSE'] = QUARRY_OBS_rating_rmse
 #print QUARRY_OBS_rating.rmse
 #print calc_RMSE(T_SSC_QUARRY_OBS)
 
@@ -2528,6 +2540,7 @@ QUARRY_OBS_rating_rmse = T_SSC_QUARRY_OBS[2]
 T_SSC_LBJ_YSI=NTU_SSCrating(SSC_dict['Pre-storm'],LBJ_YSI['NTU'],location='LBJ',T_interval='15Min',log=False)
 LBJ_YSI_rating = T_SSC_LBJ_YSI[0]
 LBJ_YSI_rating_rmse = T_SSC_LBJ_YSI[2]
+LBJ_YSI['T-SSC-RMSE'] = LBJ_YSI_rating_rmse 
 #print LBJ_YSI_rating.rmse
 #print calc_RMSE(T_SSC_LBJ_YSI)
 
@@ -2535,6 +2548,7 @@ LBJ_YSI_rating_rmse = T_SSC_LBJ_YSI[2]
 T_SSC_LBJ_OBSa =NTU_SSCrating(SSC_dict['Pre-storm'][start2013:dt.datetime(2013,4,1)],LBJ_OBSa['NTU'],location='LBJ',T_interval='5Min',log=False)
 LBJ_OBSa_rating = T_SSC_LBJ_OBSa[0]
 LBJ_OBSa_rating_rmse = T_SSC_LBJ_OBSa[2]
+LBJ_OBSa['T-SSC-RMSE'] = LBJ_OBSa_rating_rmse 
 #print LBJ_OBSa_rating.rmse
 #print calc_RMSE(T_SSC_LBJ_OBSa)
 
@@ -2542,6 +2556,7 @@ LBJ_OBSa_rating_rmse = T_SSC_LBJ_OBSa[2]
 T_SSC_LBJ_OBSb=NTU_SSCrating(SSC_dict['Pre-storm'],LBJ_OBSb['NTU'],location='LBJ',T_interval='15Min',log=False)
 LBJ_OBSb_rating = T_SSC_LBJ_OBSb[0]
 LBJ_OBSb_rating_rmse = T_SSC_LBJ_OBSb[2]
+LBJ_OBSb['T-SSC-RMSE']= LBJ_OBSb_rating_rmse 
 #print LBJ_OBSb_rating.rmse
 #print calc_RMSE(T_SSC_LBJ_OBSb)
 
@@ -2549,6 +2564,7 @@ LBJ_OBSb_rating_rmse = T_SSC_LBJ_OBSb[2]
 T_SSC_LBJ_OBS=NTU_SSCrating(SSC_dict['Pre-storm'],LBJ_OBS['NTU'],location='LBJ',T_interval='15Min',log=False)
 LBJ_OBS_rating = T_SSC_LBJ_OBS[0]
 LBJ_OBS_rating_rmse = T_SSC_LBJ_OBS[2]
+LBJ_OBS['T-SSC-RMSE'] = LBJ_OBS_rating_rmse 
 #print LBJ_OBS_rating.rmse
 #print calc_RMSE(T_SSC_LBJ_OBS)
 
@@ -2787,73 +2803,90 @@ def plotNTUratings_no_int(plot_param_table=True,show=False,log=False,save=False,
 #### ..
 #### TURBIDITY TO SSC to SEDFLUX
 ### LBJ Turbidity
+
+#LBJ_OBS_15Min = pd.concat([LBJ_OBSa_15Min['NTU'],LBJ_OBSb['NTU']])
+#LBJntu15minute = pd.concat([LBJ_YSI['NTU'],LBJ_OBSa_15Min['NTU'],LBJ_OBSb['NTU']])
+
+# YSI
+LBJ['YSI-NTU']=LBJ_YSI['NTU']
+LBJ['YSI-SSC']=LBJ_YSI_rating.beta[0] * LBJ['YSI-NTU']
+LBJ['YSI-SSC-RMSE'] = LBJ_YSI['T-SSC-RMSE']
+# OBSa
 ## resample to 15min to match Q records
 LBJ_OBSa_15Min = LBJ_OBSa.resample('15Min',closed='right').shift(1)
-LBJ_OBS_15Min = pd.concat([LBJ_OBSa_15Min['NTU'],LBJ_OBSb['NTU']])
-LBJntu15minute = pd.concat([LBJ_YSI['NTU'],LBJ_OBSa_15Min['NTU'],LBJ_OBSb['NTU']])
-#LBJntu = m.rolling_mean(LBJntu,window=3) ## Smooth out over 3 observations (45min) after already averaged to 5Min
-
-## Both YSI and OBS data resampled to 15minutes and converted to SSC
-LBJ['YSI-NTU']=LBJ_YSI['NTU']
-LBJ['YSI-SSC']=LBJ_YSI_rating.beta[0] * LBJ_YSI['NTU']
-LBJ['YSI-SSC-RMSE'] = LBJ_YSI_rating_rmse
 LBJ['OBSa-NTU']=LBJ_OBSa_15Min['NTU']
 LBJ['OBSa-SSC']=LBJ_OBSa_rating.beta[0] * LBJ['OBSa-NTU']
-LBJ['OBSa-SSC-RMSE'] = LBJ_OBSa_rating_rmse
+LBJ['OBSa-SSC-RMSE'] = LBJ_OBSa_15Min['T-SSC-RMSE']
+# OBSb
 LBJ['OBSb-NTU']=LBJ_OBSb['NTU']
 LBJ['OBSb-SSC']=LBJ_OBSb_rating.beta[0] * LBJ['OBSb-NTU']
-LBJ['OBSb-SSC-RMSE'] = LBJ_OBSb_rating_rmse
+LBJ['OBSb-SSC-RMSE'] = LBJ_OBSb['T-SSC-RMSE']
+# OBS combined
 LBJ['OBS-NTU'] = pd.concat([LBJ_OBSa_15Min['NTU'],LBJ_OBSb['NTU']])
 LBJ['OBS-SSC'] = pd.concat([LBJ['OBSa-SSC'].dropna(),LBJ['OBSb-SSC'].dropna()])## has dups since both are on a 2012-2015 index
-
-
+LBJ['OBS-SSC-RMSE']=pd.concat([LBJ['OBSa-SSC-RMSE'].dropna(),LBJ['OBSb-SSC-RMSE'].dropna()])
+# All NTU combined
+LBJ['NTU'] = pd.concat([LBJ['YSI-NTU'].dropna(),LBJ['OBS-NTU'].dropna()])
+LBJ['NTU-SSC'] = pd.concat([LBJ['YSI-SSC'].dropna(),LBJ['OBS-SSC'].dropna()])
+LBJ['NTU-SSC-RMSE'] = pd.concat([LBJ['YSI-SSC-RMSE'].dropna(),LBJ['OBS-SSC-RMSE'].dropna()])
 ### LBJ SedFlux
-LBJ['T-SSC-mg/L'] = pd.concat([LBJ['YSI-SSC'].dropna(),LBJ['OBS-SSC'].dropna()])
+LBJ['T-SSC-mg/L'] = LBJ['NTU-SSC']
+LBJ['T-SSC-mg/L-RMSE'] = LBJ['NTU-SSC-RMSE']
 LBJ['T-SedFlux-mg/sec']=LBJ['Q'] * LBJ['T-SSC-mg/L']# Q(L/sec) * C (mg/L) = mg/sec
 LBJ['T-SedFlux-tons/sec']=LBJ['T-SedFlux-mg/sec']*(10**-9) ## mg x 10**-9 = tons
 LBJ['T-SedFlux-tons/15min']=LBJ['T-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
 ## Combine with Interpolated SSC from Grab samples
-LBJ['SSC-mg/L'] = LBJ['T-SSC-mg/L'].where(LBJ['T-SSC-mg/L']>=0,LBJ['Grab-SSC-mg/L'])
-LBJ['SedFlux-tons/sec']=LBJ['T-SedFlux-tons/sec'].where(LBJ['T-SedFlux-tons/sec']>=0,LBJ['Grab-SedFlux-tons/sec'])
-LBJ['SedFlux-tons/15min']=LBJ['T-SedFlux-tons/15min'].where(LBJ['T-SedFlux-tons/15min']>=0,LBJ['Grab-SedFlux-tons/15min'])
+LBJ['SSC-mg/L'] = LBJ['T-SSC-mg/L'].where(LBJ['T-SSC-mg/L']>=0,LBJ['GrabInt-SSC-mg/L'])
+LBJ['SSC-mg/L-RMSE'] = LBJ['T-SSC-mg/L-RMSE'].where(LBJ['T-SSC-mg/L-RMSE']>=0,LBJ['GrabInt-SSC-mg/L-RMSE'])
+LBJ['SedFlux-tons/sec']=LBJ['T-SedFlux-tons/sec'].where(LBJ['T-SedFlux-tons/sec']>=0,LBJ['GrabInt-SedFlux-tons/sec'])
+LBJ['SedFlux-tons/15min']=LBJ['T-SedFlux-tons/15min'].where(LBJ['T-SedFlux-tons/15min']>=0,LBJ['GrabInt-SedFlux-tons/15min'])
+
 
 ### QUARRY Turbidity
-QUARRY['OBS-NTU'] = QUARRY_OBS['NTU']
-QUARRY['OBS-SSC'] = QUARRY_OBS_rating.beta[0] * QUARRY['OBS-NTU']
-QUARRY['OBS-SSC-RMSE'] = QUARRY_OBS_rating_rmse
+QUARRY['NTU'] = QUARRY_OBS['NTU']
+QUARRY['NTU-SSC'] = QUARRY_OBS_rating.beta[0] * QUARRY['NTU']
+QUARRY['NTU-SSC-RMSE'] = QUARRY_OBS['T-SSC-RMSE']
 ### QUARRY SedFlux
-QUARRY['T-SSC-mg/L'] = QUARRY['OBS-SSC']
+QUARRY['T-SSC-mg/L'] = QUARRY['NTU-SSC']
+QUARRY['T-SSC-mg/L-RMSE'] = QUARRY['NTU-SSC-RMSE']
 QUARRY['T-SedFlux-mg/sec']=QUARRY['Q'] * QUARRY['T-SSC-mg/L']# Q(L/sec) * C (mg/L) = mg/sec
 QUARRY['T-SedFlux-tons/sec']=QUARRY['T-SedFlux-mg/sec']*(10**-9) ## mg x 10**-9 = tons
 QUARRY['T-SedFlux-tons/15min']=QUARRY['T-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
 ## Combine with Interpolated SSC from Grab samples
-QUARRY['SSC-mg/L'] = QUARRY['T-SSC-mg/L'].where(QUARRY['T-SSC-mg/L']>=0,QUARRY['Grab-SSC-mg/L'])
-QUARRY['SedFlux-tons/sec']=QUARRY['T-SedFlux-tons/sec'].where(QUARRY['T-SedFlux-tons/sec']>=0,QUARRY['Grab-SedFlux-tons/sec'])
-QUARRY['SedFlux-tons/15min']=QUARRY['T-SedFlux-tons/15min'].where(QUARRY['T-SedFlux-tons/15min']>=0,QUARRY['Grab-SedFlux-tons/15min'])
+QUARRY['SSC-mg/L'] = QUARRY['T-SSC-mg/L'].where(QUARRY['T-SSC-mg/L']>=0,QUARRY['GrabInt-SSC-mg/L'])
+QUARRY['SSC-mg/L-RMSE'] = QUARRY['T-SSC-mg/L-RMSE'].where(QUARRY['T-SSC-mg/L-RMSE']>=0,QUARRY['GrabInt-SSC-mg/L-RMSE'])
+QUARRY['SedFlux-tons/sec']=QUARRY['T-SedFlux-tons/sec'].where(QUARRY['T-SedFlux-tons/sec']>=0,QUARRY['GrabInt-SedFlux-tons/sec'])
+QUARRY['SedFlux-tons/15min']=QUARRY['T-SedFlux-tons/15min'].where(QUARRY['T-SedFlux-tons/15min']>=0,QUARRY['GrabInt-SedFlux-tons/15min'])
 
 ### DAM Turbidity
+
+#DAMntu15minute =  pd.DataFrame(pd.concat([DAM_TS3K_15Min['NTU'],DAM_YSI['NTU']])).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+
+#TS3000
 ## resample to 15min to match Q records
 DAM_TS3K_15Min = DAM_TS3K.resample('15Min',closed='right').shift(1) ## Resample to 15 minutes for the SedFlux calc
-DAMntu15minute =  pd.DataFrame(pd.concat([DAM_TS3K_15Min['NTU'],DAM_YSI['NTU']])).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
-### DAM SedFlux
 DAM['TS3K-NTU']=DAM_TS3K_15Min['NTU']
-DAM['TS3K-SSC']=DAM_YSI_rating.beta[0] * DAM_TS3K_15Min['NTU'] ## USES YSI rating for TS3000
-DAM['TS3K-SSC-RMSE']=DAM_YSI_rating_rmse 
+DAM['TS3K-SSC']=DAM_TS3K_rating.beta[0] * DAM['TS3K-NTU'] ## USES YSI rating for TS3000
+DAM['TS3K-SSC-RMSE']=DAM_TS3K['T-SSC-RMSE']
+#YSI
 DAM['YSI-NTU']=DAM_YSI['NTU']
-DAM['DAM-SSC']=DAM_YSI_rating.beta[0] * DAM_YSI['NTU']
-DAM['DAM-SSC-RMSE']=DAM_YSI_rating_rmse
+DAM['YSI-SSC']=DAM_YSI_rating.beta[0] * DAM['YSI-NTU']
+DAM['YSI-SSC-RMSE']= DAM_YSI['T-SSC-RMSE']
 ## Both TS3K and YSI data resampled to 15minutes
-DAM['NTU']=pd.concat([DAM_TS3K_15Min['NTU'].dropna(),DAM_YSI['NTU'].dropna()])
-
+DAM['NTU']=pd.concat([DAM['TS3K-NTU'].dropna(),DAM['YSI-NTU'].dropna()])
+DAM['NTU-SSC'] = pd.concat([DAM['TS3K-SSC'].dropna(),DAM['YSI-SSC'].dropna()])
+DAM['NTU-SSC-RMSE'] = pd.concat([DAM['TS3K-SSC-RMSE'].dropna(),DAM['YSI-SSC-RMSE'].dropna()])
 ## DAM SedFlux
-DAM['T-SSC-mg/L']=pd.concat([DAM['TS3K-SSC'].dropna(),DAM['DAM-SSC'].dropna()])
+DAM['T-SSC-mg/L']=DAM['NTU-SSC']
+DAM['T-SSC-mg/L-RMSE'] = DAM['NTU-SSC-RMSE']
 DAM['T-SedFlux-mg/sec']=DAM['Q'] * DAM['T-SSC-mg/L']# Q(L/sec) * C (mg/L)
 DAM['T-SedFlux-tons/sec']=DAM['T-SedFlux-mg/sec']*(10**-9) ## mg x 10**-9 = tons
 DAM['T-SedFlux-tons/15min']=DAM['T-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
 ## Combine with Interpolated SSC from Grab samples
-DAM['SSC-mg/L'] = DAM['T-SSC-mg/L'].where(DAM['T-SSC-mg/L']>=0,DAM['Grab-SSC-mg/L'])
-DAM['SedFlux-tons/sec']=DAM['T-SedFlux-tons/sec'].where(DAM['T-SedFlux-tons/sec']>=0,DAM['Grab-SedFlux-tons/sec'])
-DAM['SedFlux-tons/15min']=DAM['T-SedFlux-tons/15min'].where(DAM['T-SedFlux-tons/15min']>=0,DAM['Grab-SedFlux-tons/15min'])
+DAM['SSC-mg/L'] = DAM['T-SSC-mg/L'].where(DAM['T-SSC-mg/L']>=0,DAM['GrabInt-SSC-mg/L'])
+DAM['SSC-mg/L-RMSE'] = DAM['T-SSC-mg/L-RMSE'].where(DAM['T-SSC-mg/L-RMSE']>=0,DAM['GrabInt-SSC-mg/L-RMSE'])
+DAM['SedFlux-tons/sec']=DAM['T-SedFlux-tons/sec'].where(DAM['T-SedFlux-tons/sec']>=0,DAM['GrabInt-SedFlux-tons/sec'])
+DAM['SedFlux-tons/15min']=DAM['T-SedFlux-tons/15min'].where(DAM['T-SedFlux-tons/15min']>=0,DAM['GrabInt-SedFlux-tons/15min'])
 
 
 
@@ -2893,10 +2926,10 @@ def StormPrecipAnalysis(storms=LBJ_StormIntervals):
                 print "Can't analyze Storm Precip for storm:"+str(start)
                 pass
     return Stormdf
-    
-LBJ_Stormdf = StormPrecipAnalysis(storms=LBJ_StormIntervals)
-QUARRY_Stormdf = StormPrecipAnalysis(storms=QUARRY_StormIntervals)
-DAM_Stormdf = StormPrecipAnalysis(storms=DAM_StormIntervals)
+#LBJ_Stormdf = StormPrecipAnalysis(storms=LBJ_StormIntervals)
+#QUARRY_Stormdf = StormPrecipAnalysis(storms=QUARRY_StormIntervals)
+#DAM_Stormdf = StormPrecipAnalysis(storms=DAM_StormIntervals)
+
  
 #### Integrate over P and Q over Storm Event
 #from HydrographTools_revert import StormSums
@@ -2975,8 +3008,7 @@ def PQvol_years_BOTH(StormsLBJ,StormsDAM,show=False):
     title="Event Rainfall vs. Event Discharge Fagaalu Stream"
     fig.suptitle(title,fontsize=16)
     fig.canvas.manager.set_window_title('Figure: '+title)
-    
-    
+
     log=False
     if log==True:
         site_lbj.set_yscale('log'), site_lbj.set_xscale('log')
@@ -3023,7 +3055,7 @@ def plotQ_storm_table(show=False):
     diff['Storm#']=range(1,len(diff)+1)
     ## add summary stats to bottom of table
     diff=diff.append(pd.DataFrame({'Storm#':'-','Psum':'-','Qupper':'-','Qlower':'-','Qtotal':'Average:','% Upper':'%.1f'%diff['% Upper'].mean(),'% Lower':'%.1f'%diff['% Lower'].mean()},index=['']))
-   
+    ## Build table
     nrows, ncols = len(diff),len(diff.columns)
     hcell, wcell=0.2,1
     hpad, wpad = .8,.5
@@ -3031,12 +3063,9 @@ def plotQ_storm_table(show=False):
     ax = fig.add_subplot(111)
     ax.patch.set_visible(False), ax.axis('off')
     ax.xaxis.set_visible(False), ax.yaxis.set_visible(False)
-    plt.suptitle("Discharge (Q) from Upstream (DAM) and Downstream (LBJ) watersheds in Faga'alu")
- 
     celldata = np.array(diff[['Storm#','Psum','Qupper','Qlower','Qtotal','% Upper','% Lower']].values)
-    
     ax.table(cellText=celldata,rowLabels=[pd.to_datetime(t) for t in diff.index.values],colLabels=['Storm#','Precip(mm)','Upper(m3)','Lower(m3)','Total(m3)','%Upper','%Lower'],loc='center')
-    
+    plt.suptitle("Discharge (Q) from Upstream (DAM) and Downstream (LBJ) watersheds in Faga'alu")
     plt.draw()
     if show==True:
         plt.show()
@@ -3054,26 +3083,36 @@ def stormdata(StormIntervals,print_stats=False):
         end =  storm[1]['end']
         print start, end
         ## Slice data from storm start to start end
-        data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end].dropna(),
-        'LBJq':LBJ['Q'][start:end],'QUARRYq':QUARRY['Q'][start:end],'DAMq':DAM['Q'][start:end],
-        'LBJgrab':LBJgrab[start:end].drop_duplicates(cols='index')['SSC (mg/L)'],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end],        
-        'LBJntu':LBJ['YSI-NTU'][start:end],'LBJfnu':LBJ['OBS-NTU'][start:end],'QUARRYfnu':QUARRY['OBS-NTU'][start:end],'DAMntu':DAM['NTU'][start:end],
-        'LBJtssc':LBJ['T-SSC-mg/L'][start:end],'QUARRYtssc':QUARRY['T-SSC-mg/L'][start:end],'DAMtssc':DAM['T-SSC-mg/L'][start:end],
-        'LBJtSed':LBJ['T-SedFlux-tons/sec'][start:end],'QUARRYtSed':QUARRY['T-SedFlux-tons/sec'][start:end],'DAMtSed':DAM['T-SedFlux-tons/sec'][start:end],
-        'LBJgrabssc':LBJ['Grab-SSC-mg/L'][start:end],'QUARRYgrabssc':QUARRY['Grab-SSC-mg/L'][start:end],'DAMgrabssc':DAM['Grab-SSC-mg/L'][start:end],        
-        'LBJgrabSed':LBJ['Grab-SedFlux-tons/sec'][start:end],'QUARRYgrabSed':QUARRY['Grab-SedFlux-tons/sec'][start:end],'DAMgrabSed':DAM['Grab-SedFlux-tons/sec'][start:end],
-        'LBJssc':LBJ['SSC-mg/L'][start:end],'QUARRYssc':QUARRY['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],
-        'LBJ-Sed':LBJ['SedFlux-tons/sec'][start:end],'QUARRY-Sed':QUARRY['SedFlux-tons/sec'][start:end],'DAM-Sed':DAM['SedFlux-tons/sec'][start:end],
-        'LBJ-Sed-cum':LBJ['SedFlux-tons/15min'][start:end].cumsum(),'QUARRY-Sed-cum':QUARRY['SedFlux-tons/15min'][start:end].cumsum(),
-        'DAM-Sed-cum':DAM['SedFlux-tons/15min'][start:end].cumsum()})
-
+        ## LBJ
+        LBJ_storm = LBJ[start:end]
+        LBJ_storm['Sed-cumsum'] = LBJ_storm['SedFlux-tons/15min'].cumsum()
+        LBJ_new_columns = []
+        for column in LBJ_storm.columns:
+            #print column
+            LBJ_new_columns.append('LBJ-'+column)
+        LBJ_storm.columns = LBJ_new_columns 
+        ## QUARRY
+        QUARRY_storm = QUARRY[start:end]
+        QUARRY['Sed-cumsum'] = QUARRY_storm['SedFlux-tons/15min'].cumsum()
+        QUARRY_new_columns=[]
+        for column in QUARRY_storm.columns:
+            QUARRY_new_columns.append('QUARRY-'+column)
+        QUARRY_storm.columns = QUARRY_new_columns
+        ## DAM
+        DAM_storm = DAM[start:end]
+        DAM_storm['Sed-cumsum'] = DAM_storm['SedFlux-tons/15min'].cumsum()
+        DAM_new_columns = []
+        for column in DAM_storm.columns:
+            DAM_new_columns.append('DAM-'+column)
+        DAM_storm.columns = DAM_new_columns
+        
+        P_storm = PrecipFilled['Precip'][start:end]
         #print data.index[0], data.index[-1]     
         ## add each storm to each other
-        storm_data = storm_data.append(data) ## add each storm to each other
+        storm_data = storm_data.append(LBJ_storm.join(DAM_storm).join(QUARRY_storm).join(P_storm)) ## add each storm to each other
     storm_data = storm_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     return storm_data
 storm_data_LBJ = stormdata(LBJ_StormIntervals)
-#storm_data_LBJ = storm_data_LBJ.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 storm_data_QUARRY = stormdata(QUARRY_StormIntervals)
 storm_data_DAM = stormdata(DAM_StormIntervals)
 
@@ -3099,7 +3138,6 @@ def Q_EMC(storm_data, show=False):
 #Q_EMC(storm_data_LBJ,True)
 
 def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
-
     #storm_data = storm_data[dt.datetime(2014,2,14,14,30):dt.datetime(2014,2,14,19,30)]
     fig, (P,Q,T,SSC,SED,SEDcum) = plt.subplots(nrows=6,ncols=1,sharex=True) 
     P.tick_params(\
@@ -3116,9 +3154,9 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     P.set_ylabel('P\nmm/15min'), P.grid(False)
     P.set_ylim(0,15)
     ## Discharge
-    storm_data['LBJq'].plot(ax=Q,color='r',label='VILLAGE')
-    #storm_data['QUARRYq'].plot(ax=Q,color='y',label='QUARRY-Q')
-    storm_data['DAMq'].plot(ax=Q,color='g',label='FOREST')
+    storm_data['LBJ-Q'].plot(ax=Q,color='r',label='VILLAGE')
+    #storm_data['QUARRY-Q''].plot(ax=Q,color='y',label='QUARRY-Q')
+    storm_data['DAM-Q'].plot(ax=Q,color='g',label='FOREST')
     Q.legend()
     Q.set_ylabel('Q\nL/s'),#, Q.set_yscale('log')
     Q.spines['bottom'].set_visible(False),Q.grid(False)
@@ -3127,13 +3165,13 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     yloc = plt.MaxNLocator(max_yticks)    
     Q.yaxis.set_major_locator(yloc)    
     ## SSC grab samples
-    storm_data['LBJgrab'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='VILLAGE')
-    storm_data['QUARRYgrab'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY')
-    storm_data['DAMgrab'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='FOREST')
+    storm_data['LBJ-Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='VILLAGE')
+    storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY')
+    storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='FOREST')
     ## Turbidity
-    storm_data['LBJntu'].plot(ax=T,color='r',label='VILLAGE')
-    storm_data['LBJfnu'].plot(ax=T,color='r',alpha=0.8,label='QUARRY')
-    storm_data['DAMntu'].plot(ax=T,color='g',label='FOREST')
+    storm_data['LBJ-NTU'].plot(ax=T,color='r',label='VILLAGE')
+    storm_data['QUARRY-NTU'].plot(ax=T,color='r',alpha=0.8,label='QUARRY')
+    storm_data['DAM-NTU'].plot(ax=T,color='g',label='FOREST')
     T.set_ylabel('T NTU'),T.set_ylim(-1)
     max_yticks = 4
     yloc = plt.MaxNLocator(max_yticks)
@@ -3141,13 +3179,13 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     T.grid(False), T.spines['bottom'].set_visible(False)
     T.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
     ## SSC from turbidity
-    storm_data['LBJtssc'].plot(ax=SSC,color='r',label='VILLAGE')
-    storm_data['QUARRYtssc'].plot(ax=SSC,ls='--',color='y',label='QUARRY')
-    storm_data['DAMtssc'].plot(ax=SSC,color='g')
+    storm_data['LBJ-T-SSC-mg/L'].plot(ax=SSC,color='r',label='VILLAGE')
+    storm_data['QUARRY-T-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY')
+    storm_data['DAM-T-SSC-mg/L'].plot(ax=SSC,color='g')
     ### SSC interpolated from grab samples
-    storm_data['LBJgrabssc'].plot(ax=SSC,ls='--',color='r',label='VILLAGE')
-    #storm_data['QUARRYgrabssc'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC-grab')
-    storm_data['DAMgrabssc'].plot(ax=SSC,ls='--',color='g',label='FOREST')
+    storm_data['LBJ-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='r',label='VILLAGE')
+    storm_data['QUARRY-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC-grab')
+    storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='g',label='FOREST')
     SSC.set_ylabel('SSC\nmg/L')#, SSC.set_ylim(0,1400)
     max_yticks = 4
     yloc = plt.MaxNLocator(max_yticks)
@@ -3155,15 +3193,16 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     SSC.grid(False),SSC.spines['bottom'].set_visible(False)
     SSC.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
     ## Sediment Yield from Interpolated grab samples
-    storm_data['LBJgrabSed'].plot(ax=SED,color='r',label='VILLAGE',ls='--')
-    #storm_data['QUARRYgrabSed'].plot(ax=SED,color='y',label='QUARRY-SedFlux-grab',ls='--')
-    storm_data['DAMgrabSed'].plot(ax=SED,color='g',label='FOREST',ls='--')
+    storm_data['LBJ-GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='--')
+    storm_data['QUARRY-GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux-grab',ls='--')
+    storm_data['DAM-GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='g',label='FOREST',ls='--')
     ## Sediment discharge from Turbidity Measurements
-    storm_data['LBJtSedkg']=storm_data['LBJtSed']/1000
-    storm_data['LBJtSedkg'].plot(ax=SED,color='r',label='VILLAGE',ls='-')
-    #storm_data['QUARRYtSed'].plot(ax=SED,color='y',label='QUARRY-SedFlux-T',ls='-')
-    storm_data['DAMtSedkg']=storm_data['DAMtSed']/1000
-    storm_data['DAMtSedkg'].plot(ax=SED,color='g',label='FOREST',ls='-')
+    storm_data['LBJ-T-SedFlux-kg/sec']=storm_data['LBJ-T-SedFlux-tons/sec']/1000
+    storm_data['LBJ-T-SedFlux-kg/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='-')
+    storm_data['QUARRY-T-SedFlux-kg/sec']=storm_data['QUARRY-T-SedFlux-tons/sec']/1000    
+    storm_data['QUARRY-T-SedFlux-kg/sec'].plot(ax=SED,color='y',label='QUARRY',ls='-')
+    storm_data['DAM-T-SedFlux-kg/sec']=storm_data['DAM-T-SedFlux-tons/sec']/1000
+    storm_data['DAM-T-SedFlux-kg/sec'].plot(ax=SED,color='g',label='FOREST',ls='-')
     SED.set_ylabel('SSY\nkg/s')#, SED.set_yscale('log')#, SED.set_ylim(0,10)
     max_yticks = 3
     yloc = plt.MaxNLocator(max_yticks)
@@ -3171,9 +3210,9 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     SED.grid(False), SED.spines['bottom'].set_visible(False)
     SED.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
     ## Cumulative Sediment Load
-    storm_data['LBJ-Sed-cum'].plot(ax=SEDcum,color='r',ls='--',label='VILLAGE')
-    #storm_data['QUARRY-Sed-cum'].plot(ax=SEDcum,color='y',ls='--',label='QUARRY-Cumulative Sed')    
-    storm_data['DAM-Sed-cum'].plot(ax=SEDcum,color='g',ls='--',label='FOREST') 
+    storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='r',ls='--',label='VILLAGE')
+    storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='y',ls='--',label='QUARRY-Cumulative Sed')    
+    storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='g',ls='--',label='FOREST') 
     SEDcum.set_ylabel('Cum. SSY\ntons')
     max_yticks = 4
     yloc = plt.MaxNLocator(max_yticks)
@@ -3204,100 +3243,124 @@ def plot_storms_individually(storm_threshold,storm_intervals):
         end =  storm[1]['end']+dt.timedelta(minutes=60)
         #print start, end
         ## Slice data from storm start to start end
-        storm_data = pd.DataFrame({'Precip':Precip['Timu1-15'][start:end],
-        'LBJq':LBJ['Q'][start:end],'QUARRYq':QUARRY['Q'][start:end],'DAMq':DAM['Q'][start:end],
-        'LBJgrab':LBJgrab[start:end].drop_duplicates(cols='index')['SSC (mg/L)'],'QUARRYgrab':QUARRYgrab['SSC (mg/L)'][start:end],'DAMgrab':DAMgrab['SSC (mg/L)'][start:end],        
-        'LBJntu':LBJ['YSI-NTU'],'LBJfnu':LBJ['OBS-NTU'],'QUARRYfnu':QUARRY['OBS-NTU'],'DAMntu':DAM['NTU'],
-        'LBJtssc':LBJ['T-SSC-mg/L'][start:end],'QUARRYtssc':QUARRY['T-SSC-mg/L'][start:end],'DAMtssc':DAM['T-SSC-mg/L'][start:end],
-        'LBJtSed':LBJ['T-SedFlux-tons/sec'][start:end],'QUARRYtSed':QUARRY['T-SedFlux-tons/sec'][start:end],'DAMtSed':DAM['T-SedFlux-tons/sec'][start:end],
-        'LBJgrabssc':LBJ['Grab-SSC-mg/L'][start:end],'QUARRYgrabssc':QUARRY['Grab-SSC-mg/L'][start:end],'DAMgrabssc':DAM['Grab-SSC-mg/L'][start:end],        
-        'LBJgrabSed':LBJ['Grab-SedFlux-tons/sec'][start:end],'QUARRYgrabSed':QUARRY['Grab-SedFlux-tons/sec'][start:end],'DAMgrabSed':DAM['Grab-SedFlux-tons/sec'][start:end],
-        'LBJssc':LBJ['SSC-mg/L'][start:end],'QUARRYssc':QUARRY['SSC-mg/L'][start:end],'DAMssc':DAM['SSC-mg/L'][start:end],
-        'LBJ-Sed':LBJ['SedFlux-tons/sec'][start:end],'QUARRY-Sed':QUARRY['SedFlux-tons/sec'][start:end],'DAM-Sed':DAM['SedFlux-tons/sec'][start:end]},
-        index=pd.date_range(start,end,freq='15Min')) 
+        ## LBJ
+        LBJ_storm = LBJ[start:end]
+        LBJ_storm['Sed-cumsum'] = LBJ_storm['SedFlux-tons/15min'].cumsum()
+        LBJ_new_columns = []
+        for column in LBJ_storm.columns:
+            #print column
+            LBJ_new_columns.append('LBJ-'+column)
+        LBJ_storm.columns = LBJ_new_columns 
+        ## QUARRY
+        QUARRY_storm = QUARRY[start:end]
+        QUARRY['Sed-cumsum'] = QUARRY_storm['SedFlux-tons/15min'].cumsum()
+        QUARRY_new_columns=[]
+        for column in QUARRY_storm.columns:
+            QUARRY_new_columns.append('QUARRY-'+column)
+        QUARRY_storm.columns = QUARRY_new_columns
+        ## DAM
+        DAM_storm = DAM[start:end]
+        DAM_storm['Sed-cumsum'] = DAM_storm['SedFlux-tons/15min'].cumsum()
+        DAM_new_columns = []
+        for column in DAM_storm.columns:
+            DAM_new_columns.append('DAM-'+column)
+        DAM_storm.columns = DAM_new_columns
+        
+        P_storm = PrecipFilled['Precip'][start:end]
+
+        storm_data = LBJ_storm.join(DAM_storm).join(QUARRY_storm).join(P_storm)
         ## Summary stats
         total_storm = len(storm_data[start:end])
         percent_P = len(storm_data['Precip'].dropna())/total_storm *100.
-        percent_Q_LBJ = len(storm_data['LBJq'].dropna())/total_storm * 100.
-        percent_Q_DAM = len(storm_data['DAMq'].dropna())/total_storm * 100.
-        percent_SSC_LBJ = len(storm_data['LBJssc'].dropna())/total_storm * 100.
-        percent_SSC_QUARRY = len(storm_data['QUARRYssc'].dropna())/total_storm * 100.
-        percent_SSC_DAM = len(storm_data['DAMssc'].dropna())/total_storm * 100.
-        count_LBJgrab = len(LBJgrab.dropna())
-        count_QUARRYgrab = len(QUARRYgrab.dropna())
-        count_DAMgrab = len(DAMgrab.dropna())
+        percent_Q_LBJ = len(storm_data['LBJ-Q'].dropna())/total_storm * 100.
+        percent_Q_DAM = len(storm_data['DAM-Q'].dropna())/total_storm * 100.
+        percent_SSC_LBJ = len(storm_data['LBJ-SSC-mg/L'].dropna())/total_storm * 100.
+        percent_SSC_QUARRY = len(storm_data['QUARRY-SSC-mg/L'].dropna())/total_storm * 100.
+        percent_SSC_DAM = len(storm_data['DAM-SSC-mg/L'].dropna())/total_storm * 100.
+        count_LBJgrab = len(LBJ['Grab-SSC-mg/L'].dropna())
+        count_QUARRYgrab = len(QUARRY['Grab-SSC-mg/L'].dropna())
+        count_DAMgrab = len(DAM['Grab-SSC-mg/L'].dropna())
         #print str(start)+' '+str(end)+' Storm#:'+str(count)
         #print '%P:'+str(percent_P)+' %Q_LBJ:'+str(percent_Q_LBJ)+' %Q_DAM:'+str(percent_Q_DAM)
         #print '%SSC_LBJ:'+str(percent_SSC_LBJ)+' %SSC_DAM:'+str(percent_SSC_DAM)
         #print '#LBJgrab:'+str(count_LBJgrab)+' #QUARRYgrab:'+str(count_QUARRYgrab)+' #DAMgrab:'+str(count_DAMgrab)        
-        
         ##Plotting per storm
         plt.ioff()
-        fig, (P,Q,T,SSC,SED) = plt.subplots(nrows=5,ncols=1,sharex=True,figsize=(15,15))
-        
+        fig, (P,Q,T,SSC,SED,SEDcum) = plt.subplots(nrows=6,ncols=1,sharex=True) 
+        P.tick_params(\
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        labelbottom='off') # labels along the bottom edge are off
         plt.suptitle('Storm: '+str(count)+' start: '+str(start)+' end: '+str(end), fontsize=22)
         ## Precip
         storm_data['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Timu1')
         P_max, P_sum = storm_data['Precip'].max(), storm_data['Precip'].sum()
         P.set_ylabel('Precip mm'),P.set_ylim(-1,Precip['Timu1-15'].max()+2)
-
         ## Discharge
-        storm_data['LBJq'].plot(ax=Q,color='r',label='LBJ-Q')
-        LBJ_Qmax, LBJ_Qmean, LBJ_Qsum = storm_data['LBJq'].max(), storm_data['LBJq'].mean(), storm_data['LBJq'].sum()
-        storm_data['QUARRYq'].plot(ax=Q,color='y',label='QUARRY-Q')
-        QUARRY_Qmax, QUARRY_Qmean, QUARRY_Qsum = storm_data['QUARRYq'].max(), storm_data['QUARRYq'].mean(),storm_data['QUARRYq'].sum()
-        storm_data['DAMq'].plot(ax=Q,color='g',label='DAM-Q')
-        DAM_Qmax, DAM_Qmean, DAM_Qsum = storm_data['DAMq'].max(), storm_data['DAMq'].mean(), storm_data['DAMq'].sum()
+        storm_data['LBJ-Q'].plot(ax=Q,color='r',label='LBJ-Q')
+        LBJ_Qmax, LBJ_Qmean, LBJ_Qsum = storm_data['LBJ-Q'].max(), storm_data['LBJ-Q'].mean(), storm_data['LBJ-Q'].sum()
+        storm_data['QUARRY-Q'].plot(ax=Q,color='y',label='QUARRY-Q')
+        QUARRY_Qmax, QUARRY_Qmean, QUARRY_Qsum = storm_data['QUARRY-Q'].max(),storm_data['QUARRY-Q'].mean(),storm_data['QUARRY-Q'].sum()
+        storm_data['DAM-Q'].plot(ax=Q,color='g',label='DAM-Q')
+        DAM_Qmax, DAM_Qmean, DAM_Qsum = storm_data['DAM-Q'].max(), storm_data['DAM-Q'].mean(), storm_data['DAM-Q'].sum()
         Q.set_ylabel('Q L/sec'), Q.set_ylim(-1,6000)
         ## Turbidity
-        storm_data['LBJntu'].plot(ax=T,color='r',label='LBJ-NTU')
-        LBJ_NTUmax, LBJ_NTUmean = storm_data['LBJntu'].max(), storm_data['LBJntu'].mean()
-        storm_data['LBJfnu'].plot(ax=T,color='y',label='LBJ-NTU')
-        LBJ_FNUmax, LBJ_FNUmean = storm_data['LBJfnu'].max(), storm_data['LBJfnu'].mean()
-        storm_data['QUARRYfnu'].plot(ax=T,color='y',label='QUARRY-NTU')
-        QUARRY_FNUmax, QUARRY_FNUmean = storm_data['QUARRYfnu'].max(), storm_data['QUARRYfnu'].mean()
-        storm_data['DAMntu'].plot(ax=T,color='g',label='DAM-NTU')
-        DAM_NTUmax, DAM_NTUmean = storm_data['DAMntu'].max(), storm_data['DAMntu'].mean()
-        T.set_ylabel('T (NTU,FNU)'),T.set_ylim(-1,2000)
-        ## SSC and grab samples
-        storm_data['LBJtssc'].plot(ax=SSC,color='r',label='LBJ-SSC')
-        LBJ_SSCmax, LBJ_SSCmean = storm_data['LBJssc'].max(), storm_data['LBJssc'].mean()
-        storm_data['QUARRYtssc'].plot(ax=SSC,color='y',label='QUARRY-SSC')
-        QUARRY_SSCmax, QUARRY_SSCmean = storm_data['QUARRYssc'].max(), storm_data['QUARRYssc'].mean()
-        storm_data['DAMtssc'].plot(ax=SSC,color='g',label='DAM-SSC')
-        DAM_SSCmax, DAM_SSCmean = storm_data['DAMtssc'].max(), storm_data['DAMtssc'].mean()
+        storm_data['LBJ-NTU'].plot(ax=T,color='r',label='LBJ-NTU')
+        LBJ_NTUmax, LBJ_NTUmean = storm_data['LBJ-NTU'].max(), storm_data['LBJ-NTU'].mean()
+        storm_data['QUARRY-NTU'].plot(ax=T,color='y',label='QUARRY-NTU')
+        QUARRY_NTUmax, QUARRY_NTUmean = storm_data['QUARRY-NTU'].max(), storm_data['QUARRY-NTU'].mean()
+        storm_data['DAM-NTU'].plot(ax=T,color='g',label='DAM-NTU')
+        DAM_NTUmax, DAM_NTUmean = storm_data['DAM-NTU'].max(), storm_data['DAM-NTU'].mean()
+        T.set_ylabel('T (NTU)'),T.set_ylim(-1,2000)
+        ## SSC from Turbidity
+        storm_data['LBJ-T-SSC-mg/L'].plot(ax=SSC,color='r',label='LBJ-SSC')
+        LBJ_SSCmax, LBJ_SSCmean = storm_data['LBJ-T-SSC-mg/L'].max(), storm_data['LBJ-T-SSC-mg/L'].mean()
+        storm_data['QUARRY-T-SSC-mg/L'].plot(ax=SSC,color='y',label='QUARRY-SSC')
+        QUARRY_SSCmax, QUARRY_SSCmean = storm_data['QUARRY-T-SSC-mg/L'].max(), storm_data['QUARRY-T-SSC-mg/L'].mean()
+        storm_data['DAM-T-SSC-mg/L'].plot(ax=SSC,color='g',label='DAM-SSC')
+        DAM_SSCmax, DAM_SSCmean = storm_data['DAM-T-SSC-mg/L'].max(), storm_data['DAM-T-SSC-mg/L'].mean()
         ## Grabs
-        storm_data['LBJgrab'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
-        storm_data['QUARRYgrab'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
-        storm_data['DAMgrab'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
+        storm_data['LBJ-Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
+        storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
+        storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
         SSC.set_ylabel('SSC mg/L'), SSC.set_ylim(-1,1500)
         ### SSC interpolated from grab samples
-        storm_data['LBJgrabssc'].plot(ax=SSC,ls='--',color='r',label='LBJ-SSC')
-        LBJ_SSCgrabmax, LBJ_SSCgrabmean = storm_data['LBJgrabssc'].max(), storm_data['LBJgrabssc'].mean()
-        storm_data['QUARRYgrabssc'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC')
-        QUARRY_SSCgrabmax, QUARRY_SSCgrabmean = storm_data['QUARRYgrabssc'].max(), storm_data['QUARRYgrabssc'].mean()
-        storm_data['DAMgrabssc'].plot(ax=SSC,ls='--',color='g',label='DAM-SSC')
-        DAM_SSCgrabmax, DAM_SSCgrabmean = storm_data['DAMgrabssc'].max(), storm_data['DAMgrabssc'].mean()
+        storm_data['LBJ-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='r',label='LBJ-SSC')
+        LBJ_SSCgrabmax, LBJ_SSCgrabmean = storm_data['LBJ-GrabInt-SSC-mg/L'].max(), storm_data['LBJ-GrabInt-SSC-mg/L'].mean()
+        storm_data['QUARRY-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC')
+        QUARRY_SSCgrabmax, QUARRY_SSCgrabmean = storm_data['QUARRY-GrabInt-SSC-mg/L'].max(), storm_data['QUARRY-GrabInt-SSC-mg/L'].mean()
+        storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='g',label='DAM-SSC')
+        DAM_SSCgrabmax, DAM_SSCgrabmean = storm_data['DAM-GrabInt-SSC-mg/L'].max(), storm_data['DAM-GrabInt-SSC-mg/L'].mean()
         ## Sediment discharge
-        storm_data['LBJ-Sed'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
-        LBJ_Smax, LBJ_Smean, LBJ_Ssum = storm_data['LBJ-Sed'].max(), storm_data['LBJ-Sed'].mean(), storm_data['LBJ-Sed'].sum()
-        storm_data['QUARRY-Sed'].plot(ax=SED,color='y',label='QUARRY-SedFlux',ls='-')
-        QUARRY_Smax, QUARRY_Smean, QUARRY_Ssum = storm_data['QUARRY-Sed'].max(), storm_data['QUARRY-Sed'].mean(), storm_data['QUARRY-Sed'].sum()
-        storm_data['DAM-Sed'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
-        DAM_Smax, DAM_Smean, DAM_Ssum = storm_data['DAM-Sed'].max(), storm_data['DAM-Sed'].mean(), storm_data['DAM-Sed'].sum()
+        storm_data['LBJ-SedFlux-tons/sec'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
+        LBJ_Smax, LBJ_Smean, LBJ_Ssum = storm_data['LBJ-SedFlux-tons/sec'].max(), storm_data['LBJ-SedFlux-tons/sec'].mean(), storm_data['LBJ-SedFlux-tons/sec'].sum()
+        storm_data['QUARRY-SedFlux-tons/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux',ls='-')
+        QUARRY_Smax, QUARRY_Smean, QUARRY_Ssum = storm_data['QUARRY-SedFlux-tons/sec'].max(), storm_data['QUARRY-SedFlux-tons/sec'].mean(), storm_data['QUARRY-SedFlux-tons/sec'].sum()
+        storm_data['DAM-SedFlux-tons/sec'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
+        DAM_Smax, DAM_Smean, DAM_Ssum = storm_data['DAM-SedFlux-tons/sec'].max(), storm_data['DAM-SedFlux-tons/sec'].mean(), storm_data['DAM-SedFlux-tons/sec'].sum()
         SED.set_ylabel('SSY tons/sec')#, SED.set_ylim(-.1,4000)
-        
         #P.legend(loc='best'), 
         Q.legend(loc='best',ncol=2), T.legend(loc='best',ncol=3)          
         SSC.legend(loc='best',ncol=5),SED.legend(loc='best',ncol=2)
-        
+        ## Cumulative Sediment Load
+        storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='r',ls='--',label='VILLAGE')
+        storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='y',ls='--',label='QUARRY-Cumulative Sed')    
+        storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='g',ls='--',label='FOREST') 
+        SEDcum.set_ylabel('Cum. SSY\ntons')
+        max_yticks = 4
+        yloc = plt.MaxNLocator(max_yticks)
+        SEDcum.yaxis.set_major_locator(yloc) 
+        SEDcum.yaxis.set_ticks_position('right')
+        SEDcum.grid(False)
         #Shade Storms
         shade_color='grey'
         start, end = storm[1]['start'], storm[1]['end']
         P.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), Q.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         T.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), SSC.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         SED.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        
+        SEDcum.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         plt.tight_layout()        
     
         title='Storm_'+str(count)+' '+str(start.year)+'-'+str(start.month)+'-'+str(start.day)
@@ -3308,59 +3371,55 @@ def plot_storms_individually(storm_threshold,storm_intervals):
 #plot_storms_individually(LBJ_storm_threshold,LBJ_StormIntervals)      
 
 #### Event Sediment Flux
+AV_Q_measurement_RMSE = 2 # these come from Harmel 2009
+SSC_measurement_RMSE = 2 # these come from Harmel 2009
 #### LBJ Event-wise Sediment Flux DataFrame
 SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,LBJ['SedFlux-tons/15min'])
 SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
-SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
+## SSY RMSE
+SedFluxStorms_LBJ['Stage-Q-model-RMSE'] = StormSums(LBJ_StormIntervals,LBJ['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
+SedFluxStorms_LBJ['T-SSC-model-RMSE'] = StormSums(LBJ_StormIntervals,LBJ['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
+SedFluxStorms_LBJ['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(SedFluxStorms_LBJ['Stage-Q-model-RMSE']**2. + SedFluxStorms_LBJ['T-SSC-model-RMSE']**2.))**0.5 ## Calculate Cumulative Probable Error Harmel  2009
+
 #### QUARRY Event-wise Sediment Flux DataFrame
 SedFluxStorms_QUARRY = StormSums(QUARRY_StormIntervals,QUARRY['SedFlux-tons/15min'])
 SedFluxStorms_QUARRY.columns = ['Sstart','Send','Scount','Ssum','Smax']
-SedFluxStorms_QUARRY=Pstorms_QUARRY.join(SedFluxStorms_QUARRY)#Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_QUARRY=SedFluxStorms_QUARRY.join(Qstorms_QUARRY)
+## SSY RMSE
+SedFluxStorms_QUARRY['Stage-Q-model-RMSE'] = StormSums(QUARRY_StormIntervals,QUARRY['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
+SedFluxStorms_QUARRY['T-SSC-model-RMSE'] = StormSums(QUARRY_StormIntervals,QUARRY['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
+SedFluxStorms_QUARRY['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(SedFluxStorms_QUARRY['Stage-Q-model-RMSE']**2. + SedFluxStorms_QUARRY['T-SSC-model-RMSE']**2.))**0.5 ## Calculate Cumulative Probable Error Harmel  2009
+
 #### DAM Event-wise Sediment Flux DataFrame
 SedFluxStorms_DAM = StormSums(DAM_StormIntervals,DAM['SedFlux-tons/15min'])
 SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
-SedFluxStorms_DAM=Pstorms_DAM.join(SedFluxStorms_DAM)#Add Event S (which will be fewer events than Event Precip)
 SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
+## SSY RMSE
+SedFluxStorms_DAM['Stage-Q-model-RMSE'] = StormSums(DAM_StormIntervals,DAM['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
+SedFluxStorms_DAM['T-SSC-model-RMSE'] = StormSums(DAM_StormIntervals,DAM['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
+SedFluxStorms_DAM['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(SedFluxStorms_DAM['Stage-Q-model-RMSE']**2. + SedFluxStorms_DAM['T-SSC-model-RMSE']**2.))**0.5 ## Calculate Cumulative Probable Error Harmel  2009
 
-
-##### STORMS DATA FILTERED
-##### LBJ Event-wise Sediment Flux DataFrame
-#SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,storm_data_LBJ['LBJ-Sed'])
-#SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
-#SedFluxStorms_LBJ=Pstorms_LBJ.join(SedFluxStorms_LBJ) ## Add Event S (which will be fewer events than Event Precip)
-#SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
-##### QUARRY Event-wise Sediment Flux DataFrame
-#SedFluxStorms_QUARRY = StormSums(DAM_StormIntervals,storm_data_QUARRY['QUARRY-Sed'])
-#SedFluxStorms_QUARRY.columns = ['Sstart','Send','Scount','Ssum','Smax']
-#SedFluxStorms_QUARRY=Pstorms_QUARRY.join(SedFluxStorms_QUARRY)#Add Event S (which will be fewer events than Event Precip)
-#SedFluxStorms_QUARRY=SedFluxStorms_QUARRY.join(Qstorms_QUARRY)
-##### DAM Event-wise Sediment Flux DataFrame
-#SedFluxStorms_DAM = StormSums(DAM_StormIntervals,storm_data_DAM['DAM-Sed'])
-#SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
-#SedFluxStorms_DAM=Pstorms_DAM.join(SedFluxStorms_DAM)#Add Event S (which will be fewer events than Event Precip)
-#SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
-#    
 #### Calculate correlation coefficients and sediment rating curves    
 def compileALLStorms():
-    ALLStorms=pd.DataFrame({'Supper':SedFluxStorms_DAM['Ssum'],
+    ## Sediment Yield
+    ALLStorms=pd.DataFrame({'Supper':SedFluxStorms_DAM['Ssum'],'Supper_PE':SedFluxStorms_DAM['PE'],
     'Slower':SedFluxStorms_LBJ['Ssum']-SedFluxStorms_DAM['Ssum'],
-    'Stotal':SedFluxStorms_LBJ['Ssum']})
+    'Stotal':SedFluxStorms_LBJ['Ssum'],'Stotal_PE':SedFluxStorms_LBJ['PE']})
+    ## Sediment Yield RMSE
     
     ## Qsum
     ALLStorms['Qsumtotal']=SedFluxStorms_LBJ['Qsum']
     ALLStorms['Qsumupper']=SedFluxStorms_DAM['Qsum']
     ALLStorms['Qsumlower']=SedFluxStorms_LBJ['Qsum']-SedFluxStorms_DAM['Qsum']
-    
     ## Qmax
     ALLStorms['Qmaxupper']=SedFluxStorms_DAM['Qmax']
     ALLStorms['Qmaxlower']=SedFluxStorms_LBJ['Qmax']
     ALLStorms['Qmaxtotal']=SedFluxStorms_LBJ['Qmax']
-    
     ## Add Event Precipitation and EI
     ALLStorms['Pstorms']=Pstorms_LBJ['Psum'] ## Add Event Precip
     ALLStorms['EI'] = LBJ_Stormdf['EI'][LBJ_Stormdf['EI']>1] ## Add Event Erosion Index
+    ALLStorms = ALLStorms[ALLStorms.index<Mitigation]
     return ALLStorms
 ALLStorms = compileALLStorms()
 
@@ -3370,8 +3429,10 @@ def S_storm_diff_table():
     S_diff = S_diff[S_diff['Supper']>0]
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
+    S_diff['UPPER PE'] = S_diff['Supper_PE'].apply(int)
     S_diff['LOWER tons']=S_diff['Slower'].round(2)
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
+    S_diff['TOTAL PE'] = S_diff['Stotal_PE'].apply(int)
     S_diff['% Upper'] = S_diff['Supper']/S_diff['Stotal']*100
     S_diff['% Upper'] = S_diff['% Upper'].apply(np.int)
     S_diff['% Lower'] = S_diff['Slower']/S_diff['Stotal']*100
@@ -3379,11 +3440,11 @@ def S_storm_diff_table():
     S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
     S_diff['Storm#']=range(1,len(S_diff)+1) 
     ## Filter negative values for S at LBJ    
-    S_diff = S_diff[S_diff['Slower']>0]
+    #S_diff = S_diff[S_diff['Slower']>0]
     S_diff['Storm Start'] = S_diff.index
     ## add summary stats to bottom of table
-    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','LOWER tons':'-','TOTAL tons':'Average:','% Upper':'%.0f'%S_diff['% Upper'].mean(),'% Lower':'%.0f'%S_diff['% Lower'].mean()},index=['']))
-    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','LOWER tons','TOTAL tons','% Upper','% Lower']]
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','UPPER PE':'-','LOWER tons':'-','TOTAL tons':'-','TOTAL PE':'Average:','% Upper':'%.0f'%S_diff['% Upper'].mean(),'% Lower':'%.0f'%S_diff['% Lower'].mean()},index=['']))
+    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER PE','LOWER tons','TOTAL tons','TOTAL PE','% Upper','% Lower']]
     return S_diff
 
 ## Calculate the percent of total SSY with raw vales, BEFORE NORMALIZING by area!
@@ -3513,15 +3574,13 @@ def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFl
     pearson = fig.add_subplot(111)
     pearson.patch.set_visible(False), pearson.axis('off')
     pearson.xaxis.set_visible(False), pearson.yaxis.set_visible(False) 
-
-        
+  
     SedFluxStorms_DAM = SedFluxStorms_DAM.dropna()
     SedFluxStorms_LBJ= SedFluxStorms_LBJ.dropna()
     ALLStorms = ALLStorms[ALLStorms['Slower']>0].dropna()
     
     pvalue=pval
     ## Psum vs. Ssum
-    
     if pearson_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
         Upper_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[0]
     if pearson_r(ALLStorms['Pstorms'],ALLStorms['Slower'])[1] < pvalue:
@@ -3557,14 +3616,12 @@ def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFl
         Lower_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(ALLStorms['Qmaxlower'],ALLStorms['Slower'])[0]
     if pearson_r(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
         Total_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])[0]
-    
     ## Put data together, and put in table
     PsumS = [Upper_Psum_Ssum_Pearson_r,Lower_Psum_Ssum_Pearson_r,Total_Psum_Ssum_Pearson_r]
     EIS = [Upper_EI_Ssum_Pearson_r,Lower_EI_Ssum_Pearson_r,Total_EI_Ssum_Pearson_r]
     QsumS = [Upper_Qsum_Ssum_Pearson_r,Lower_Qsum_Ssum_Pearson_r,Total_Qsum_Ssum_Pearson_r]
     QmaxS = [Upper_Qmax_Ssum_Pearson_r,Lower_Qmax_Ssum_Pearson_r,Total_Qmax_Ssum_Pearson_r]
     pearson.table(cellText = [PsumS,EIS,QsumS,QmaxS],rowLabels=['Psum','EI','Qsum','Qmax'],colLabels=['FOREST','FOR-VIL','VILLAGE'],loc='center left')
-    
     plt.suptitle("Pearson's coefficients for each variable\n as compared to SSY (Mg), p<"+str(pvalue),fontsize=12)  
     plt.draw()
     if show==True:
@@ -3581,7 +3638,6 @@ def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedF
     spearman.patch.set_visible(False), spearman.axis('off')
     spearman.xaxis.set_visible(False), spearman.yaxis.set_visible(False) 
     
-        
     SedFluxStorms_DAM = SedFluxStorms_DAM.dropna()
     SedFluxStorms_LBJ= SedFluxStorms_LBJ.dropna()
     ALLStorms = compileALLStorms()
@@ -3626,14 +3682,12 @@ def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedF
         Lower_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(ALLStorms['Qmaxlower'],ALLStorms['Slower'])[0]
     if spearman_r(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
         Total_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])[0]
-    
     ## Put data together, and put in table
     PsumS = [Upper_Psum_Ssum_Spearman_r,Lower_Psum_Ssum_Spearman_r,Total_Psum_Ssum_Spearman_r]
     EIS = [Upper_EI_Ssum_Spearman_r,Lower_EI_Ssum_Spearman_r,Total_EI_Ssum_Spearman_r]
     QsumS = [Upper_Qsum_Ssum_Spearman_r,Lower_Qsum_Ssum_Spearman_r,Total_Qsum_Ssum_Spearman_r]
     QmaxS = [Upper_Qmax_Ssum_Spearman_r,Lower_Qmax_Ssum_Spearman_r,Total_Qmax_Ssum_Spearman_r]
     spearman.table(cellText = [PsumS,EIS,QsumS,QmaxS],rowLabels=['Psum','EI','Qsum','Qmax'],colLabels=['FOREST','FOR-VIL','VILLAGE'],loc='center left')
-    
     plt.suptitle("Spearman's coefficients for each variable\n as compared to SSY (Mg), p<"+str(pvalue),fontsize=12)  
     plt.draw()
     if show==True:
@@ -3641,7 +3695,6 @@ def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedF
     return
 #plotSpearmanTable(pval=0.05,show=True)
     
- 
 def plotCoeffTable(show=False,norm=False):
     if norm==True:
         ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
@@ -3791,7 +3844,7 @@ def plotALLStorms_ALLRatings(ms=10,show=False,log=False,save=False,norm=False):
     show_plot(show,fig)
     savefig(save,title)
     return
-#plotALLStorms_ALLRatings(show=True,log=True,norm=True,save=False)
+plotALLStorms_ALLRatings(show=True,log=True,norm=True,save=False)
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
 
