@@ -270,7 +270,8 @@ if 'Q_S_Diff_summary_table' in locals():
 
 SSYspec_Forest = float(Q_S_Diff_summary_table.ix['SSY* Forest'][''][:4])
 SSYspec_Village = float(Q_S_Diff_summary_table.ix['SSY* Village'][''][:4])
-document.add_paragraph("Humans have increased specific SSY ~"+"%.0f"%((SSYspec_Village/SSYspec_Forest)*100.)+"%")
+SSYspec_change = (SSYspec_Village/SSYspec_Forest)
+document.add_paragraph("Humans have increased specific SSY ~"+"%.0f"%SSYspec_change+"x")
 
 #### DISCUSSION
 discussion_title=document.add_heading('Discussion',level=2)
