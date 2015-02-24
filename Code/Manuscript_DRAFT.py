@@ -84,6 +84,10 @@ Q_Diff_table.table_num = str(tab_count())
 S_Diff_table = S_storm_diff_table() ## function to create table data
 S_Diff_table.table_num = str(tab_count())
 
+### Storm Q and SSY summary table
+Q_S_Diff_summary_table = Q_S_storm_diff_summary_table()
+Q_S_Diff_summary_table.table_num = str(tab_count())
+
 #### FIGURES ########################################################################################################################################################
 figure_count=0
 def fig_count():
@@ -125,6 +129,9 @@ OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,
 ## Synthetic Rating Curves
 Synthetic_Rating_Curve = {'filename':figdir+'T/Synthetic Rating Curves','fig_num':str(fig_count())} ## define file name to find the png file from other script
 Synthetic_Rating_Curves(param='SS_Mean',show=False,save=True,filename=Synthetic_Rating_Curve['filename'])## generate figure from separate script and save to file
+## SSY models
+SSY_models_ALL = {'filename':figdir+'SSY/SSY Models ALL','fig_num':str(fig_count())}
+plotALLStorms_ALLRatings(subset='pre',norm=True,log=True,show=False,save=True,filename=SSY_models_ALL['filename'])
 
 #################################################################################################################################################################
 #### TITLE
@@ -250,11 +257,20 @@ document.add_heading('Disturbance Ratio', level=3)
 #### Comparing predictors of SSY
 document.add_heading('Comparing predictors of SSY',level=3)
 
-#### Fitting sediment curves
+#### Fitting SSY models
 document.add_heading('Fitting sediment curves',level=3)
+if 'SSY_models_ALL' in locals():
+    document.add_picture(SSY_models_ALL['filename']+'.png',width=Inches(6))
+    add_figure_caption(SSY_models_ALL['fig_num'],"SSY rating curves for predictors")
 
 #### Comparing human impact on SSY from Faga’alu watershed
 document.add_heading("Comparing human impact on SSY from Faga'alu watershed",level=3)
+if 'Q_S_Diff_summary_table' in locals():
+    dataframe_to_table(df=Q_S_Diff_summary_table,table_num=Q_S_Diff_summary_table.table_num,caption="Total Q and SSY")
+
+SSYspec_Forest = float(Q_S_Diff_summary_table.ix['SSY* Forest'][''][:4])
+SSYspec_Village = float(Q_S_Diff_summary_table.ix['SSY* Village'][''][:4])
+document.add_paragraph("Humans have increased specific SSY ~"+"%.0f"%((SSYspec_Village/SSYspec_Forest)*100.)+"%")
 
 #### DISCUSSION
 discussion_title=document.add_heading('Discussion',level=2)
