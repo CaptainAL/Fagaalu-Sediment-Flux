@@ -307,6 +307,27 @@ fieldstart2014b, fieldstop2014b =  dt.datetime(2014,9,29,0,0), dt.datetime(2015,
 ## Mitigation
 Mitigation = dt.datetime(2014,10,1,0,0)
 
+def LandCover_table():
+    landcoverXL = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx')
+    landcover_table = landcoverXL.parse('Fagaalu')
+    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','%','% High Intensity Developed','% Developed Open Space',
+                           '% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Bare Land']]
+    # Format Table data                       
+    for column in landcover_table.columns:
+        try:
+            if column.startswith('%')==True:
+                landcover_table[column] = landcover_table[column]*100.
+                landcover_table[column] = landcover_table[column].round(1)
+            else:
+                landcover_table[column] = landcover_table[column].round(2)
+        except:
+            pass
+    landcover_table = landcover_table[landcover_table['Subwatershed'].isin(['FOREST(UPPER)','QUARRY','VILLAGE(TOTAL)','Fagaalu Stream'])==True].reset_index()
+    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','%','% High Intensity Developed','% Developed Open Space',
+                           '% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Bare Land']]
+    return landcover_table
+LandCover_table()
+
 if 'XL' not in locals():
     print 'opening MASTER_DATA excel file...'+dt.datetime.now().strftime('%H:%M:%S')
     XL = pd.ExcelFile(datadir+'MASTER_DATA_FAGAALU.xlsx')
@@ -2904,7 +2925,6 @@ DAM['SedFlux-tons/sec']=DAM['T-SedFlux-tons/sec'].where(DAM['T-SedFlux-tons/sec'
 DAM['SedFlux-tons/15min']=DAM['T-SedFlux-tons/15min'].where(DAM['T-SedFlux-tons/15min']>=0,DAM['GrabInt-SedFlux-tons/15min'])
 
 
-
 #### ..
 #### EVENT-WISE ANALYSES
 
@@ -3249,7 +3269,7 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
 Storm_SedFlux(storm_data_LBJ,LBJ_storm_threshold,LBJ_StormIntervals,'LBJ_StormIntervals',show=True)
 #Storm_SedFlux(storm_data_DAM,DAM_storm_threshold,DAM_StormIntervals,'DAM_StormIntervals',show=True)
 
-def plot_storms_individually(storm_threshold,storm_intervals):
+def plot_all_storms_individually(storm_threshold,storm_intervals,show=False,save=True):
     count = 0
     for storm in storm_intervals.iterrows():
         count+=1
@@ -3378,11 +3398,148 @@ def plot_storms_individually(storm_threshold,storm_intervals):
         plt.tight_layout()        
     
         title='Storm_'+str(count)+' '+str(start.year)+'-'+str(start.month)+'-'+str(start.day)
-        plt.savefig(figdir+'storm_figures/'+title+'.png')
-        plt.close('all')
+        if save ==True:
+            plt.savefig(figdir+'storm_figures/'+title+'.png')
+        if show==True:
+            plt.show()
+        elif show==False:
+            plt.close('all')
     plt.ion()
     return
-#plot_storms_individually(LBJ_storm_threshold,LBJ_StormIntervals)      
+#plot_all_storms_individually(LBJ_storm_threshold,LBJ_StormIntervals,show=True,save=False) # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
+
+def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=''):
+    ## Storm Intervals -60 minutes to show whole storm
+    start = storm['start']-dt.timedelta(minutes=60)
+    end =  storm['end']+dt.timedelta(minutes=60)
+    #print start, end
+    ## Slice data from storm start to start end
+    ## LBJ
+    LBJ_storm = LBJ[start:end]
+    LBJ_storm['Sed-cumsum'] = LBJ_storm['SedFlux-tons/15min'].cumsum()
+    LBJ_new_columns = []
+    for column in LBJ_storm.columns:
+        #print column
+        LBJ_new_columns.append('LBJ-'+column)
+    LBJ_storm.columns = LBJ_new_columns 
+    ## QUARRY
+    QUARRY_storm = QUARRY[start:end]
+    QUARRY['Sed-cumsum'] = QUARRY_storm['SedFlux-tons/15min'].cumsum()
+    QUARRY_new_columns=[]
+    for column in QUARRY_storm.columns:
+        QUARRY_new_columns.append('QUARRY-'+column)
+    QUARRY_storm.columns = QUARRY_new_columns
+    ## DAM
+    DAM_storm = DAM[start:end]
+    DAM_storm['Sed-cumsum'] = DAM_storm['SedFlux-tons/15min'].cumsum()
+    DAM_new_columns = []
+    for column in DAM_storm.columns:
+        DAM_new_columns.append('DAM-'+column)
+    DAM_storm.columns = DAM_new_columns
+    ## Precip
+    P_storm = PrecipFilled['Precip'][start:end]
+    ## Compile Storm Data
+    storm_data = LBJ_storm.join(DAM_storm).join(QUARRY_storm).join(P_storm)
+    ## Summary stats
+    total_storm = len(storm_data[start:end])
+    percent_P = len(storm_data['Precip'].dropna())/total_storm *100.
+    percent_Q_LBJ = len(storm_data['LBJ-Q'].dropna())/total_storm * 100.
+    percent_Q_DAM = len(storm_data['DAM-Q'].dropna())/total_storm * 100.
+    percent_SSC_LBJ = len(storm_data['LBJ-SSC-mg/L'].dropna())/total_storm * 100.
+    percent_SSC_QUARRY = len(storm_data['QUARRY-SSC-mg/L'].dropna())/total_storm * 100.
+    percent_SSC_DAM = len(storm_data['DAM-SSC-mg/L'].dropna())/total_storm * 100.
+    count_LBJgrab = len(LBJ['Grab-SSC-mg/L'].dropna())
+    count_QUARRYgrab = len(QUARRY['Grab-SSC-mg/L'].dropna())
+    count_DAMgrab = len(DAM['Grab-SSC-mg/L'].dropna())
+    #print str(start)+' '+str(end)
+    #print '%P:'+str(percent_P)+' %Q_LBJ:'+str(percent_Q_LBJ)+' %Q_DAM:'+str(percent_Q_DAM)
+    #print '%SSC_LBJ:'+str(percent_SSC_LBJ)+' %SSC_DAM:'+str(percent_SSC_DAM)
+    #print '#LBJgrab:'+str(count_LBJgrab)+' #QUARRYgrab:'+str(count_QUARRYgrab)+' #DAMgrab:'+str(count_DAMgrab)        
+    ##Plotting per storm
+    fig, (P,Q,T,SSC,SED,SEDcum) = plt.subplots(nrows=6,ncols=1,sharex=True,figsize=(8,8)) 
+    P.tick_params(\
+    axis='x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom='off',      # ticks along the bottom edge are off
+    top='off',         # ticks along the top edge are off
+    labelbottom='off') # labels along the bottom edge are off
+    #plt.suptitle(' start: '+str(start)+' end: '+str(end), fontsize=22)
+    ## Precip
+    storm_data['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Timu1')
+    P_max, P_sum = storm_data['Precip'].max(), storm_data['Precip'].sum()
+    P.set_ylabel('Precip mm'),P.set_ylim(-1,Precip['Timu1-15'].max()+2)
+    ## Discharge Q
+    storm_data['LBJ-Q'].plot(ax=Q,color='r',label='VILLAGE')
+    LBJ_Qmax, LBJ_Qmean, LBJ_Qsum = storm_data['LBJ-Q'].max(), storm_data['LBJ-Q'].mean(), storm_data['LBJ-Q'].sum()
+    storm_data['QUARRY-Q'].plot(ax=Q,color='y',label='QUARRY')
+    QUARRY_Qmax, QUARRY_Qmean, QUARRY_Qsum = storm_data['QUARRY-Q'].max(),storm_data['QUARRY-Q'].mean(),storm_data['QUARRY-Q'].sum()
+    storm_data['DAM-Q'].plot(ax=Q,color='g',label='FOREST')
+    DAM_Qmax, DAM_Qmean, DAM_Qsum = storm_data['DAM-Q'].max(), storm_data['DAM-Q'].mean(), storm_data['DAM-Q'].sum()
+    Q.set_ylabel('Q L/sec')#, Q.set_ylim(-1,6000)
+    ## Turbidity T
+    storm_data['LBJ-NTU'].plot(ax=T,color='r',label='LBJ-NTU')
+    LBJ_NTUmax, LBJ_NTUmean = storm_data['LBJ-NTU'].max(), storm_data['LBJ-NTU'].mean()
+    storm_data['QUARRY-NTU'].plot(ax=T,color='y',label='QUARRY-NTU')
+    QUARRY_NTUmax, QUARRY_NTUmean = storm_data['QUARRY-NTU'].max(), storm_data['QUARRY-NTU'].mean()
+    storm_data['DAM-NTU'].plot(ax=T,color='g',label='DAM-NTU')
+    DAM_NTUmax, DAM_NTUmean = storm_data['DAM-NTU'].max(), storm_data['DAM-NTU'].mean()
+    T.set_ylabel('T (NTU)')#,T.set_ylim(-1,2000)
+    ## SSC from Turbidity T-SSC
+    storm_data['LBJ-T-SSC-mg/L'].plot(ax=SSC,color='r',label='LBJ-SSC')
+    LBJ_SSCmax, LBJ_SSCmean = storm_data['LBJ-T-SSC-mg/L'].max(), storm_data['LBJ-T-SSC-mg/L'].mean()
+    storm_data['QUARRY-T-SSC-mg/L'].plot(ax=SSC,color='y',label='QUARRY-SSC')
+    QUARRY_SSCmax, QUARRY_SSCmean = storm_data['QUARRY-T-SSC-mg/L'].max(), storm_data['QUARRY-T-SSC-mg/L'].mean()
+    storm_data['DAM-T-SSC-mg/L'].plot(ax=SSC,color='g',label='DAM-SSC')
+    DAM_SSCmax, DAM_SSCmean = storm_data['DAM-T-SSC-mg/L'].max(), storm_data['DAM-T-SSC-mg/L'].mean()
+    ## Grabs Grab-SSC
+    storm_data['LBJ-Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
+    storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
+    storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
+    SSC.set_ylabel('SSC mg/L')#, SSC.set_ylim(-1,1500)
+    ### SSC interpolated from grab samples GrabInt-SSC
+    storm_data['LBJ-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='r',label='LBJ-SSC')
+    LBJ_SSCgrabmax, LBJ_SSCgrabmean = storm_data['LBJ-GrabInt-SSC-mg/L'].max(), storm_data['LBJ-GrabInt-SSC-mg/L'].mean()
+    storm_data['QUARRY-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC')
+    QUARRY_SSCgrabmax, QUARRY_SSCgrabmean = storm_data['QUARRY-GrabInt-SSC-mg/L'].max(), storm_data['QUARRY-GrabInt-SSC-mg/L'].mean()
+    storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='g',label='DAM-SSC')
+    DAM_SSCgrabmax, DAM_SSCgrabmean = storm_data['DAM-GrabInt-SSC-mg/L'].max(), storm_data['DAM-GrabInt-SSC-mg/L'].mean()
+    ## Sediment Yield SedFlux
+    storm_data['LBJ-SedFlux-tons/sec'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
+    LBJ_Smax, LBJ_Smean, LBJ_Ssum = storm_data['LBJ-SedFlux-tons/sec'].max(), storm_data['LBJ-SedFlux-tons/sec'].mean(), storm_data['LBJ-SedFlux-tons/sec'].sum()
+    storm_data['QUARRY-SedFlux-tons/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux',ls='-')
+    QUARRY_Smax, QUARRY_Smean, QUARRY_Ssum = storm_data['QUARRY-SedFlux-tons/sec'].max(), storm_data['QUARRY-SedFlux-tons/sec'].mean(), storm_data['QUARRY-SedFlux-tons/sec'].sum()
+    storm_data['DAM-SedFlux-tons/sec'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
+    DAM_Smax, DAM_Smean, DAM_Ssum = storm_data['DAM-SedFlux-tons/sec'].max(), storm_data['DAM-SedFlux-tons/sec'].mean(), storm_data['DAM-SedFlux-tons/sec'].sum()
+    SED.set_ylabel('SSY tons/sec')#, SED.set_ylim(-.1,4000)
+    ## Cumulative Sediment Load
+    storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='r',ls='--',label='VILLAGE')
+    storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='y',ls='--',label='QUARRY-Cumulative Sed')    
+    storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='g',ls='--',label='FOREST') 
+    SEDcum.set_ylabel('Cum. SSY\ntons'),SEDcum.yaxis.set_ticks_position('right')
+    for axis in fig.axes:
+        max_yticks = 4
+        yloc = plt.MaxNLocator(max_yticks)
+        axis.yaxis.set_major_locator(yloc) 
+        axis.grid(False)
+    ## Legends
+    #P.legend(loc='best'), 
+    Q.legend(loc='best',ncol=2)#, T.legend(loc='best',ncol=3)          
+    #SSC.legend(loc='best',ncol=5),SED.legend(loc='best',ncol=2)
+    #Shade Storms
+    shade_storms=False
+    if shade_storms==True:
+        shade_color='grey'
+        start, end = storm[1]['start'], storm[1]['end']
+        P.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), Q.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+        T.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), SSC.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+        SED.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+        SEDcum.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    plt.tight_layout(pad=0.1)        
+    #title=str(start.year)+'-'+str(start.month)+'-'+str(start.day)
+    show_plot(show)
+    savefig(save,filename)
+    return
+plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=True,save=False,filename='') # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
 
 #### Event Sediment Flux
 AV_Q_measurement_RMSE = 8.5 # these come from Harmel 2009 lookup table in DUET-HWQ
@@ -3528,17 +3685,24 @@ def Q_S_storm_diff_summary_table():
     diff = diff[diff['Slower']>0]  
     ## Number Storms
     diff['Storm#']=range(1,len(diff)+1)  
-
+    ## Disturbance Ratio
+    SSYpre = 1.78 * diff['km2Supper'].sum()
+    SSY = diff['Stotal'].sum()
+    SSY_DR = SSY/SSYpre
+    ## Q Disturbance Ratio
+    Qpre = 1.78 * (diff['QupperMCM'].sum()/.9)
+    Q = diff['QtotalMCM'].sum()
+    Q_DR = Q/Qpre   
 
     ## Summarize
     table_data_dict = {'Storms':len(diff),'Precipitation':'%.0f'%diff['Pstorms'].sum()+' mm',
     'Q Forest MCM':'%.2f'%diff['QupperMCM'].sum() +' MCM','Q Forest mm':'%.0f'%diff['mmQupper'].sum() +' mm',
     'Q Village MCM':'%.2f'%diff['QtotalMCM'].sum() +'MCM','Q Village mm':'%.0f'%diff['mmQtotal'].sum()+' mm',
     'SSY Forest':'%.1f'%diff['Supper'].sum() +'Mg','SSY* Forest':'%.1f'%diff['km2Supper'].sum() +r'Mg/km^2',
-    'SSY Village':'%.1f'%diff['Stotal'].sum()+'Mg','SSY* Village':'%.1f'%diff['km2Stotal'].sum()+r'Mg/km^2'}
+    'SSY Village':'%.1f'%diff['Stotal'].sum()+'Mg','SSY* Village':'%.1f'%diff['km2Stotal'].sum()+r'Mg/km^2','Q Disturbance Ratio':'%.1f'%Q_DR,'SSY Disturbance Ratio':'%.1f'%SSY_DR}
     
     summary =pd.DataFrame(table_data_dict,index=[""])
-    summary = summary[['Storms','Precipitation','Q Forest MCM','Q Forest mm','Q Village MCM','Q Village mm','SSY Forest','SSY* Forest','SSY Village','SSY* Village']]
+    summary = summary[['Storms','Precipitation','Q Forest MCM','Q Forest mm','Q Village MCM','Q Village mm','SSY Forest','SSY* Forest','SSY Village','SSY* Village','Q Disturbance Ratio','SSY Disturbance Ratio']]
     summary = summary.T
     summary[' ']= summary.index
     summary = summary[[' ','']]
@@ -3598,7 +3762,7 @@ def plotS_storm_table_summary(fs=16,show=False):
     the_table.scale(1.5, 1.5)
     show_plot(show)
     return
-plotS_storm_table_summary(fs=22,show=True)
+#plotS_storm_table_summary(fs=22,show=True)
 
 def NormalizeSSYbyCatchmentArea(ALLStorms):
     ## DAM = 0.9 km2
@@ -3621,8 +3785,61 @@ def NormalizeSSYbyCatchmentArea(ALLStorms):
     ALLStorms['Pstorms']=Pstorms_LBJ['Psum'] ## Add Event Precip
     ALLStorms['EI'] = LBJ_Stormdf['EI'][LBJ_Stormdf['EI']>1] ## Add Event Erosion Index
     return ALLStorms
+    
+def Pearson_r_Table(pvalue=0.05):
+    ALLStorms = compileALLStorms()
+    Upper = ALLStorms[['Pstorms','EI','Qsumupper','Qmaxupper','Supper','Supper_PE']].dropna()
+    Lower = ALLStorms[['Pstorms','EI','Qsumlower','Qmaxlower','Slower']].dropna()
+    Total = ALLStorms[['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal','Stotal_PE']].dropna()
+    ## Psum vs. Ssum
+    if pearson_r(Upper['Pstorms'],Upper['Supper'])[1] < pvalue:
+        Upper_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(Upper['Pstorms'],Upper['Supper'])[0]
+    if pearson_r(Lower['Pstorms'],Lower['Slower'])[1] < pvalue:
+        Lower_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(Lower['Pstorms'],Lower['Slower'])[0]
+    if pearson_r(Total['Pstorms'],Total['Stotal'])[1] < pvalue:
+        Total_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(Total['Pstorms'],Total['Stotal'])[0]      
+    ## EI vs. Ssum
+    if pearson_r(Upper['EI'],Upper['Supper'])[1] < pvalue:
+        Upper_EI_Ssum_Pearson_r = '%.2f'%pearson_r(Upper['EI'],Upper['Supper'])[0]
+    elif pearson_r(Upper['EI'],Upper['Supper'])[1] >= pvalue:
+        Upper_EI_Ssum_Pearson_r = ' ' 
+    if pearson_r(Lower['EI'],Lower['Slower'])[1] < pvalue:
+        Lower_EI_Ssum_Pearson_r = '%.2f'%pearson_r(Lower['EI'],Lower['Slower'])[0]
+    elif pearson_r(Lower['EI'],Lower['Slower'])[1] >= pvalue:
+        Lower_EI_Ssum_Pearson_r = ' ' 
+    if pearson_r(Total['EI'],Total['Stotal'])[1] < pvalue:
+        Total_EI_Ssum_Pearson_r = '%.2f'%pearson_r(Total['EI'],Total['Stotal'])[0]
+    elif pearson_r(Total['EI'],Total['Stotal'])[1] >= pvalue:
+        Total_EI_Ssum_Pearson_r = ' ' 
+    ## Qsum vs. Ssum
+    if pearson_r(Upper['Qsumupper'],Upper['Supper'])[1] < pvalue:
+        Upper_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(Upper['Qsumupper'],Upper['Supper'])[0]
+    if pearson_r(Lower['Qsumlower'],Lower['Slower'])[1] < pvalue:
+        Lower_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(Lower['Qsumlower'],Lower['Slower'])[0]
+    elif pearson_r(Lower['Qsumlower'],Lower['Slower'])[1]>=pvalue:
+        Lower_Qsum_Ssum_Pearson_r = ' '
+    if pearson_r(Total['Qsumtotal'],Total['Stotal'])[1] < pvalue:
+        Total_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(Total['Qsumtotal'],Total['Stotal'])[0]
+    elif pearson_r(Total['Qsumtotal'],Total['Stotal'])[1] >= pvalue:
+        Total_Qsum_Ssum_Pearson_r =' '
+    ## Qmaxvs. Ssum
+    if pearson_r(Upper['Qmaxupper'],Upper['Supper'])[1] < pvalue:
+        Upper_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(Upper['Qmaxupper'],Upper['Supper'])[0]
+    if pearson_r(Lower['Qmaxlower'],Lower['Slower'])[1] < pvalue:
+        Lower_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(Lower['Qmaxlower'],Lower['Slower'])[0]
+    if pearson_r(Total['Qmaxtotal'],Total['Stotal'])[1] < pvalue:
+        Total_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(Total['Qmaxtotal'],Total['Stotal'])[0]
+    ## Put data together, and put in table
+    table_data_dict = {'FOREST':[Upper_Psum_Ssum_Pearson_r,Upper_EI_Ssum_Pearson_r,Upper_Qsum_Ssum_Pearson_r,Upper_Qmax_Ssum_Pearson_r],
+    'VILLAGE-FOREST':[Lower_Psum_Ssum_Pearson_r,Lower_EI_Ssum_Pearson_r,Lower_Qsum_Ssum_Pearson_r,Lower_Qmax_Ssum_Pearson_r],
+    'VILLAGE':[Total_Psum_Ssum_Pearson_r,Total_EI_Ssum_Pearson_r,Total_Qsum_Ssum_Pearson_r,Total_Qmax_Ssum_Pearson_r]} ## Put data in a dictionary to convert to DataFrame
+    summary =pd.DataFrame(table_data_dict,index=['Precip','EI','Qsum','Qmax'])[['FOREST','VILLAGE-FOREST','VILLAGE']]
+    summary['']= summary.index
+    summary = summary[['','FOREST','VILLAGE-FOREST','VILLAGE']]
+    return summary
+Pearson_r_Table(pvalue=0.05)
 
-def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms, pvalue=0.05,show=False):
+def plotPearsonTable(pvalue=0.05,show=False):
     nrows, ncols = 3,4
     hcell, wcell=0.3,1
     hpad, wpad = 1,1
@@ -3631,47 +3848,61 @@ def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFl
     pearson.patch.set_visible(False), pearson.axis('off')
     pearson.xaxis.set_visible(False), pearson.yaxis.set_visible(False) 
   
-    SedFluxStorms_DAM = SedFluxStorms_DAM.dropna()
-    SedFluxStorms_LBJ= SedFluxStorms_LBJ.dropna()
-    ALLStorms = ALLStorms[ALLStorms['Slower']>0].dropna()
+    ALLStorms = compileALLStorms()
+    Upper = ALLStorms[['Pstorms','EI','Qsumupper','Qmaxupper','Supper','Supper_PE']].dropna()
+    Lower = ALLStorms[['Pstorms','EI','Qsumlower','Qmaxlower','Slower']].dropna()
+    Total = ALLStorms[['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal','Stotal_PE']].dropna()
     
-
     ## Psum vs. Ssum
-    if pearson_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
-        Upper_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[0]
-    if pearson_r(ALLStorms['Pstorms'],ALLStorms['Slower'])[1] < pvalue:
-        Lower_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(ALLStorms['Pstorms'],ALLStorms['Slower'])[0]
-    if pearson_r(SedFluxStorms_LBJ['Psum'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
-        Total_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_LBJ['Psum'],SedFluxStorms_LBJ['Ssum'])[0]
+    if pearson_r(Upper['Pstorms'],Upper['Supper'])[1] < pvalue:
+        Upper_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(Upper['Pstorms'],Upper['Supper'])[0]
+        
+    if pearson_r(Lower['Pstorms'],Lower['Slower'])[1] < pvalue:
+        Lower_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(Lower['Pstorms'],Lower['Slower'])[0]
+        
+    if pearson_r(Total['Pstorms'],Total['Stotal'])[1] < pvalue:
+        Total_Psum_Ssum_Pearson_r = '%.2f'%pearson_r(Total['Pstorms'],Total['Stotal'])[0]
+        
     ## EI vs. Ssum
-    if pearson_r(SedFluxStorms_DAM['EI'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
-        Upper_EI_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_DAM['EI'],SedFluxStorms_DAM['Ssum'])[0]
-    elif pearson_r(SedFluxStorms_DAM['EI'],SedFluxStorms_DAM['Ssum'])[1] >= pvalue:
+    if pearson_r(Upper['EI'],Upper['Supper'])[1] < pvalue:
+        Upper_EI_Ssum_Pearson_r = '%.2f'%pearson_r(Upper['EI'],Upper['Supper'])[0]
+    elif pearson_r(Upper['EI'],Upper['Supper'])[1] >= pvalue:
         Upper_EI_Ssum_Pearson_r = ' ' 
-    if pearson_r(ALLStorms['EI'],ALLStorms['Slower'])[1] < pvalue:
-        Lower_EI_Ssum_Pearson_r = '%.2f'%pearson_r(ALLStorms['EI'],ALLStorms['Slower'])[0]
-    elif pearson_r(ALLStorms['EI'],ALLStorms['Slower'])[1] >= pvalue:
+        
+    if pearson_r(Lower['EI'],Lower['Slower'])[1] < pvalue:
+        Lower_EI_Ssum_Pearson_r = '%.2f'%pearson_r(Lower['EI'],Lower['Slower'])[0]
+    elif pearson_r(Lower['EI'],Lower['Slower'])[1] >= pvalue:
         Lower_EI_Ssum_Pearson_r = ' ' 
-    if pearson_r(SedFluxStorms_LBJ['EI'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
-        Total_EI_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_LBJ['EI'],SedFluxStorms_LBJ['Ssum'])[0]
-    elif pearson_r(SedFluxStorms_LBJ['EI'],SedFluxStorms_LBJ['Ssum'])[1] >= pvalue:
+        
+    if pearson_r(Total['EI'],Total['Stotal'])[1] < pvalue:
+        Total_EI_Ssum_Pearson_r = '%.2f'%pearson_r(Total['EI'],Total['Stotal'])[0]
+    elif pearson_r(Total['EI'],Total['Stotal'])[1] >= pvalue:
         Total_EI_Ssum_Pearson_r = ' ' 
+        
     ## Qsum vs. Ssum
-    if pearson_r(SedFluxStorms_DAM['Qsum'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
-        Upper_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_DAM['Qsum'],SedFluxStorms_DAM['Ssum'])[0]
-    if pearson_r(ALLStorms['Qsumlower'],ALLStorms['Slower'])[1] < pvalue:
-        Lower_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(ALLStorms['Qsumlower'],ALLStorms['Slower'])[0]
-    if pearson_r(SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
-        Total_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'])[0]
-    elif pearson_r(SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'])[1] >= pvalue:
+    if pearson_r(Upper['Qsumupper'],Upper['Supper'])[1] < pvalue:
+        Upper_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(Upper['Qsumupper'],Upper['Supper'])[0]
+        
+    if pearson_r(Lower['Qsumlower'],Lower['Slower'])[1] < pvalue:
+        Lower_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(Lower['Qsumlower'],Lower['Slower'])[0]
+    elif pearson_r(Lower['Qsumlower'],Lower['Slower'])[1]>=pvalue:
+        Lower_Qsum_Ssum_Pearson_r = ' '
+        
+    if pearson_r(Total['Qsumtotal'],Total['Stotal'])[1] < pvalue:
+        Total_Qsum_Ssum_Pearson_r = '%.2f'%pearson_r(Total['Qsumtotal'],Total['Stotal'])[0]
+    elif pearson_r(Total['Qsumtotal'],Total['Stotal'])[1] >= pvalue:
         Total_Qsum_Ssum_Pearson_r =' '
+        
     ## Qmaxvs. Ssum
-    if pearson_r(SedFluxStorms_DAM['Qmax'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
-        Upper_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_DAM['Qmax'],SedFluxStorms_DAM['Ssum'])[0]
-    if pearson_r(ALLStorms['Qmaxlower'],ALLStorms['Slower'])[1] < pvalue:
-        Lower_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(ALLStorms['Qmaxlower'],ALLStorms['Slower'])[0]
-    if pearson_r(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
-        Total_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])[0]
+    if pearson_r(Upper['Qmaxupper'],Upper['Supper'])[1] < pvalue:
+        Upper_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(Upper['Qmaxupper'],Upper['Supper'])[0]
+        
+    if pearson_r(Lower['Qmaxlower'],Lower['Slower'])[1] < pvalue:
+        Lower_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(Lower['Qmaxlower'],Lower['Slower'])[0]
+        
+    if pearson_r(Total['Qmaxtotal'],Total['Stotal'])[1] < pvalue:
+        Total_Qmax_Ssum_Pearson_r = '%.2f'%pearson_r(Total['Qmaxtotal'],Total['Stotal'])[0]
+        
     ## Put data together, and put in table
     PsumS = [Upper_Psum_Ssum_Pearson_r,Lower_Psum_Ssum_Pearson_r,Total_Psum_Ssum_Pearson_r]
     EIS = [Upper_EI_Ssum_Pearson_r,Lower_EI_Ssum_Pearson_r,Total_EI_Ssum_Pearson_r]
@@ -3681,9 +3912,62 @@ def plotPearsonTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFl
     plt.suptitle("Pearson's coefficients for each variable\n as compared to SSY (Mg), p<"+str(pvalue),fontsize=12)  
     show_plot(show)
     return
-#plotPearsonTable(pvalue=0.05,show=True)
+plotPearsonTable(pvalue=0.05,show=True)
 
-def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedFluxStorms_LBJ,ALLStorms=ALLStorms, pvalue=0.05,show=False):
+def Spearman_r_Table(pvalue=0.05):
+    ALLStorms = compileALLStorms()
+    Upper = ALLStorms[['Pstorms','EI','Qsumupper','Qmaxupper','Supper','Supper_PE']].dropna()
+    Lower = ALLStorms[['Pstorms','EI','Qsumlower','Qmaxlower','Slower']].dropna()
+    Total = ALLStorms[['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal','Stotal_PE']].dropna()
+    ## Psum vs. Ssum
+    if spearman_r(Upper['Pstorms'],Upper['Supper'])[1] < pvalue:
+        Upper_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(Upper['Pstorms'],Upper['Supper'])[0]
+    if spearman_r(Lower['Pstorms'],Lower['Slower'])[1] < pvalue:
+        Lower_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(Lower['Pstorms'],Lower['Slower'])[0]
+    if spearman_r(Total['Pstorms'],Total['Stotal'])[1] < pvalue:
+        Total_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(Total['Pstorms'],Total['Stotal'])[0]      
+    ## EI vs. Ssum
+    if spearman_r(Upper['EI'],Upper['Supper'])[1] < pvalue:
+        Upper_EI_Ssum_Spearman_r = '%.2f'%spearman_r(Upper['EI'],Upper['Supper'])[0]
+    elif spearman_r(Upper['EI'],Upper['Supper'])[1] >= pvalue:
+        Upper_EI_Ssum_Spearman_r = ' ' 
+    if spearman_r(Lower['EI'],Lower['Slower'])[1] < pvalue:
+        Lower_EI_Ssum_Spearman_r = '%.2f'%spearman_r(Lower['EI'],Lower['Slower'])[0]
+    elif spearman_r(Lower['EI'],Lower['Slower'])[1] >= pvalue:
+        Lower_EI_Ssum_Spearman_r = ' ' 
+    if spearman_r(Total['EI'],Total['Stotal'])[1] < pvalue:
+        Total_EI_Ssum_Spearman_r = '%.2f'%spearman_r(Total['EI'],Total['Stotal'])[0]
+    elif spearman_r(Total['EI'],Total['Stotal'])[1] >= pvalue:
+        Total_EI_Ssum_Spearman_r = ' ' 
+    ## Qsum vs. Ssum
+    if spearman_r(Upper['Qsumupper'],Upper['Supper'])[1] < pvalue:
+        Upper_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(Upper['Qsumupper'],Upper['Supper'])[0]
+    if spearman_r(Lower['Qsumlower'],Lower['Slower'])[1] < pvalue:
+        Lower_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(Lower['Qsumlower'],Lower['Slower'])[0]
+    elif spearman_r(Lower['Qsumlower'],Lower['Slower'])[1]>=pvalue:
+        Lower_Qsum_Ssum_Spearman_r = ' '
+    if spearman_r(Total['Qsumtotal'],Total['Stotal'])[1] < pvalue:
+        Total_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(Total['Qsumtotal'],Total['Stotal'])[0]
+    elif spearman_r(Total['Qsumtotal'],Total['Stotal'])[1] >= pvalue:
+        Total_Qsum_Ssum_Spearman_r =' '
+    ## Qmaxvs. Ssum
+    if spearman_r(Upper['Qmaxupper'],Upper['Supper'])[1] < pvalue:
+        Upper_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(Upper['Qmaxupper'],Upper['Supper'])[0]
+    if spearman_r(Lower['Qmaxlower'],Lower['Slower'])[1] < pvalue:
+        Lower_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(Lower['Qmaxlower'],Lower['Slower'])[0]
+    if spearman_r(Total['Qmaxtotal'],Total['Stotal'])[1] < pvalue:
+        Total_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(Total['Qmaxtotal'],Total['Stotal'])[0]
+    ## Put data together, and put in table
+    table_data_dict = {'FOREST':[Upper_Psum_Ssum_Spearman_r,Upper_EI_Ssum_Spearman_r,Upper_Qsum_Ssum_Spearman_r,Upper_Qmax_Ssum_Spearman_r],
+    'VILLAGE-FOREST':[Lower_Psum_Ssum_Spearman_r,Lower_EI_Ssum_Spearman_r,Lower_Qsum_Ssum_Spearman_r,Lower_Qmax_Ssum_Spearman_r],
+    'VILLAGE':[Total_Psum_Ssum_Spearman_r,Total_EI_Ssum_Spearman_r,Total_Qsum_Ssum_Spearman_r,Total_Qmax_Ssum_Spearman_r]} ## Put data in a dictionary to convert to DataFrame
+    summary =pd.DataFrame(table_data_dict,index=['Precip','EI','Qsum','Qmax'])[['FOREST','VILLAGE-FOREST','VILLAGE']]
+    summary['']= summary.index
+    summary = summary[['','FOREST','VILLAGE-FOREST','VILLAGE']]
+    return summary
+Spearman_r_Table(pvalue=0.05)
+
+def plotSpearmanTable(pvalue=0.05,show=False):
     nrows, ncols = 3,4
     hcell, wcell=0.3,1
     hpad, wpad = 1,1
@@ -3692,49 +3976,64 @@ def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedF
     spearman.patch.set_visible(False), spearman.axis('off')
     spearman.xaxis.set_visible(False), spearman.yaxis.set_visible(False) 
     
-    SedFluxStorms_DAM = SedFluxStorms_DAM.dropna()
-    SedFluxStorms_LBJ= SedFluxStorms_LBJ.dropna()
     ALLStorms = compileALLStorms()
-    ALLStorms = ALLStorms[ALLStorms['Slower']>0].dropna()
+    Upper = ALLStorms[['Supper','Supper_PE','Qsumupper','Qmaxupper','Pstorms','EI']].dropna()
+    Lower = ALLStorms[['Slower','Qsumlower','Qmaxlower','Pstorms','EI']].dropna()
+    Total = ALLStorms[['Stotal','Stotal_PE','Qsumtotal','Qmaxtotal','Pstorms','EI']].dropna()
 
     ## Psum vs. Ssum
-    if spearman_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
-        Upper_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_DAM['Psum'],SedFluxStorms_DAM['Ssum'])[0]
-    if spearman_r(ALLStorms['Pstorms'],ALLStorms['Slower'])[1] < pvalue:
-        Lower_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(ALLStorms['Pstorms'],ALLStorms['Slower'])[0]
-    if spearman_r(SedFluxStorms_LBJ['Psum'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
-        Total_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_LBJ['Psum'],SedFluxStorms_LBJ['Ssum'])[0]
+    if spearman_r(Upper['Pstorms'],Upper['Supper'])[1] < pvalue:
+        Upper_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(Upper['Pstorms'],Upper['Supper'])[0]
+        
+    if spearman_r(Lower['Pstorms'],Lower['Slower'])[1] < pvalue:
+        Lower_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(Lower['Pstorms'],Lower['Slower'])[0]
+    elif spearman_r(Lower['Pstorms'],Lower['Slower'])[1] >= pvalue:
+        Lower_Psum_Ssum_Spearman_r = ' '
+        
+    if spearman_r(Total['Pstorms'],Total['Stotal'])[1] < pvalue:
+        Total_Psum_Ssum_Spearman_r = '%.2f'%spearman_r(Total['Pstorms'],Total['Stotal'])[0]
+        
     ## EI vs. Ssum
-    if spearman_r(SedFluxStorms_DAM['EI'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
-        Upper_EI_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_DAM['EI'],SedFluxStorms_DAM['Ssum'])[0]
-    elif spearman_r(SedFluxStorms_DAM['EI'],SedFluxStorms_DAM['Ssum'])[1] >= pvalue:
+    if spearman_r(Upper['EI'],Upper['Supper'])[1] < pvalue:
+        Upper_EI_Ssum_Spearman_r = '%.2f'%spearman_r(Upper['EI'],Upper['Supper'])[0]
+    elif spearman_r(Upper['EI'],Upper['Supper'])[1] >= pvalue:
         Upper_EI_Ssum_Spearman_r = ' ' 
-    if spearman_r(ALLStorms['EI'],ALLStorms['Slower'])[1] < pvalue:
-        Lower_EI_Ssum_Spearman_r = '%.2f'%spearman_r(ALLStorms['EI'],ALLStorms['Slower'])[0]
-    elif spearman_r(ALLStorms['EI'],ALLStorms['Slower'])[1] >= pvalue:
+        
+    if spearman_r(Lower['EI'],Lower['Slower'])[1] < pvalue:
+        Lower_EI_Ssum_Spearman_r = '%.2f'%spearman_r(Lower['EI'],Lower['Slower'])[0]
+    elif spearman_r(Lower['EI'],Lower['Slower'])[1] >= pvalue:
         Lower_EI_Ssum_Spearman_r = ' ' 
-    if spearman_r(SedFluxStorms_LBJ['EI'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
-        Total_EI_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_LBJ['EI'],SedFluxStorms_LBJ['Ssum'])[0]
-    elif spearman_r(SedFluxStorms_LBJ['EI'],SedFluxStorms_LBJ['Ssum'])[1] >= pvalue:
+        
+    if spearman_r(Total['EI'],Total['Stotal'])[1] < pvalue:
+        Total_EI_Ssum_Spearman_r = '%.2f'%spearman_r(Total['EI'],Total['Stotal'])[0]
+    elif spearman_r(Total['EI'],Total['Stotal'])[1] >= pvalue:
         Total_EI_Ssum_Spearman_r = ' ' 
+        
     ## Qsum vs. Ssum
-    if spearman_r(SedFluxStorms_DAM['Qsum'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
-        Upper_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_DAM['Qsum'],SedFluxStorms_DAM['Ssum'])[0]
-    if spearman_r(ALLStorms['Qsumlower'],ALLStorms['Slower'])[1] < pvalue:
-        Lower_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(ALLStorms['Qsumlower'],ALLStorms['Slower'])[0]
-    elif spearman_r(ALLStorms['Qsumlower'],ALLStorms['Slower'])[1] >= pvalue:
+    if spearman_r(Upper['Qsumupper'],Upper['Supper'])[1] < pvalue:
+        Upper_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(Upper['Qsumupper'],Upper['Supper'])[0]
+        
+    if spearman_r(Lower['Qsumlower'],Lower['Slower'])[1] < pvalue:
+        Lower_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(Lower['Qsumlower'],Lower['Slower'])[0]
+    elif spearman_r(Lower['Qsumlower'],Lower['Slower'])[1]>=pvalue:
         Lower_Qsum_Ssum_Spearman_r = ' '
-    if spearman_r(SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
-        Total_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'])[0]
-    elif spearman_r(SedFluxStorms_LBJ['Qsum'],SedFluxStorms_LBJ['Ssum'])[1] >= pvalue:
+        
+    if spearman_r(Total['Qsumtotal'],Total['Stotal'])[1] < pvalue:
+        Total_Qsum_Ssum_Spearman_r = '%.2f'%spearman_r(Total['Qsumtotal'],Total['Stotal'])[0]
+    elif spearman_r(Total['Qsumtotal'],Total['Stotal'])[1] >= pvalue:
         Total_Qsum_Ssum_Spearman_r =' '
+        
     ## Qmaxvs. Ssum
-    if spearman_r(SedFluxStorms_DAM['Qmax'],SedFluxStorms_DAM['Ssum'])[1] < pvalue:
-        Upper_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_DAM['Qmax'],SedFluxStorms_DAM['Ssum'])[0]
-    if spearman_r(ALLStorms['Qmaxlower'],ALLStorms['Slower'])[1] < pvalue:
-        Lower_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(ALLStorms['Qmaxlower'],ALLStorms['Slower'])[0]
-    if spearman_r(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])[1] < pvalue:
-        Total_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(SedFluxStorms_LBJ['Qmax'],SedFluxStorms_LBJ['Ssum'])[0]
+    if spearman_r(Upper['Qmaxupper'],Upper['Supper'])[1] < pvalue:
+        Upper_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(Upper['Qmaxupper'],Upper['Supper'])[0]
+        
+    if spearman_r(Lower['Qmaxlower'],Lower['Slower'])[1] < pvalue:
+        Lower_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(Lower['Qmaxlower'],Lower['Slower'])[0]
+        
+    if spearman_r(Total['Qmaxtotal'],Total['Stotal'])[1] < pvalue:
+        Total_Qmax_Ssum_Spearman_r = '%.2f'%spearman_r(Total['Qmaxtotal'],Total['Stotal'])[0]
+        
+        
     ## Put data together, and put in table
     PsumS = [Upper_Psum_Ssum_Spearman_r,Lower_Psum_Ssum_Spearman_r,Total_Psum_Ssum_Spearman_r]
     EIS = [Upper_EI_Ssum_Spearman_r,Lower_EI_Ssum_Spearman_r,Total_EI_Ssum_Spearman_r]
@@ -3746,7 +4045,7 @@ def plotSpearmanTable(SedFluxStorms_DAM=SedFluxStorms_DAM,SedFluxStorms_LBJ=SedF
     if show==True:
         plt.show()
     return
-#plotSpearmanTable(pvalue=0.05,show=True)
+plotSpearmanTable(pvalue=0.05,show=True)
     
 def plotCoeffTable(show=False,norm=False):
     if norm==True:
@@ -3857,7 +4156,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     PowerFit(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],xy,qmaxs,linestyle='-',color='g',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
     ## Total Watershed (=LBJ)
     QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='r',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2)
+    PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='r',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2)
     qmaxs.set_title('Event Peak Discharge '+xlabelQmax)
     #qmaxs.set_ylabel(ylabel)
     #qmaxs.set_xlabel(xlabelQmax)

@@ -56,23 +56,7 @@ def tab_count():
     table_count+=1
     return str(table_count)
 # Prepare LULC Data
-landcoverXL = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx')
-landcover_table = landcoverXL.parse('Fagaalu')
-landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','%','% High Intensity Developed','% Developed Open Space',
-                       '% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Bare Land']]
-# Format Table data                       
-for column in landcover_table.columns:
-    try:
-        if column.startswith('%')==True:
-            landcover_table[column] = landcover_table[column]*100.
-            landcover_table[column] = landcover_table[column].round(1)
-        else:
-            landcover_table[column] = landcover_table[column].round(2)
-    except:
-        pass
-landcover_table = landcover_table[landcover_table['Subwatershed'].isin(['FOREST(UPPER)','QUARRY','VILLAGE(TOTAL)','Fagaalu Stream'])==True].reset_index()
-landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','%','% High Intensity Developed','% Developed Open Space',
-                       '% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Bare Land']]
+landcover_table = LandCover_table()
 landcover_table.table_num = str(tab_count())
 
 ### Storm Water Discharge Table
@@ -87,6 +71,14 @@ S_Diff_table.table_num = str(tab_count())
 ### Storm Q and SSY summary table
 Q_S_Diff_summary_table = Q_S_storm_diff_summary_table()
 Q_S_Diff_summary_table.table_num = str(tab_count())
+
+### Pearson r coefficient table
+Pearson_table = Pearson_r_Table()
+Pearson_table.table_num = str(tab_count())
+
+### Pearson r coefficient table
+Spearman_table = Spearman_r_Table()
+Spearman_table.table_num = str(tab_count())
 
 #### FIGURES ########################################################################################################################################################
 figure_count=0
@@ -116,7 +108,11 @@ plotSSCboxplots(storm_samples_only=True,withR2=False,show=False,save=True,filena
 ## Discharge vs Sediment Concentration
 Discharge_Concentration = {'filename':figdir+'SSC/Water discharge vs Sediment concentration','fig_num':str(fig_count())}
 plotQvsC(storm_samples_only=False,ms=6,show=False,log=False,save=True,filename=Discharge_Concentration['filename'])
+
 ### T-SSC Rating Curves
+## Synthetic Rating Curves
+Synthetic_Rating_Curve = {'filename':figdir+'T/Synthetic Rating Curves','fig_num':str(fig_count())} ## define file name to find the png file from other script
+Synthetic_Rating_Curves(param='SS_Mean',show=False,save=True,filename=Synthetic_Rating_Curve['filename'])## generate figure from separate script and save to file
 ## LBJ and DAM YSI T-SSC rating curves
 LBJ_and_DAM_YSI_Rating_Curve = {'filename':figdir+'T/T-SSC rating LBJ and DAM YSI','fig_num':str(fig_count())}
 plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,Use_All_SSC=False,show=False,save=True,filename=LBJ_and_DAM_YSI_Rating_Curve['filename'])
@@ -125,10 +121,12 @@ LBJ_OBSa_Rating_Curve = {'filename':figdir+'T/T-SSC rating LJB OBSa','fig_num':s
 OBSa_compare_ratings(df=LBJ_OBSa,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,show=False,save=True,filename=LBJ_OBSa_Rating_Curve['filename'])  
 ## LBJ OBSa T-SSC rating curve
 LBJ_OBSb_Rating_Curve = {'filename':figdir+'T/T-SSC rating LJB OBSb','fig_num':str(fig_count())}
-OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,show=False,save=True,filename=LBJ_OBSb_Rating_Curve ['filename'])  
-## Synthetic Rating Curves
-Synthetic_Rating_Curve = {'filename':figdir+'T/Synthetic Rating Curves','fig_num':str(fig_count())} ## define file name to find the png file from other script
-Synthetic_Rating_Curves(param='SS_Mean',show=False,save=True,filename=Synthetic_Rating_Curve['filename'])## generate figure from separate script and save to file
+OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,show=False,save=True,filename=LBJ_OBSb_Rating_Curve['filename'])  
+
+## Storms
+Example_Storm = {'filename':figdir+'storm_figures/Example_Storm','fig_num':str(fig_count())}
+plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=False,save=True,filename=Example_Storm['filename']) 
+
 ## SSY models
 SSY_models_ALL = {'filename':figdir+'SSY/SSY Models ALL','fig_num':str(fig_count())}
 plotALLStorms_ALLRatings(subset='pre',norm=True,log=True,show=False,save=True,filename=SSY_models_ALL['filename'])
@@ -143,15 +141,32 @@ title.paragraph_format.space_before = 0
 abstract_title = document.add_heading('ABSTRACT',level=2)
 abstract_title.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
 abstract = document.add_paragraph('Abstract text goes here....')
+### Read in Body Text
+Body_Text = Document(maindir+'/Manuscript/Body_Text.docx')
+section_count = 0
+Section = {'Introduction':[],'Study Area':[],'Methods':[],'Results':[],'Discussion':[],'Conclusion':[]}
+for paragraph in Body_Text.paragraphs:
+    if len(paragraph.text)==0:
+        section_count+=1
+    if section_count == 1:
+        Section['Introduction'].append(paragraph)
+    if section_count == 2:
+        Section['Study Area'].append(paragraph)   
+    if section_count == 3:
+        Section['Methods'].append(paragraph)
+    if section_count == 4:
+        Section['Results'].append(paragraph)        
+    if section_count == 5:
+        Section['Discussion'].append(paragraph)        
+    if section_count == 6:
+        Section['Conclusion'].append(paragraph)    
 #### INTRODUCTION
 introduction_title = document.add_heading('Introduction',level=2)
-introduction = document.add_paragraph('Introduction text goes here....')
-introduction.style='BodyText'
-Intro_Text = Document(maindir+'/Manuscript/Introduction.docx')
-#for paragraph in Intro_Text.paragraphs:
-#    txt = document.add_paragraph(paragraph.text)
-#    txt.paragraph_format.left_indent = 0
-#    txt.paragraph_format.first_line_indent = Inches(.4)
+for paragraph in Section['Introduction'][1:]:
+    p = document.add_paragraph(paragraph.text)
+    p.style='BodyText'
+    p.paragraph_format.left_indent = 0
+    p.paragraph_format.first_line_indent = Inches(.4)
 
 #### STUDY AREA
 study_area_title = document.add_heading('Study Area',level=2)
@@ -203,8 +218,6 @@ if 'DAM_StageDischarge' in locals():
 if 'Q_Diff_table' in locals():
     dataframe_to_table(df=Q_Diff_table,table_num=Q_Diff_table.table_num,caption="Water discharge from subwatersheds in Faga'alu")
 
-## Storm Water Discharge Summary Table
-
 #### Suspended Sediment Concentration
 document.add_heading('Suspended Sediment Concentration',level=4)
 ## SSC boxplots
@@ -219,6 +232,11 @@ if 'Discharge_Concentration' in locals():
 
 #### Turbidity
 document.add_heading('Turbidity', level=4)
+
+## Synthetic Rating Curves
+if 'Synthetic_Rating_Curve' in locals():
+    document.add_picture(Synthetic_Rating_Curve['filename']+'.png',width=Inches(6)) ## add pic from filename defined above
+    add_figure_caption(Synthetic_Rating_Curve['fig_num'],"Synthetic Rating  Curves for Turbidimeters deployed at FOREST, QUARRY, VILLAGE, Nuuuli-1 and Nuuuli-2")
 
 ## LBJ and DAM YSI T-SSC rating curves
 if 'LBJ_and_DAM_YSI_Rating_Curve' in locals():
@@ -235,13 +253,13 @@ if 'LBJ_OBSb_Rating_Curve' in locals():
     document.add_picture(LBJ_OBSb_Rating_Curve['filename']+'.png',width=Inches(6))
     add_figure_caption(LBJ_OBSb_Rating_Curve['fig_num'],"Turbidity-Suspended Sediment Concentration relationships for the OBS500 turbidimeter deployed at VILLAGE ("+str(LBJ_OBSb.dropna().index[0])+"-"+str(LBJ_OBSb.dropna().index[-1])+").")
 
-## Synthetic Rating Curves
-if 'Synthetic_Rating_Curve' in locals():
-    document.add_picture(Synthetic_Rating_Curve['filename']+'.png',width=Inches(6)) ## add pic from filename defined above
-    add_figure_caption(Synthetic_Rating_Curve['fig_num'],"Synthetic Rating  Curves for Turbidimeters deployed at FOREST, QUARRY, VILLAGE, Nuuuli-1 and Nuuuli-2")
+
 
 #### Storm Events
 document.add_heading('Storm Events',level=3)
+if 'Example_Storm' in locals():
+    document.add_picture(Example_Storm['filename']+'.png',width=Inches(6))
+    add_figure_caption(Example_Storm['fig_num'],"Example of storm event.")
 
 #### Comparing SSY from disturbed and undisturbed subwatersheds
 document.add_heading('Comparing SSY from disturbed and undisturbed subwatersheds',level=3)
@@ -249,20 +267,7 @@ document.add_heading('Comparing SSY from disturbed and undisturbed subwatersheds
 document.add_paragraph("Table "+S_Diff_table.table_num+" shows that lots of...")
 if 'S_Diff_table' in locals():
     dataframe_to_table(df=S_Diff_table,table_num=S_Diff_table.table_num,caption="Sediment discharge from subwatersheds in Faga'alu")
-
-
-#### Disturbance Ratio 
-document.add_heading('Disturbance Ratio', level=3)
-
-#### Comparing predictors of SSY
-document.add_heading('Comparing predictors of SSY',level=3)
-
-#### Fitting SSY models
-document.add_heading('Fitting sediment curves',level=3)
-if 'SSY_models_ALL' in locals():
-    document.add_picture(SSY_models_ALL['filename']+'.png',width=Inches(6))
-    add_figure_caption(SSY_models_ALL['fig_num'],"SSY rating curves for predictors")
-
+    
 #### Comparing human impact on SSY from Faga’alu watershed
 document.add_heading("Comparing human impact on SSY from Faga'alu watershed",level=3)
 if 'Q_S_Diff_summary_table' in locals():
@@ -271,8 +276,25 @@ if 'Q_S_Diff_summary_table' in locals():
 SSYspec_Forest = float(Q_S_Diff_summary_table.ix['SSY* Forest'][''][:4])
 SSYspec_Village = float(Q_S_Diff_summary_table.ix['SSY* Village'][''][:4])
 SSYspec_change = (SSYspec_Village/SSYspec_Forest)
-document.add_paragraph("Humans have increased specific SSY ~"+"%.0f"%SSYspec_change+"x")
+document.add_paragraph("Humans have increased specific SSY ~"+"%.1f"%SSYspec_change+"x")    
 
+#### Fitting SSY models
+document.add_heading('Fitting sediment curves',level=3)
+if 'SSY_models_ALL' in locals():
+    document.add_picture(SSY_models_ALL['filename']+'.png',width=Inches(6))
+    add_figure_caption(SSY_models_ALL['fig_num'],"SSY rating curves for predictors")
+
+#### Comparing predictors of SSY
+document.add_heading('Comparing predictors of SSY',level=3)
+# Pearson's correlation coeffs
+document.add_paragraph("Pearson's correlation coefficients...")
+if 'Pearson_table' in locals():
+    dataframe_to_table(df=Pearson_table,table_num=Pearson_table.table_num,caption="Pearson correlation coefficients")
+# Spearman's correlation coeffs
+document.add_paragraph("Spearman's correlation coefficients...")  
+if 'Spearman_table' in locals():
+    dataframe_to_table(df=Spearman_table,table_num=Spearman_table.table_num,caption="Spearman correlation coefficients")
+    
 #### DISCUSSION
 discussion_title=document.add_heading('Discussion',level=2)
 discussion_text = document.add_paragraph('Discussion text goes here...')
