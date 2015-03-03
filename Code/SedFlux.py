@@ -1663,8 +1663,11 @@ SSC_dict={'ALL':SSC,'Pre-ALL':SSC_pre_mitigation,'ALL-storm':SSC_all_storm_sampl
 #SSC_raw_time[SSC_raw_time['Location'].isin(['LBJ'])]['SSC (mg/L)'].plot(ls='None',marker='.',c='g')
 
 #### SSC Grab sample ANALYSIS
-SampleCounts = DataFrame(data=[str(val) for val in pd.unique(SSC['Location'])],columns=['Location'])
-SampleCounts['#ofSSCsamples']=pd.Series([len(SSC[SSC['Location']==str(val)]) for val in pd.unique(SSC['Location'])]) ##add column of Locations
+def sample_counts(SSCdata):
+    SampleCounts = DataFrame(data=[str(val) for val in pd.unique(SSCdata['Location'])],columns=['Location'])
+    SampleCounts['#ofSSCsamples']=pd.Series([len(SSCdata[SSCdata['Location']==str(val)]) for val in pd.unique(SSCdata['Location'])]) ##add column of Locations
+    return SampleCounts
+SampleCounts = sample_counts(SSC_dict['Pre-ALL'])
 
 ### SSC Sample Counts from Unique Sites
 ## from SampleCounts select rows where SampleCounts['Location'] starts with 'Quarry'; sum up the #ofSSCsamples column

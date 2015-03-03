@@ -42,10 +42,19 @@ def dataframe_to_table(df=pd.DataFrame(),table_num=str(len(document.tables)+1),c
     ## Format Table Style  
     table.style = 'TableGrid'   
     table.autofit
-    table.num = str(len(document.tables)+1)
+    #table.num = str(len(document.tables)+1)
     return table
+    
+def add_equation(eq_table):
+    t = document.add_table(rows=len(eq_table.rows),cols=len(eq_table.columns))
+    t.rows[0].cells[1].text = eq_table.rows[0].cells[1].text
+    t.rows[0].cells[2].text = eq_table.rows[0].cells[2].text   
+    if len(eq_table.rows)>1:
+        t.rows[1].cells[0].merge(t.rows[1].cells[2]).text = eq_table.rows[1].cells[0].text
+    t.style = 'TableGrid'   
+    t.autofit
+    return t
 ###################################################################################################################################################################    
-
 
 
 #### TABLES ########################################################################################################################################################
@@ -131,7 +140,31 @@ plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=Fals
 SSY_models_ALL = {'filename':figdir+'SSY/SSY Models ALL','fig_num':str(fig_count())}
 plotALLStorms_ALLRatings(subset='pre',norm=True,log=True,show=False,save=True,filename=SSY_models_ALL['filename'])
 
-#################################################################################################################################################################
+###### EQUATIONS ############################################################################################################################################
+equation_count=0
+def eq_count():
+    global equation_count
+    equation_count+=1
+    return str(equation_count)
+    
+Equations = Document(maindir+'/Manuscript/Equations.docx').tables
+## SSYev = Q*SSC 
+SSYEV_eq = Equations[0].table
+SSYEV_eq.eq_num = eq_count()
+## predict_SSYev = aXb
+predict_SSYEV_eq = Equations[1].table
+predict_SSYEV_eq.eq_num = eq_count()
+## DR = SSY/SSYpre
+DR_eq = Equations[2].table
+DR_eq.eq_num = eq_count()
+## SSYpre = Area_total * (SSYupper/AREAupper)
+SSYpre_eq = Equations[3].table
+SSYpre_eq.eq_num = eq_count()
+## PE = sqrt(sum(Error^2+Error^2))
+PE_eq = Equations[4].table
+PE_eq.eq_num = eq_count()
+############################################################################################################################################
+
 #### TITLE
 title_title = document.add_heading('TITLE:',level=1)
 title_title.paragraph_format.space_before = 0
@@ -162,7 +195,7 @@ for paragraph in Body_Text.paragraphs:
         Section['Conclusion'].append(paragraph)    
 #### INTRODUCTION
 introduction_title = document.add_heading('Introduction',level=2)
-for paragraph in Section['Introduction'][1:]:
+for paragraph in Section['Introduction'][2:]:
     p = document.add_paragraph(paragraph.text)
     p.style='BodyText'
     p.paragraph_format.left_indent = 0
@@ -170,22 +203,25 @@ for paragraph in Section['Introduction'][1:]:
 
 #### STUDY AREA
 study_area_title = document.add_heading('Study Area',level=2)
-study_area = document.add_paragraph('Study Area text goes here....referring to Figure'+Study_Area_map['fig_num'])
+# Climate
+document.add_heading('Climate',level=3)
+document.add_paragraph("Precipitation on Tutuila (14S, 170W) is caused by major storms including cyclones and tropical depressions, isolated thunderstorms, and orographic uplifting of trade-wind squalls over the high (300-600m), mountainous ridge that runs the length of the island. Unlike many other Pacific Islands, the mountainous ridge runs parallel to the predominant wind direction , and does not cause a significant windward/leeward rainfall gradient. There are two subtle rainfall seasons-a drier season, from June to September (32% of annual P) and a wetter season, from October to May (68% of annual P). During the wetter summer season the Inter-Tropical Convergence Zone (ITCZ) moves over the island, causing relatively light Northerly winds, higher temperatures, higher humidity, and higher rainfall. During the drier winter season, the island is influenced by the southeast Trades and relatively stronger, predominantly East to Southeast winds, lower temperatures, lower humidity and lower rainfall.")
+
+document.add_paragraph("Long-term rain gage records show a strong precipitation gradient with increasing elevation. Rainfall records from 1903-1973 show average precipitation is 6,350 mm at Matafao Mtn. (653m m.a.s.l), 5,280mm at Matafao Reservoir (249m m.a.s.l.) and about 3,800mm on the coastal plain (Craig, 2009; Dames & Moore, 1981; Tonkin & Taylor International Ltd., 1989; Wong, 1996). Potential evapotranspiration follows the opposite trend, with annual mean PET varying from 890mm at high elevation to 1,150mm at sea level (Izuka, 2005). Precipitation varies orographically from an average 6,350mm/yr at high elevation to 2,380mm/yr at the shoreline, averaging 3,800mm/yr over the island   from 1903 to 1973 (Eyre, 1994). Tropical cyclones are erratic but recently have occurred on average every 1-13 years (Craig, 2009) and bring intense rainfall, flooding, landslides, and high sediment loading events (Buchanan-Banks, 1979). Analysis of 212 peak discharges at 11 continuous-record gaging sites up    to 1990 showed 65.5% of annual peak flows occurred during the wet season (Wong, 1996). When controlling for drainage area,   average annual specific discharge shows little spatial variation across the island, irrespective of location or orientation (Dames & Moore, 1981).")
 ## Study Area map
 if 'Study_Area_map' in locals():
     document.add_picture(Study_Area_map['filename'],width=Inches(6))
     add_figure_caption(Study_Area_map['fig_num'],"Faga'alu watershed showing upper (undisturbed) and lower (human-disturbed) subwatersheds.")
-# Climate
-document.add_heading('Climate',level=3)
 # Land Use
 document.add_heading('Land Use',level=3)
-document.add_paragraph('Land use text goes here...referring to Table '+landcover_table.table_num)
+document.add_paragraph("Faga'alu watershed (1.86 km2) is characterized by large areas of undisturbed, steeply sloping, heavily forested hillsides in the upper watershed, and similarly steep topography with relatively small flat areas that are urbanized or densely settled in the lower watershed (Figure "+Study_Area_map['fig_num']+"). This settlement pattern is typical for volcanic islands with steep topography in the south Pacific. Monitoring efforts focused on Faga'alu, which discharges to a sediment-impacted reef (Aeby et al., 2006), and includes two unique features not found in "+"typical"+" watersheds in American Samoa: 1) an open aggregate quarry, and 2) a large impervious area associated with a hospital. Three water impoundment structures were built in the upper Faga'alu watershed for drinking water supply and hydropower but only the highest, Matafao Reservoir, was ever connected to the municipal water system and has since fallen out of use (Tonkin & Taylor International Ltd., 1989).")
+document.add_paragraph("Land use in Faga'alu watershed includes agriculture, roads, and urbanization (Table "+landcover_table.table_num+"). The predominant land cover in the Faga'alu watershed is undisturbed forest on the steep hillsides (85.7%). These forests are prone to natural landslides that can contribute large amounts of sediment during storm events (Buchanan-Banks, 1979; Calhoun and Fletcher, 1999). Compared to other watersheds on Tutuila, a relatively large portion of Faga'alu watershed is urbanized ("+"high intensity developed"+" in Table "+landcover_table.table_num+", 4.6%), due to large areas of impervious surface associated with the hospital and the numerous residences and businesses.  A small portion of the watershed (1.1%) is developed open space, which includes landscaped lawns and parks. In addition to some small, household gardens there are several small agricultural areas growing banana and taro on the steep hillsides. NOAA Land Cover map (2.5m res.) classified the  agricultural plots as "+"Grassland"+" due to the high grass cover in the plots (Table "+landcover_table.table_num+") (NOAA's Ocean Service and Coastal Services Center, 2010). These plots are currently receiving technical assistance from the Natural Resource Conservation Service (NRCS) to mitigate erosion problems.")
 ## Land Use/Land cover Table
 if 'landcover_table' in locals():
     dataframe_to_table(df=landcover_table,table_num=landcover_table.table_num,caption="Land use categories in Fag'alu and Nu'uuli watersheds CITATION")
-
+document.add_paragraph("")
 ## Quarry description
-quarry_text = document.add_paragraph('Quarry description text goes here...Picture is of the quarry (Figure '+Quarry_picture['fig_num']+').')
+document.add_paragraph("In Faga'alu there is an open-pit aggregate quarry (~2ha) that accounts for the majority of the 1.1% bare land area in Faga'alu watershed (Table "+landcover_table.table_num+"). The quarry has been in continuous operation since the 1960's by advancing into the steep hillside to quarry the underlying basalt formation (Latinis 1996). The quarry operators have installed some sediment management practices such as silt fences and settling ponds (Horsley-Witten, 2011) but they are unmaintained and likely inadequate to control the large amount of sediment mobilized by the intense tropical rains (Horsley-Witten, 2012a). Longitudinal sampling of Faga'alu stream in 2011 showed significantly increased turbidity downstream of the quarry and of a new bridge construction site on the village road (Curtis et al., 2011). Construction of the bridge was completed March 2012 and no longer increases turbidity. There are several small footpaths and unpaved driveways, but most unpaved roads are stabilized with compacted gravel and do not appear to be a major contributor of sediment (Horsley-Witten, 2012b).")
 ## Quarry picture
 if 'Quarry_picture' in locals():
     document.add_picture(Quarry_picture['filename'],width=Inches(6))
@@ -193,7 +229,40 @@ if 'Quarry_picture' in locals():
 
 #### METHODS
 methods_title = document.add_heading('Methods',level=2)
-methods = document.add_paragraph('Methods text  goes here...')
+document.add_paragraph("A nested-watershed approach was used to quantify the contribution of SSY from undisturbed and human-disturbed areas to total sediment loading to Faga'alu Bay during baseflow, and during storm events of varying magnitude. While steep, mountainous streams can discharge large amounts of bedload (Milliman and Syvitski, 1992), this research is focused on sediment size fractions that can be transported in suspension in the marine environment to settle on corals, and this is generally restricted to silt and clay fractions (<16um) (Asselman, 2000).")
+### Predicting event suspended sediment yield (SSYEV)
+document.add_heading("Predicting event suspended sediment yield (SSYEV)",level=3)
+document.add_paragraph("SSY generated by individual storm events (SSYEV) can be used to compare the responses of different watersheds (Basher et al., 2011; Duvert et al., 2012; Fahey et al., 2003; Hicks, 1990), assess the contribution of individual subwatersheds to total SSY (Zimmermann et al., 2012), and determine changes in SSY from the same watershed over time (Bonta, 2000). SSYEV is calculated by integrating continuous suspended sediment load from measured or modeled discharge (Q) and suspended sediment concentration (SSC) (Duvert et al., 2012):")
+add_equation(SSYEV_eq) ## Equation
+document.add_paragraph("SSYEV may be correlated with precipitation or discharge variables ("+'"storm metrics"'+"), so four storm metrics were tested in this research: total event precipitation (Psum), EI30 rainfall erosivity (EI30) (Hicks, 1990), total event discharge (Qsum), and peak event discharge (Qmax) (Duvert et al., 2012; Rodrigues et al., 2013). Storm metrics may be linearly or nonlinearly correlated with SSYEV, so both Pearson's and Spearman's correlation coefficients were calculated to select the best predictor of SSYEV from the total watershed, and from each subwatershed.")
+document.add_paragraph("The relationship between SSYEV and storm metrics may be a linear function, but is often best fit by a watershed-specific power law function of the form:")
+add_equation(predict_SSYEV_eq) ## Equation
+### Disturbance Ratio
+document.add_heading('Disturbance Ratio',level=3)
+document.add_paragraph("To assess the contribution of each subwatershed to total SSY from the watershed, the percent contribution of each subwatershed will be calculated as the difference between SSYEV observed at the upstream and downstream monitoring stations. Another approach is the disturbance ratio (DR), which is the ratio of SSYEV from the total human-disturbed watershed under current conditions (measured at the watershed outlet: VILLAGE and N1) to SSY under pre-disturbance conditions (SSYpre):")
+add_equation(DR_eq) ## Equation
+document.add_paragraph("SSYpre is calculated assuming that the specific SSY from forested parts of the lower watershed is similar to the specific SSY from the upper watershed:")
+add_equation(SSYpre_eq) ## Equation
+document.add_paragraph("The percent contribution and DR will be calculated for each storm and averaged to determine the contribution of each subwatershed to total SSY.")
+### Data Collection
+document.add_heading('Data Collection',level=3)
+document.add_heading('Precipitation',level=4)
+document.add_paragraph("Precipitation (P) was measured with Rainwise RAINEW tipping-bucket rain gages at 1 min intervals at three locations in Faga'alu watershed (Figure "+Study_Area_map['fig_num']+"). Data at RG2 was only recorded January-March, 2012, to determine a relationship between elevation and precipitation. Precipitation at 15 min intervals was also measured at the Vantage Pro Weather Station (Wx) and used to fill any data gaps in the precipitation recorded at RG1. The event total precipitation (Psum) and EI30 for storm events were calculated using data from RG1, with data gaps filled by data from Wx.")
+## Water Discharge
+document.add_heading('Water Discharge',level=4)
+document.add_paragraph("Stream discharge (Q) was derived from 15 min interval stream stage measurements, using a stage-discharge rating curve calibrated to Q measurements made under baseflow and stormflow conditions. Stream stage was measured with non-vented pressure transducers (PT) (Solinst Levelogger or Onset HOBO Water Level Logger) installed at two locations in Faga'alu: FOREST and VILLAGE. Stream gauging sites were chosen to take advantage of existing control structures (FOREST) or stabilized streambed and banks (VILLAGE). Barometric pressure data to calculate stage from PT's was collected at Wx. Data gaps were filled by barometric data from stations at Pago Pago Harbor (NSTP6) and NOAA Climate Observatory at Tula (TULA). Priority was given to station that was closest to the watershed with valid barometric pressure data.")
+document.add_paragraph("Discharge (Q) was measured in the field by the area-velocity method (AV) using a Marsh-McBirney flowmeter to measure flow velocity and channel surveys to measure stream cross-section geometry (Harrelson et al., 1994; Turnipseed and Sauer, 2010). AV measurements were made at FOREST and VILLAGE in Faga'alu, and linear, log-linear, and nonlinear rating curves were tested for best fit. AV measurements could not be made at high stages at FOREST and VILLAGE for safety reasons, so the rating curve at FOREST was modeled with HEC-RAS (Brunner, 2010) and calibrated to the AV measurements. Manning's equation was used to extend the rating curve at VILLAGE.")
+## Suspended Sediment Yield
+document.add_heading('Suspended Sediment Concentration and Turbidity',level=4)
+document.add_paragraph("Suspended sediment concentration (SSC) at 15 min intervals was derived from turbidity (T) measurements, using a T-SSC relationship calibrated to stream water samples collected over a range of Q and SSC. The T-SSC relationship is unique to each region, or even each stream, and can be influenced by water color, dissolved solids and organic matter, temperature, and the shape, size and composition of sediment particles. However, T has proved to be a robust surrogate measure of SSC in streams (Gippel 1995) and is widely used for remote monitoring applications (Lewis 1996).")
+document.add_paragraph("Turbidity (T) was measured at 5 min intervals at FOREST and VILLAGE. Turbidity was measured at VILLAGE using a YSI 600OMS sonde with 6136 Turbidity Probe from February 2012 until it was damaged in May 2012. As a replacement, a CampbellSci OBS500 was then deployed at VILLAGE in March 2013 to March 2014, but no data was recorded from August 2013-January 2014 due to instrument malfunction. A new CampbellSci OBS500 was installed at VILLAGE from January to August, 2014. Turbidity was measured at FOREST using a Greenspan TS3000 turbidimeter from January 2012 to July 2012 when it was vandalized and destroyed. The YSI turbidimeter previously deployed at VILLAGE was repaired and redeployed at FOREST June 2013 to October 2013, and January 2014 to August 2014. Turbidity of grab samples was also measured in the laboratory by a LaMotte 20/20 turbidimeter (LAB) to compare to T measured in the field. Turbidity data was resampled to 15 min intervals corresponding to Q for calculating suspended sediment yield (SSY) (Equation "+SSYEV_eq.eq_num+").")
+document.add_paragraph("The VILLAGE-YSI rating was used to convert turbidity from all instruments to SSC, due to its good fit over the full range of SSC samples")
+document.add_paragraph("Stream water samples for SSC were collected by dip sampling with 500mL HDPE bottles at FOREST, QUARRY, and VILLAGE, and by ISCO 3700 Autosamplers at QUARRY. Other sites were sampled opportunistically during storm events. From January 6, 2012, to February 26, 2014, 610 samples were collected at 12 sites in Faga'alu and analyzed for SSC. Samples were analyzed in the field using gravimetric methods (Gray et al., 2000). Water samples were vacuum filtered on 47mm, 0.7um Millipore AP40 glass fiber filters, oven dried at 100C for one hour, cooled and weighed to determine SSC (mg/L). Three main sampling locations in Faga'alu are the focus in this analysis: 1) Upstream (FOREST)(n="+str(DAM_grab_count)+"), 2) immediately downstream of the Quarry (QUARRY)(n="+str(QUARRY_grab_count)+" from grab sampling, n="+str(QUARRY_R2_grab_count)+"), and 3) Downstream (VILLAGE)(n="+str(LBJ_grab_count)+").")
+## Measurement Uncertainty
+document.add_heading('Measurement Uncertainty',level=3)
+document.add_paragraph("Uncertainty in SSYEV estimates arises from both measurement and model errors, including models of stage-discharge (stage-Q) and turbidity-suspended sediment concentration (T-SSC) (Harmel et al., 2006). The Root Mean Square Error (RMSE) method estimates the "+'"most probable value"'+" of the cumulative or combined error by propagating the error from each measurement and modeling procedure to the final SSYEV estimate (Topping, 1972). The resulting cumulative probable error (PE) is the square root of the sum of the squares of the maximum values of the separate errors:")
+add_equation(PE_eq) ## Equation
+document.add_paragraph("PE was calculated for each storm event to add a statistical measure of uncertainty to SSYEV (plus-minus tons). The effect of uncertain SSYEV estimates may complicate conclusions about SSYEV-Qmax relationships, contributions from subwatersheds, and anthropogenic impacts. This is common in sediment yield studies where successful models estimate SSY with plus-minus 50-100% accuracy (Duvert et al., 2012), but preliminary data suggested the difference in SSYEV from the upper and lower subwatersheds is significantly larger than the ranges of uncertainty in the SSY estimates.")
 
 #### RESULTS ####
 results_title = document.add_heading('Results',level=2)
@@ -202,10 +271,12 @@ document.add_heading('Field Data  Collection',level=3)
 
 #### Precipitation
 document.add_heading('Precipitation',level=4)
-precipitation_text = document.add_paragraph('Precipitation text goes here...')
+document.add_paragraph("Annual precipitation measured at RG1 was 3,350mm and 3,443mm in 2012 and 2013 respectively. These annual rainfall amounts are approximately 73% of long-term rainfall data (=4500-4800mm) from the Parameter-elevation Relationships on Independent Slopes Model (PRISM)  (Craig, 2009).  Comparison of rain gauge data showed no orographic relationship between RG1 and Wx, or RG1 and RG2, so precipitation was assumed to be homogenous over the watershed for all analyses. Rain gauges could only be placed as high as ~300m (RG2), though the highest point in the watershed is ~600m. Long-term rain gage records show a strong precipitation gradient with increasing elevation, with average precipitation of 3-4,000mm on the lowlands, increasing to more than 6,350mm at the highest elevations around the harbor (Mt. Alava and Matafao Peak) (Craig, 2009; Dames & Moore, 1981; Wong, 1996). Rainfall records from 1903-1973 show average precipitation is 6,350mm  at Matafao peak, 5,300mm at Matafao Dam and about 3,800mm on the coastal plain (Tonkin & Taylor International Ltd., 1989). Rainfall data measured at higher elevations would be useful to determine a more robust orographic rainfall relationship.")
 
 #### Water Discharge
 document.add_heading('Water Discharge',level=4)
+document.add_paragraph("  The non-linear rating curve (3rd order polynomial) fit to discharge predicted by Manning's (n=0.50) was selected at the VILLAGE site. A-V measurements could not be made at high discharges at FOREST due to safety concerns so a rating curve was developed using HEC-RAS (Brunner, 2010). Discharge was characterized by periods of low but perennial baseflow (FOREST: 7-53 L/sec), punctuated by short, flashy hydrograph peaks (FOREST: max 6,873 L/sec , VILLAGE: max   101,110 L/sec). ")
+
 ## LBJ stage-discharge rating
 if 'LBJ_StageDischarge' in locals():
     document.add_picture(LBJ_StageDischarge['filename']+'.png',width=Inches(6))
@@ -220,6 +291,10 @@ if 'Q_Diff_table' in locals():
 
 #### Suspended Sediment Concentration
 document.add_heading('Suspended Sediment Concentration',level=4)
+document.add_paragraph("Mean SSC values (baseflow and stormflow ) were lowest at the FOREST site (32mg/L), and highest at the QUARRY (213mg/L) and the donwstream VILLAGE site (145mg/L) .  Maximum SSC values were 500mg/L, 12,600 mg/L, and 3,500 mg/L at the upstream (FOREST), quarry (QUARRY), and downstream (VILLAGE) sites, respectively.  The maximum SSC values at QUARRY (12,600 mg/L ) and VILLAGE (3,500 mg/L) sites were sampled during the same event March 5, 2012, during fairly low discharge (Q_VILLAGE=325 L/sec). The maximum SSC value for the upstream site (500 mg/L) was sampled on April 23,2013 at high discharge (Q_FOREST= 3,600 L/sec). Anecdotal and field observations reported higher than normal SSC upstream of the quarry during the 2013 field season (G. Poysky, pers. comm.).")
+document.add_paragraph("At FOREST, 33 samples (60%) were taken during stormflow conditions (Q_DAM>54 L/sec), with mean SSC of 44 mg/L. At QUARRY, 127 samples (48%  of all samples) were taken during stormflow conditions  (Q_DAM>54 L/sec); and mean SSC for QUARRY stormflow samples was 173 mg/L. At VILLAGE, 87 samples (56%) were taken during stormflow conditions (Q_VILLAGE>150 L/sec); and mean SSC for VILLAGE stormflow samples was 130 mg/L (Table 2). This pattern of SSC values suggests there is a large input of sediment downstream of FOREST at the quarry, and then SSC is diluted by addition of stormflow with lower SSC between QUARRY and VILLAGE.")
+document.add_paragraph("Given the close proximity of the quarry to the stream, SSC downstream of the quarry can be highly influenced by mining activity. Prior to 2013, a common practice for removing fine sediment from crushed aggregate was to rinse it with water pumped from the stream. The fine sediment was discharged directly into the stream, causing high SSC during low discharges. While sheetwash erosion of the quarry during storms causes higher total sediment loading, the instantaneous SSC are lower due to dilution by stormflow. The practice of manually rinsing fine sediment from aggregate was discontinued in 2013, corresponding with a lack of high SSC grab samples during low discharges (Figure "+Discharge_Concentration['fig_num']+").")
+
 ## SSC boxplots
 if 'SSC_Boxplots' in locals():
     document.add_picture(SSC_Boxplots['filename']+'.png',width=Inches(6))
@@ -232,6 +307,7 @@ if 'Discharge_Concentration' in locals():
 
 #### Turbidity
 document.add_heading('Turbidity', level=4)
+document.add_paragraph("The T-SSC relationship varied among sampling sites and sensors. However the T-SSC relationship developed for the YSI turbidimeter at VILLAGE fit all samples collected at FOREST and VILLAGE fairly well (RMSE = 33 mg/L), and was used to model continuous SSC at both sites.")
 
 ## Synthetic Rating Curves
 if 'Synthetic_Rating_Curve' in locals():
@@ -257,19 +333,27 @@ if 'LBJ_OBSb_Rating_Curve' in locals():
 
 #### Storm Events
 document.add_heading('Storm Events',level=3)
+document.add_paragraph("    Overall, "+' Number '+" storm events were identified from discharge data from January, 2012, to March 2014 using the stage threshold method, and manual separation of complex storm events. Valid discharge data was recorded during eighty-eight events at FOREST (upstream site), and seventy-two events at VILLAGE (downstream site). Valid turbidity data was recorded during fifty-five events at FOREST, and thirty events at VILLAGE. Twenty-five events had valid precipitation, discharge and turbidity data for both the FOREST and VILLAGE to calculate and compare the sediment loading from the UPPER and LOWER watersheds. ")
+
 if 'Example_Storm' in locals():
     document.add_picture(Example_Storm['filename']+'.png',width=Inches(6))
     add_figure_caption(Example_Storm['fig_num'],"Example of storm event.")
 
 #### Comparing SSY from disturbed and undisturbed subwatersheds
 document.add_heading('Comparing SSY from disturbed and undisturbed subwatersheds',level=3)
+document.add_paragraph("    Two approaches were used to determine how much SSY from Faga'alu is contributed by the undisturbed and human-disturbed areas: a sediment budget and a comparison of event-based sediment rating curves (see section 3.5). ")
+document.add_paragraph("    Percent contributions were calculated to determine how much total sediment loading to the Bay is contributed by the upper, undisturbed subwatershed (UPPER), and the lower, human-disturbed subwatershed (LOWER) for storm events with data measured at both locations (FOREST and VILLAGE)(Figure 3). SSY from the LOWER watershed (SSYLower) was calculated by subtracting SSY measured at FOREST from SSY measured at VILLAGE (SSYLower = SSYVILLAGE - SSYFOREST).")
+document.add_paragraph("    SSY from the UPPER watershed (SSYUPPER) accounted for an average of 17% of Total Sediment Loading to the Bay, while sediment yield from the Lower watershed (SSYLower) accounted for an average of 83% of Total Sediment Loading (SSYTotal) (Table "+S_Diff_table.table_num+"). The UPPER watershed is 0.90km2 and the LOWER watershed is 0.88km2 so we can assume that the same fraction of total sediment loading, ~17%, is from undisturbed forest in the LOWER watershed. Therefore, 17% of total sediment loading is from undisturbed areas in the UPPER watershed, ~17% of total sediment loading is from the undisturbed areas in the LOWER watershed, and the remaining ~66% of total sediment loading must then be contributed by the quarry and other disturbed areas in the LOWER watershed. A rough estimate then is the disturbed areas in the LOWER watershed account for a ~200% increase in sediment loading above natural conditions to Faga'alu Bay. This is a considerably rough and uncertain estimate, however, since it assumes SSY from natural areas in the LOWER watershed is similar to SSY from natural areas in the UPPER watershed, doesn't account for the slight difference in watershed size and assumes there is as much undisturbed area in the LOWER watershed as the UPPER watershed.")
 ## Storm Sediment Table
-document.add_paragraph("Table "+S_Diff_table.table_num+" shows that lots of...")
 if 'S_Diff_table' in locals():
     dataframe_to_table(df=S_Diff_table,table_num=S_Diff_table.table_num,caption="Sediment discharge from subwatersheds in Faga'alu")
     
 #### Comparing human impact on SSY from Faga’alu watershed
 document.add_heading("Comparing human impact on SSY from Faga'alu watershed",level=3)
+document.add_paragraph("An alternative approach to quantify the impact of human-disturbed areas on SSY to Faga'alu Bay is to compare the specific sediment yield from the undisturbed and the total watershed using the area-normalized Qmax-SSY relationship. Event-based SSY and Qmax were normalized by watershed area. Ordinary Least Squares Regressions were fit to log-transformed event SSY and Qmax data from the UPPER and TOTAL watersheds (Figure "+SSY_models_ALL['fig_num']+"). Only the UPPER and TOTAL watersheds could be compared, since Qmax for LOWER is the same as TOTAL and could not be normalized by watershed area.")
+document.add_paragraph("When normalized by area, the SSY-Qmax relationship is displaced upward if SSY is higher for the same storm size, which is attributed to the additional sediment loading from human-disturbed areas.  If area-normalized event SSY rating curves converge at higher Qmax values, it indicates a diminishing relative increase from human disturbance for large storms. It was hypothesized that at high discharges, SSY from the Upper watershed may become the dominant source of total sediment loading to Faga'alu Bay. While this was demonstrated in one storm it doesn't appear to be the trend according to the SSY-Qmax relationship or the sediment budget approach (see section 3.3).")
+document.add_paragraph("The area-normalized SSY-Qmax models for the UPPER and TOTAL watersheds in Faga'alu were compared to the SSY-Qmax models from eight small, mountainous catchments in Spain, France and Mexico (Duvert et al., 2012). The UPPER watershed model was slightly higher, and the TOTAL watershed model was significantly higher than the nonlinear model fit to all the data in Duvert et al. (2012)(Figure 13. The UPPER model was very similar to a watershed specific model (ARES) for a watershed in the Spanish Pyrenees (0.45km2).")
+
 if 'Q_S_Diff_summary_table' in locals():
     dataframe_to_table(df=Q_S_Diff_summary_table,table_num=Q_S_Diff_summary_table.table_num,caption="Total Q and SSY")
 
@@ -279,13 +363,23 @@ SSYspec_change = (SSYspec_Village/SSYspec_Forest)
 document.add_paragraph("Humans have increased specific SSY ~"+"%.1f"%SSYspec_change+"x")    
 
 #### Fitting SSY models
-document.add_heading('Fitting sediment curves',level=3)
+document.add_heading('Fitting SSYEV models',level=3)
+document.add_paragraph("Qmax was the most correlated with SSYEV for all three watersheds, and was selected as the best predictor variable . To investigate for any patterns not reflected in the Pearson's and Spearman's correlation coefficients, regression lines were fit to all four predictor variables using ordinary least squares regression on log-transformed data (POWER law)(Figure "+SSY_models_ALL['fig_num']+"). ")
+document.add_paragraph("Interpret Figure 11 for the reader.  What do you want them to see in Figure 11?  What is important?")
+document.add_paragraph("Coefficients of determination (R2) were calculated for POWER law regressions fit to the SSY-Qmax relationship for UPPER and TOTAL watersheds. The LOWER subwatershed was excluded for this analysis since a suitable method to normalize Qmax for the subwatershed could not be found in the literature.  The LINEAR function achieved a better fit (r2 =0.77) than the POWER law function (r2=0.71) for the UPPER watershed, but not for the TOTAL watershed (r2: power="+' Number '+"). A main objective of this study was to develop a model of SSY to Faga'alu Bay so the best fit model for the TOTAL watershed was selected. All examples found in the literature also used the Power law function, so for better comparison with other studies, the POWER law model fit to event SSY-Qmax was selected as the best model (Figure "+SSY_models_ALL['fig_num']+", Table "+Pearson_table.table_num+", Table"+Spearman_table.table_num+"). Future analysis could also compare the log-transformed linear with bias correction and nonlinear fitting methods in Duvert et al. (2012) but they were not performed for this analysis.")
+
+document.add_paragraph("Several researchers have attempted to explain the difference in a (intercept) and B (slope) coefficients according to watershed characteristics. A sediment rating curve (Q-SSC) is considered a 'black box' model, and the a and B coefficients have no physical meaning. However, some physical interpretation has been ascribed to them, with the a coefficient representing an erosion severity index, and the B coefficient representing the erosive power of the river. High a values suggest high availability of easily eroded sediment sources in the watershed, and high B values suggest that a small change in stream discharge leads to a large increase in sediment load due to the erosive power of the river or the extent that new sediment sources become available as discharge increases (Asselman, 2000).  ")
+
+document.add_paragraph("Similar analysis has been done on event-based sediment yield curves. Rankl (2004) found that B coefficients were not statistically different , and he assumed that the B exponent was a function of rainfall intensity on hillslopes. Rankl (2004) hypothesized that variability in a (the intercept) was a function of sediment availability and erodibility in watersheds, but Duvert et al. (2012) argued that a values are dependent on the regression fitting method (nonlinear method fits higher up on low discharges than linear fit).")
+
 if 'SSY_models_ALL' in locals():
     document.add_picture(SSY_models_ALL['filename']+'.png',width=Inches(6))
     add_figure_caption(SSY_models_ALL['fig_num'],"SSY rating curves for predictors")
 
 #### Comparing predictors of SSY
 document.add_heading('Comparing predictors of SSY',level=3)
+document.add_paragraph("Similar to Duvert et al. (2012), Pearson's and Spearman's correlation coefficients were highest for Qmax for all three watersheds in Faga'alu. Some predictors were highly correlated for a single watershed but not the others, like Qsum for the UPPER watershed. EI was the least correlated with SSY.")
+
 # Pearson's correlation coeffs
 document.add_paragraph("Pearson's correlation coefficients...")
 if 'Pearson_table' in locals():
@@ -294,10 +388,14 @@ if 'Pearson_table' in locals():
 document.add_paragraph("Spearman's correlation coefficients...")  
 if 'Spearman_table' in locals():
     dataframe_to_table(df=Spearman_table,table_num=Spearman_table.table_num,caption="Spearman correlation coefficients")
+
+document.add_paragraph("No statistically significant correlations (p<0.001) were found between SSY and EI using Pearson's or Spearman's coefficients. Overall, statistically significant Pearson's and Spearman's correlation coefficients were fairly similar, indicating the relationship of SSY with the predictor variables is adequately described by a linear function and that outliers and non-normality in the data did not affect the test. The exception was significantly higher Spearman's correlation coefficient for Psum for the TOTAL watershed Spearman's=0.84 vs. Pearson's=0.70). Pearson correlation coefficients were highest overall for Psum and Qmax, indicating these were significantly correlated with event SSY. Qsum showed high correlation with SSY for the UPPER watershed but not the LOWER or TOTAL watershed.")
+document.add_paragraph("The Pearson correlation coefficients for the UPPER watershed are slightly higher for discharge-related predictors (especially Qsum) and lower for precipitation-type predictors (Psum and EI30) than for the LOWER watershed. This suggests that sediment production processes are more dominated by discharge in the UPPER watershed and precipitation in the LOWER watershed.  SSY from the LOWER watershed is hypothesized to be mostly generated by surface erosion at the quarry, dirt roads, and agricultural plots, whereas SSY from the UPPER watershed is hypothesized to be mainly from channel processes and mass wasting. Mass wasting can contribute large pulses of sediment during large precipitation events, which can be deposited in lobes on the streambanks and entrained at high discharges during later events. Qmax may be a promising predictor that integrates these processes.")
+
     
 #### DISCUSSION
 discussion_title=document.add_heading('Discussion',level=2)
-discussion_text = document.add_paragraph('Discussion text goes here...')
+document.add_paragraph("EI30 is poorly correlated with SSY due to the effect of previous events (Rodrigues et al., 2013)")
 
 
 #### CONCLUSION
