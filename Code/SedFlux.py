@@ -1713,12 +1713,12 @@ DAM['Grab-SSC-mg/L'] = DAMgrab.drop_duplicates(cols='index')['SSC (mg/L)']
 def plotSSCboxplots(storm_samples_only=False,withR2=False,show=False,save=False,filename=figdir+''):
     ## Subset SSC
     if storm_samples_only==True:
-        SSC = SSC_dict['ALL-storm']
+        SSC = SSC_dict['Pre-storm']
         LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
         QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
         DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
     elif storm_samples_only==False:
-        SSC = SSC_dict['ALL']
+        SSC = SSC_dict['Pre-ALL']
         LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
         QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
         DAMgrab = SSC[SSC['Location'].isin(['DAM'])]    
