@@ -1423,17 +1423,18 @@ def HEC_AV_rmse(HEC_Series,AV_Series):
 DAM_HEC_rmse = HEC_AV_rmse(DAM_HECstageDischarge,DAMstageDischarge)[2]   
 
 ### Compare Discharg Ratings
-def plotQratingLBJ(show=False,log=False,save=False,filename=figdir+''): ## Rating Curves
+def plotQratingLBJ(ms=6,show=False,log=False,save=False,filename=figdir+''): ## Rating Curves
+    mpl.rc('lines',markersize=ms)
     title="Water Discharge Ratings for VILLAGE (LBJ)"
     fig, (site_lbj, site_lbj_zoom)= plt.subplots(1,2,figsize=(8,4))
     xy = np.linspace(0,8000,8000)
     #LBJ AV Measurements and Rating Curve
-    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='LBJ_AV 12') 
-    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='LBJ_AV 13') 
-    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='LBJ_AV 14') 
-    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='LBJ_AV 12') 
-    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='LBJ_AV 13') 
-    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='LBJ_AV 14') 
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'o',color='k',fillstyle='none',label='LBJ_AV 12') 
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'^',color='k',fillstyle='none',label='LBJ_AV 13') 
+    site_lbj.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'s',color='k',fillstyle='none',label='LBJ_AV 14') 
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2012:stop2012],LBJstageDischarge['stage(cm)'][start2012:stop2012],'o',color='k',fillstyle='none',label='LBJ_AV 12') 
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2013:stop2013],LBJstageDischarge['stage(cm)'][start2013:stop2013],'^',color='k',fillstyle='none',label='LBJ_AV 13') 
+    site_lbj_zoom.plot(LBJstageDischarge['Q-AV(L/sec)'][start2014:stop2014],LBJstageDischarge['stage(cm)'][start2014:stop2014],'s',color='k',fillstyle='none',label='LBJ_AV 14') 
 
     ## LBJ MODELS
     ## Mannings for AV measurements
@@ -1441,15 +1442,15 @@ def plotQratingLBJ(show=False,log=False,save=False,filename=figdir+''): ## Ratin
     #site_lbj_zoom.plot(LBJstageDischarge['Q-AManningV(L/sec)'],LBJstageDischarge['stage(cm)'],'.',ls='None',c='grey',label='A-ManningsV')
     ## LBJ Power
     LBJ_AVpower = powerfunction(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])    
-    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='g',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
-    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj_zoom,c='g',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])        
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
+    PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj_zoom,c='grey',ls='-',label='LBJ_AVpower '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])        
     ## LBJ Mannings from stream survey
     LBJ_ManQ, LBJ_Manstage = LBJ_Man_reduced['Q']*1000, LBJ_Man_reduced['stage']*100
-    site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='r',label='Mannings n='+str(LBJ_n)+r'$ r^2$'+"%.2f"%LBJ_Man_r2)
-    site_lbj_zoom.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='r',label='Mannings')
+    site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='k',label='Mannings n='+str(LBJ_n)+r'$ r^2$'+"%.2f"%LBJ_Man_r2)
+    site_lbj_zoom.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='k',label='Mannings')
     ## Storm Thresholds
-    site_lbj.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='r',label='Storm threshold')
-    site_lbj_zoom.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='r',label='Storm threshold')
+    site_lbj.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='k',label='Storm threshold')
+    site_lbj_zoom.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='k',label='Storm threshold')
     ## Label point -click
     labelindex_subplot(site_lbj, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
     labelindex_subplot(site_lbj_zoom, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
@@ -1476,31 +1477,30 @@ def plotQratingLBJ(show=False,log=False,save=False,filename=figdir+''): ## Ratin
 #plotQratingLBJ(show=True,log=True,save=False)
 
 ### Compare Discharg Ratings
-def plotQratingDAM(show=False,log=False,save=False,filename=figdir+''): ## Rating Curves
+def plotQratingDAM(ms=6,show=False,log=False,save=False,filename=figdir+''): ## Rating Curves
+    mpl.rc('lines',markersize=ms)
     fig, (site_dam, site_dam_zoom) = plt.subplots(1,2,figsize=(8,4))
-    
     title="Discharge Ratings for FOREST (DAM)"
     xy = np.linspace(0,8000,8000)
-    
     #DAM AV Measurements and Rating Curve
-    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
-    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
-    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'o',color='k',fillstyle='none',label='DAM_AV 12')
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'^',color='k',fillstyle='none',label='DAM_AV 13')
+    site_dam.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'s',color='k',fillstyle='none',label='DAM_AV 14')
     #DAM AV Measurements and Rating Curve
-    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'.',color='g',markeredgecolor='k',label='DAM_AV 12')
-    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'.',color='y',markeredgecolor='k',label='DAM_AV 13')
-    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'.',color='r',markeredgecolor='k',label='DAM_AV 14')
+    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2012:stop2012],DAMstageDischarge['stage(cm)'][start2012:stop2012],'o',color='k',fillstyle='none',label='DAM_AV 12')
+    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2013:stop2013],DAMstageDischarge['stage(cm)'][start2013:stop2013],'^',color='k',fillstyle='none',label='DAM_AV 13')
+    site_dam_zoom.plot(DAMstageDischarge['Q-AV(L/sec)'][start2014:stop2014],DAMstageDischarge['stage(cm)'][start2014:stop2014],'s',color='k',fillstyle='none',label='DAM_AV 14')
     
     ### DAM Linear
     ## DAM Power    
     DAM_AVpower=powerfunction(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])    
-    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='g',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
-    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam_zoom,c='g',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam,c='grey',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
+    PowerFit(DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'],xy,site_dam_zoom,c='grey',ls='-', label='DAM AVpower '+r'$r^2$'+"%.2f"%DAM_AVpower['r2']) ## rating from DAM_AV
     #DAM HEC-RAS Model and Rating Curve
     #PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam,c='b',ls='--',label='DAM_HECpower '+r'$r^2$'+"%.2f"%DAM_HEC_r2) ## rating from DAM_HEC
-    site_dam.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
+    site_dam.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='k',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
     #PowerFit(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],xy,site_dam_zoom,c='b',ls='--',label='DAM_HECpower '+r'$r^2$'+"%.2f"%DAM_HEC_r2) ## rating from DAM_HEC
-    site_dam_zoom.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='b',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
+    site_dam_zoom.plot(DAM_HECstageDischarge['Q_HEC(L/sec)'],DAM_HECstageDischarge['stage(cm)'],'-',color='k',label='DAM HEC-RAS '+r'$r^2$'+"%.2f"%DAM_HEC.r2)
     ## DAM  FLUME
     
     ## DAM Mannings from stream survey
@@ -1511,9 +1511,9 @@ def plotQratingDAM(show=False,log=False,save=False,filename=figdir+''): ## Ratin
     labelindex_subplot(site_dam, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
     labelindex_subplot(site_dam_zoom, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
     ## Storm Thresholds
-    site_dam.axhline(46,ls='--',linewidth=0.6,c='g',label='Channel top')
-    site_dam.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='g',label='Storm threshold')
-    site_dam_zoom.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='g',label='Storm threshold')
+    site_dam.axhline(46,ls='-.',linewidth=0.6,c='grey',label='Channel top')
+    site_dam.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='grey',label='Storm threshold')
+    site_dam_zoom.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='grey',label='Storm threshold')
     ## Label subplots    
     site_dam.set_ylabel('Stage(cm)'),site_dam.set_xlabel('Q(L/sec)'),site_dam_zoom.set_xlabel('Q(L/sec)')
     ## Format subplots
@@ -1529,7 +1529,7 @@ def plotQratingDAM(show=False,log=False,save=False,filename=figdir+''): ## Ratin
     show_plot(show,fig)
     savefig(save,filename)
     return
-#plotQratingDAM(show=True,log=False,save=False,filename=figdir+'')
+#plotQratingDAM(ms=6,show=True,log=False,save=False,filename=figdir+'')
 #plotQratingDAM(show=True,log=False,save=True)
 #plotQratingDAM(show=True,log=True,save=True)
 #plotQratingDAM(show=True,log=True,save=False)
@@ -1703,6 +1703,14 @@ DAMgrab = SSC[SSC['Location'].isin(['DAM'])]#.resample('5Min',fill_method='pad',
 DAMgrab['index'] = DAMgrab.index
 DAM_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DAM'].ix[1] ## the # in .ix[#] is the row number in SampleCounts above
 
+def Percent_storm_samples(location):
+    storm_samples = len(SSC_dict['Pre-storm'][SSC_dict['Pre-storm']['Location'].isin([location])])
+    all_samples = len(SSC_dict['Pre-ALL'][SSC_dict['Pre-ALL']['Location'].isin([location])]) 
+    percent_storm = storm_samples/all_samples *100
+    return percent_storm
+Percent_storm_Forest = Percent_storm_samples('DAM')
+Percent_storm_Quarry = Percent_storm_samples('DT')
+Percent_storm_Village = Percent_storm_samples('LBJ')
 ## ADD Grab samples to Site DataFrames
 LBJ['Grab-SSC-mg/L'] = LBJgrab.drop_duplicates(cols='index')['SSC (mg/L)']
 QUARRY['GrabDT-SSC-mg/L'] = QUARRYgrab.drop_duplicates(cols='index')['SSC (mg/L)']
@@ -1736,7 +1744,7 @@ def plotSSCboxplots(storm_samples_only=False,withR2=False,show=False,save=False,
     GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
     GrabSampleCategories = np.concatenate([[1]*len(DAMgrab['SSC (mg/L)']),[2]*len(QUARRYgrab['SSC (mg/L)']),[3]*len(LBJgrab['SSC (mg/L)'])])
     #mpl.rc('lines',markersize=300)
-    fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,4))
+    fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,3))
     GrabSamples.columns = ['FOREST','QUARRY','VILLAGE']
     bp1 = GrabSamples.boxplot(ax=ax1)
     bp2 = GrabSamples.boxplot(ax=ax2)
@@ -1766,9 +1774,9 @@ def plotSSCboxplots(storm_samples_only=False,withR2=False,show=False,save=False,
 def plotQvsC(storm_samples_only=False,ms=6,show=False,log=False,save=False,filename=figdir+''):  
     ## Subset SSC
     if storm_samples_only==True:
-        SSC = SSC_dict['ALL-storm']
+        SSC = SSC_dict['Pre-storm']
     elif storm_samples_only==False:
-        SSC = SSC_dict['ALL']
+        SSC = SSC_dict['Pre-ALL']
     ## Append Discharge (Q) data
     dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM']['SSC (mg/L)'])
     dam_ssc['Q']=DAM['Q']
@@ -1795,34 +1803,36 @@ def plotQvsC(storm_samples_only=False,ms=6,show=False,log=False,save=False,filen
     up, quar, down = plt.subplot(gs[3],sharex=up_ex),plt.subplot(gs[4],sharex=quar_ex),plt.subplot(gs[5],sharex=down_ex)
     mpl.rc('lines',markersize=ms)
     ## plot LBJ samples
-    down.plot(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'.',c='r',label='VILLAGE 2012')
-    down.plot(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'.',c='y',label='VILLAGE 2013')
-    down.plot(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'.',c='g',label='VILLAGE 2014')
-    down_ex.plot(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'.',c='r',label='VILLAGE 2012')
-    down_ex.plot(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'.',c='y',label='VILLAGE 2013')    
-    down_ex.plot(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'.',c='g',label='VILLAGE 2014')
+    down.plot(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='VILLAGE 2012')
+    down.plot(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='VILLAGE 2013')
+    down.plot(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='VILLAGE 2014')
+    down_ex.plot(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='VILLAGE 2012')
+    down_ex.plot(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='VILLAGE 2013')    
+    down_ex.plot(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='VILLAGE 2014')
     ## plot quarry samples
-    quar.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'.',c='r',label='QUARRY 2012')
-    quar.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'.',c='y',label='QUARRY 2013')
-    quar.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'.',c='g',label='QUARRY 2014')
-    quar_ex.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'.',c='r',label='QUARRY 2012')
-    quar_ex.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'.',c='y',label='QUARRY 2013')    
-    quar_ex.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'.',c='g',label='QUARRY 2014')
+    quar.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='QUARRY 2012')
+    quar.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='QUARRY 2013')
+    quar.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='QUARRY 2014')
+    quar_ex.plot(quarry2012['Q'],quarry2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='QUARRY 2012')
+    quar_ex.plot(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='QUARRY 2013')    
+    quar_ex.plot(quarry2014['Q'],quarry2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='QUARRY 2014')
     ## plot DAM samples
-    up.plot(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'.',c='r',label='FOREST2012')
-    up.plot(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'.',c='y',label='FOREST 2013')
-    up.plot(dam_ssc2014['Q'],dam_ssc2014['SSC (mg/L)'],'.',c='g',label='FOREST 2014')
-    up_ex.plot(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'.',c='r',label='FOREST 2012')
-    up_ex.plot(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'.',c='y',label='FOREST 2013')
-    up_ex.plot(dam_ssc2014['Q'],dam_ssc2014['SSC (mg/L)'],'.',c='g',label='FOREST 2014')
+    up.plot(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='FOREST2012')
+    up.plot(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='FOREST 2013')
+    up.plot(dam_ssc2014['Q'],dam_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='FOREST 2014')
+    up_ex.plot(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='FOREST 2012')
+    up_ex.plot(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='FOREST 2013')
+    up_ex.plot(dam_ssc2014['Q'],dam_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='FOREST 2014')
     ## plot a line marking storm threshold and label it
-    up.axvline(x=54,ls='--',color='k'),quar.axvline(x=54,ls='--',color='k'),down.axvline(x=150,ls='--',color='k')  
-    up_ex.axvline(x=54,ls='--',color='k'),quar_ex.axvline(x=54,ls='--',color='k'),down_ex.axvline(x=150,ls='--',color='k')  
-    up.text(54,800,'storm threshold',rotation='vertical'), quar.text(54,800,'storm threshold',rotation='vertical'), down.text(150,800,'storm threshold',rotation='vertical')      
+    storm_Q_DAM = DAM[DAM['stage']==DAM_storm_threshold.round(0)]['Q'][0]
+    storm_Q_LBJ = LBJ[LBJ['stage']==LBJ_storm_threshold.round(0)]['Q'][0]
+    up.axvline(x=storm_Q_DAM,ls='--',color='k'),quar.axvline(x=storm_Q_DAM,ls='--',color='k'),down.axvline(x=storm_Q_LBJ,ls='--',color='k')  
+    up_ex.axvline(x=storm_Q_DAM,ls='--',color='k'),quar_ex.axvline(x=storm_Q_DAM,ls='--',color='k'),down_ex.axvline(x=storm_Q_LBJ,ls='--',color='k')  
+    up.text(54,800,'storm threshold',rotation='vertical')#, quar.text(54,800,'storm threshold',rotation='vertical'), down.text(150,800,'storm threshold',rotation='vertical')      
     ## Regression 
-    plotregressionline(lbj_ssc['Q'],lbjQC,down,'k--')
-    plotregressionline(quarry_ssc['Q'],quarQC,quar,'k--')
-    plotregressionline(dam_ssc['Q'],damQC,up,'k--')
+    #plotregressionline(lbj_ssc['Q'],lbjQC,down,'k--')
+    #plotregressionline(quarry_ssc['Q'],quarQC,quar,'k--')
+    #plotregressionline(dam_ssc['Q'],damQC,up,'k--')
     ## Limits
     down.set_ylim(0,1200), quar.set_ylim(0,1200), up.set_ylim(0,1200)
     down.set_xlim(0,lbj_ssc['Q'].max()+100),quar.set_xlim(0,lbj_ssc['Q'].max()+100),up.set_xlim(0,lbj_ssc['Q'].max()+100)
@@ -2260,6 +2270,38 @@ def Synthetic_Rating_Curves(param,show=False,save=False,filename=figdir+''):
     savefig(save,filename)
     return
 #Synthetic_Rating_Curves(param='SS_Mean',show=True,save=False)#,filename=figdir+'Synthetic Rating Curves.png')
+    
+    ## PLOT T-SSC for  Synthetic Rating Curves
+def Synthetic_Rating_Curves_Fagaalu(param,show=False,save=False,filename=figdir+''):
+    fig, (lbj,dam,comb)= plt.subplots(1,3,figsize=(8,3),sharex=True,sharey=True,)
+    max_y,max_x = 6000, 6000
+    xy = np.linspace(0,max_y)
+    ## LBJ    
+    lbj.scatter(LBJ_SRC[param],LBJ_SRC['SSC(mg/L)'],c='k')
+    lbj_SRC = pd.ols(y=LBJ_SRC['SSC(mg/L)'],x=LBJ_SRC[param],intercept=False)
+    lbj.plot(xy,xy*lbj_SRC.beta[0],ls='-',label='Village_OBS500 '+r'$r^2$'+"%.2f"%lbj_SRC.r2,c='k')
+    comb.plot(xy,xy*lbj_SRC.beta[0],ls='-',label='Village_OBS500 '+r'$r^2$'+"%.2f"%lbj_SRC.r2,c='k')
+    lbj.set_ylabel('SSC (mg/L)'), lbj.set_title('Village_OBS500 '+r'$r^2=$'+"%.2f"%lbj_SRC.r2)
+    ## DAM
+    dam.scatter(DAM_SRC[param],DAM_SRC['SSC(mg/L)'],c='grey')
+    dam_SRC = pd.ols(y=DAM_SRC['SSC(mg/L)'],x=DAM_SRC[param],intercept=False)
+    dam.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC'+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')
+    comb.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC'+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')
+    dam.set_title('Forest_YSI '+r'$r^2=$'+"%.2f"%dam_SRC.r2)#, dam.set_ylabel('SSC (mg/L)'), 
+    ## COMBINED
+    comb.scatter(LBJ_SRC[param],LBJ_SRC['SSC(mg/L)'],c='k')
+    comb.scatter(DAM_SRC[param],DAM_SRC['SSC(mg/L)'],c='grey')
+    comb.set_title('All')
+    for ax in fig.axes:
+        ax.set_xlabel(param)
+        ax.set_ylim(0,max_y)
+        ax.set_xlim(0,max_x)
+        ax.locator_params(nbins=4)
+    plt.tight_layout(pad=0.1)
+    show_plot(show)
+    savefig(save,filename)
+    return
+#Synthetic_Rating_Curves_Fagaalu(param='SS_Mean',show=True,save=False,filename=figdir+'')
 
 ## PLOT T-SSC rating curves for the YSI turbidimeter
 def plotYSI_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=False):
@@ -2333,27 +2375,27 @@ def plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,Use_All_SSC=False,storm_samp
     xy = np.linspace(0,max_y)  
     ## LBJ
     lbj=NTU_SSCrating(SSC,LBJ_YSI['NTU'],location='LBJ',T_interval='15Min',Intercept=False,log=False)
-    ntu.scatter(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],c='r')
-    ntu.plot(xy,xy*lbj[0].beta[0],ls='-',c='r',label='LBJ '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    ntu.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',c='k',label='LBJ')
+    ntu.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='LBJ '+r'$r^2$'+"%.2f"%lbj[0].r2)
     labelindex_subplot(ntu,lbj[1].index,lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'])    
     ## DAM
     dam=NTU_SSCrating(SSC,DAM_YSI['NTU'],location='DAM',T_interval='15Min',Intercept=False,log=False)
-    ntu.scatter(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],c='g')
-    ntu.plot(xy,xy*dam[0].beta[0],ls='-',c='g',label='DAM '+r'$r^2$'+"%.2f"%dam[0].r2)
+    ntu.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',fillstyle='none',c='k',label='DAM')
+    ntu.plot(xy,xy*dam[0].beta[0],ls='--',c='k',label='DAM '+r'$r^2$'+"%.2f"%dam[0].r2)
     ntu.legend()
     labelindex_subplot(ntu,dam[1].index,dam[1]['T-NTU'],dam[1]['SSC (mg/L)'])    
     ## Zoom in 
-    ntu_zoom.scatter(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],c='r')
-    ntu_zoom.plot(xy,xy*lbj[0].beta[0],ls='-',c='r',label='LBJ '+r'$r^2$'+"%.2f"%lbj[0].r2)
-    ntu_zoom.scatter(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],c='g')
-    ntu_zoom.plot(xy,xy*dam[0].beta[0],ls='-',c='g',label='DAM '+r'$r^2$'+"%.2f"%dam[0].r2)   
+    ntu_zoom.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',c='k',label='LBJ')
+    ntu_zoom.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='LBJ '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    ntu_zoom.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',fillstyle='none',c='k',label='DAM')
+    ntu_zoom.plot(xy,xy*dam[0].beta[0],ls='--',c='k',label='DAM '+r'$r^2$'+"%.2f"%dam[0].r2)   
     try:
         DAM_SRC==None
     except:
         dam_SRC = pd.ols(y=DAM_SRC['SSC(mg/L)'],x=DAM_SRC['SS_Mean'],intercept=False)
-        ntu.scatter(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],c='grey')
+        ntu.plot(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],ls='none',marker='^',fillstyle='none',c='grey',label='DAM_SRC')
         ntu.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC '+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')  
-        ntu_zoom.scatter(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],c='grey')
+        ntu_zoom.plot(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],ls='none',marker='^',fillstyle='none',c='grey',label='DAM_SRC')
         ntu_zoom.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC '+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')  
         
     ntu.set_xlabel('NTU')
@@ -2389,25 +2431,25 @@ def OBSa_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=
 
     ## BS Avg
     bs_average=NTU_SSCrating(SSC,df['Turb_BS_Avg'],location=SSC_loc,T_interval='5Min',Intercept=False,log=False)
-    bs_avg.scatter(bs_average[1]['T-NTU'],bs_average[1]['SSC (mg/L)'])
-    bs_avg.plot(xy,xy*bs_average[0].beta[0],ls='-',label='BS_Avg'+r'$r^2$'+"%.2f"%bs_average[0].r2)
+    bs_avg.scatter(bs_average[1]['T-NTU'],bs_average[1]['SSC (mg/L)'],c='k')
+    bs_avg.plot(xy,xy*bs_average[0].beta[0],ls='-',c='k',label='BS_Avg'+r'$r^2$'+"%.2f"%bs_average[0].r2)
     bs_avg.set_title(SSC_loc+' BS_Avg '+r'$r^2=$'+"%.2f"%bs_average[0].r2)
     bs_avg.set_xlabel('BS Avg')
     ## BS Mean SRC
     bs_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Mean'],intercept=False)
-    bs_avg.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='r')
-    bs_avg.plot(xy,xy*bs_mean_SRC.beta[0],ls='-',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2,c='r')
+    bs_avg.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
+    bs_avg.plot(xy,xy*bs_mean_SRC.beta[0],ls='--',c='grey',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2)
     bs_avg.legend()
     ## SS Avg
     ss_average=NTU_SSCrating(SSC,df['Turb_SS_Avg'],location=SSC_loc,T_interval='5Min',Intercept=False,log=False)
-    ss_avg.scatter(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'])
-    ss_avg.plot(xy,xy*ss_average[0].beta[0],ls='-',label='SS_Avg'+r'$r^2$'+"%.2f"%ss_average[0].r2)   
+    ss_avg.scatter(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'],c='k')
+    ss_avg.plot(xy,xy*ss_average[0].beta[0],ls='-',c='k',label='SS_Avg'+r'$r^2$'+"%.2f"%ss_average[0].r2)   
     ss_avg.set_title(SSC_loc+' SS_Avg '+r'$r^2=$'+"%.2f"%ss_average[0].r2) 
     ss_avg.set_xlabel('SS Avg')
     ## SS Mean SRC
     ss_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Mean'],intercept=False)
-    ss_avg.scatter(df_SRC['SS_Mean'],df_SRC['SSC(mg/L)'],c='r')
-    ss_avg.plot(xy,xy*ss_mean_SRC.beta[0],ls='-',label='SS_Mean_SRC'+r'$r^2$'+"%.2f"%ss_mean_SRC.r2,c='r')
+    ss_avg.scatter(df_SRC['SS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
+    ss_avg.plot(xy,xy*ss_mean_SRC.beta[0],ls='--',c='grey',label='SS_Mean_SRC'+r'$r^2$'+"%.2f"%ss_mean_SRC.r2)
     ss_avg.legend()
     plt.tight_layout(pad=0.1)
     for ax in fig.axes:
@@ -2437,78 +2479,78 @@ def OBSb_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=
     xy = np.linspace(0,max_y)
     ## BS Median
     bs_median=NTU_SSCrating(SSC,df['Turb_BS_Median'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
-    bs_med.scatter(bs_median[1]['T-NTU'],bs_median[1]['SSC (mg/L)'])
-    bs_med.plot(xy,xy*bs_median[0].beta[0],ls='-',label='BS_Median'+r'$r^2$'+"%.2f"%bs_median[0].r2)
+    bs_med.scatter(bs_median[1]['T-NTU'],bs_median[1]['SSC (mg/L)'],c='k')
+    bs_med.plot(xy,xy*bs_median[0].beta[0],ls='-',c='k',label='BS_Median'+r'$r^2$'+"%.2f"%bs_median[0].r2)
     ## BS Median SRC
     bs_median_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Median'],intercept=False)
-    bs_med.scatter(df_SRC['BS_Median'],df_SRC['SSC(mg/L)'],c='r')
-    bs_med.plot(xy,xy*bs_median_SRC.beta[0],ls='-',label='BS_Median_SRC'+r'$r^2$'+"%.2f"%bs_median_SRC.r2,c='r')
+    bs_med.scatter(df_SRC['BS_Median'],df_SRC['SSC(mg/L)'],c='grey')
+    bs_med.plot(xy,xy*bs_median_SRC.beta[0],ls='--',c='grey',label='BS_Median_SRC'+r'$r^2$'+"%.2f"%bs_median_SRC.r2)
     bs_med.set_title('BS_Median '+r'$r^2=$'+"%.2f"%bs_median[0].r2)
     bs_med.set_ylabel('SSC (mg/L)'),bs_med.set_xlabel('BS Median')
     ## BS Mean
     bs_mean=NTU_SSCrating(SSC,df['Turb_BS_Mean'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
-    bs_mea.scatter(bs_mean[1]['T-NTU'],bs_mean[1]['SSC (mg/L)'])
-    bs_mea.plot(xy,xy*bs_mean[0].beta[0],ls='-',label='BS_Mean'+r'$r^2$'+"%.2f"%bs_mean[0].r2)
+    bs_mea.scatter(bs_mean[1]['T-NTU'],bs_mean[1]['SSC (mg/L)'],c='k')
+    bs_mea.plot(xy,xy*bs_mean[0].beta[0],ls='-',c='k',label='BS_Mean'+r'$r^2$'+"%.2f"%bs_mean[0].r2)
     ## BS Mean SRC
     bs_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Mean'],intercept=False)
-    bs_mea.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='r')
-    bs_mea.plot(xy,xy*bs_mean_SRC.beta[0],ls='-',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2,c='r')
+    bs_mea.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
+    bs_mea.plot(xy,xy*bs_mean_SRC.beta[0],ls='--',c='grey',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2)
     bs_mea.set_title('BS_Mean '+r'$r^2=$'+"%.2f"%bs_mean[0].r2)
     bs_mea.set_xlabel('BS Mean')
     ## BS Min
     bs_minimum=NTU_SSCrating(SSC,df['Turb_BS_Min'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
-    bs_min.scatter(bs_minimum[1]['T-NTU'],bs_minimum[1]['SSC (mg/L)'])
-    bs_min.plot(xy,xy*bs_minimum[0].beta[0],ls='-',label='BS_Min'+r'$r^2$'+"%.2f"%bs_minimum[0].r2)
+    bs_min.scatter(bs_minimum[1]['T-NTU'],bs_minimum[1]['SSC (mg/L)'],c='k')
+    bs_min.plot(xy,xy*bs_minimum[0].beta[0],ls='-',c='k',label='BS_Min'+r'$r^2$'+"%.2f"%bs_minimum[0].r2)
     ## BS Min SRC
     bs_min_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Min'],intercept=False)
-    bs_min.scatter(df_SRC['BS_Min'],df_SRC['SSC(mg/L)'],c='r')
-    bs_min.plot(xy,xy*bs_min_SRC.beta[0],ls='-',label='BS_Min_SRC'+r'$r^2$'+"%.2f"%bs_min_SRC.r2,c='r')
+    bs_min.scatter(df_SRC['BS_Min'],df_SRC['SSC(mg/L)'],c='grey')
+    bs_min.plot(xy,xy*bs_min_SRC.beta[0],ls='--',c='grey',label='BS_Min_SRC'+r'$r^2$'+"%.2f"%bs_min_SRC.r2)
     bs_min.set_title('BS_Min '+r'$r^2=$'+"%.2f"%bs_minimum[0].r2)
     bs_min.set_xlabel('BS Min')
     ## BS Max
     bs_maximum=NTU_SSCrating(SSC,df['Turb_BS_Max'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
-    bs_max.scatter(bs_maximum[1]['T-NTU'],bs_maximum[1]['SSC (mg/L)'])
-    bs_max.plot(xy,xy*bs_maximum[0].beta[0],ls='-',label='BS_Max'+r'$r^2$'+"%.2f"%bs_maximum[0].r2)    
+    bs_max.scatter(bs_maximum[1]['T-NTU'],bs_maximum[1]['SSC (mg/L)'],c='k')
+    bs_max.plot(xy,xy*bs_maximum[0].beta[0],ls='-',c='k',label='BS_Max'+r'$r^2$'+"%.2f"%bs_maximum[0].r2)    
     ## BS Max SRC
     bs_max_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Max'],intercept=False)
-    bs_max.scatter(df_SRC['BS_Max'],df_SRC['SSC(mg/L)'],c='r')
-    bs_max.plot(xy,xy*bs_max_SRC.beta[0],ls='-',label='BS_Max_SRC'+r'$r^2$'+"%.2f"%bs_max_SRC.r2,c='r')
+    bs_max.scatter(df_SRC['BS_Max'],df_SRC['SSC(mg/L)'],c='grey')
+    bs_max.plot(xy,xy*bs_max_SRC.beta[0],ls='--',c='grey',label='BS_Max_SRC'+r'$r^2$'+"%.2f"%bs_max_SRC.r2)
     bs_max.set_title('BS_Max '+r'$r^2=$'+"%.2f"%bs_maximum[0].r2)
     bs_max.set_xlabel('BS Max')
     ## SS Median
     ss_median=NTU_SSCrating(SSC,df['Turb_SS_Median'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
-    ss_med.scatter(ss_median[1]['T-NTU'],ss_median[1]['SSC (mg/L)'])
-    ss_med.plot(xy,xy*ss_median[0].beta[0],ls='-',label='SS_Median'+r'$r^2$'+"%.2f"%ss_median[0].r2)
+    ss_med.scatter(ss_median[1]['T-NTU'],ss_median[1]['SSC (mg/L)'],c='k')
+    ss_med.plot(xy,xy*ss_median[0].beta[0],ls='-',c='k',label='SS_Median'+r'$r^2$'+"%.2f"%ss_median[0].r2)
     ## SS Median SRC
     ss_median_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Median'],intercept=False)
-    ss_med.scatter(df_SRC['SS_Median'],df_SRC['SSC(mg/L)'],c='r')
-    ss_med.plot(xy,xy*ss_median_SRC.beta[0],ls='-',label='SS_Median_SRC'+r'$r^2$'+"%.2f"%ss_median_SRC.r2,c='r')
+    ss_med.scatter(df_SRC['SS_Median'],df_SRC['SSC(mg/L)'],c='grey')
+    ss_med.plot(xy,xy*ss_median_SRC.beta[0],ls='--',c='grey',label='SS_Median_SRC'+r'$r^2$'+"%.2f"%ss_median_SRC.r2)
     ss_med.set_title('SS_Median '+r'$r^2=$'+"%.2f"%ss_median[0].r2)
     ss_med.set_ylabel('SSC (mg/L)'),ss_med.set_xlabel('SS Median')
     ## SS Mean
     ss_mean=NTU_SSCrating(SSC,df['Turb_SS_Mean'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
-    ss_mea.scatter(ss_mean[1]['T-NTU'],ss_mean[1]['SSC (mg/L)'])
-    ss_mea.plot(xy,xy*ss_mean[0].beta[0],ls='-',label='SS_Mean'+r'$r^2$'+"%.2f"%ss_mean[0].r2)
+    ss_mea.scatter(ss_mean[1]['T-NTU'],ss_mean[1]['SSC (mg/L)'],c='k')
+    ss_mea.plot(xy,xy*ss_mean[0].beta[0],ls='-',c='k',label='SS_Mean'+r'$r^2$'+"%.2f"%ss_mean[0].r2)
     ## SS Mean SRC
     ss_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Mean'],intercept=False)
-    ss_mea.scatter(df_SRC['SS_Mean'],df_SRC['SSC(mg/L)'],c='r')
-    ss_mea.plot(xy,xy*ss_mean_SRC.beta[0],ls='-',label='SS_Mean_SRC'+r'$r^2$'+"%.2f"%ss_mean_SRC.r2,c='r')
+    ss_mea.scatter(df_SRC['SS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
+    ss_mea.plot(xy,xy*ss_mean_SRC.beta[0],ls='--',c='grey',label='SS_Mean_SRC'+r'$r^2$'+"%.2f"%ss_mean_SRC.r2)
     ss_mea.set_title('SS_Mean '+r'$r^2=$'+"%.2f"%ss_mean[0].r2)
     ss_mea.set_xlabel('SS Mean')
     ## SS Min
     ss_minimum=NTU_SSCrating(SSC,df['Turb_SS_Min'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
-    ss_min.scatter(ss_minimum[1]['T-NTU'],ss_minimum[1]['SSC (mg/L)'])
-    ss_min.plot(xy,xy*ss_minimum[0].beta[0],ls='-',label='SS_Min'+r'$r^2$'+"%.2f"%ss_minimum[0].r2)
+    ss_min.scatter(ss_minimum[1]['T-NTU'],ss_minimum[1]['SSC (mg/L)'],c='k')
+    ss_min.plot(xy,xy*ss_minimum[0].beta[0],ls='-',c='k',label='SS_Min'+r'$r^2$'+"%.2f"%ss_minimum[0].r2)
     ## BS Min SRC
     ss_min_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Min'],intercept=False)
-    ss_min.scatter(df_SRC['SS_Min'],df_SRC['SSC(mg/L)'],c='r')
-    ss_min.plot(xy,xy*ss_min_SRC.beta[0],ls='-',label='SS_Min_SRC'+r'$r^2$'+"%.2f"%ss_min_SRC.r2,c='r')
+    ss_min.scatter(df_SRC['SS_Min'],df_SRC['SSC(mg/L)'],c='grey')
+    ss_min.plot(xy,xy*ss_min_SRC.beta[0],ls='--',c='grey',label='SS_Min_SRC'+r'$r^2$'+"%.2f"%ss_min_SRC.r2)
     ss_min.set_title('SS_Min '+r'$r^2=$'+"%.2f"%ss_minimum[0].r2)
     ss_min.set_xlabel('SS Min')
     ## SS Max
     ss_maximum=NTU_SSCrating(SSC,df['Turb_SS_Max'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
-    ss_max.scatter(ss_maximum[1]['T-NTU'],ss_maximum[1]['SSC (mg/L)'])
-    ss_max.plot(xy,xy*ss_maximum[0].beta[0],ls='-',label='SS_Max'+r'$r^2$'+"%.2f"%ss_maximum[0].r2)    
+    ss_max.scatter(ss_maximum[1]['T-NTU'],ss_maximum[1]['SSC (mg/L)'],c='k')
+    ss_max.plot(xy,xy*ss_maximum[0].beta[0],ls='-',c='k',label='SS_Max'+r'$r^2$'+"%.2f"%ss_maximum[0].r2)    
     ss_max.set_title('SS_Max '+r'$r^2=$'+"%.2f"%ss_maximum[0].r2)
     ss_max.set_xlabel('SS Max')
     #fig.canvas.manager.set_window_title(SSC_loc)
@@ -3071,11 +3113,16 @@ def Q_storm_diff_table():
     Q_Diff['Precip (mm)'] = Q_Diff['Precip (mm)'].apply(np.int)
     Q_Diff['Storm#']=range(1,len(Q_Diff)+1)
     Q_Diff['Storm Start'] = Q_Diff.index
+    Q_Diff['Storm Start'] = Q_Diff['Storm Start'].apply(lambda x: "{:%m/%d/%Y}".format(x))
+    ## summary stats
+    Percent_Upper = Q_Diff['UPPER m3'].sum()/Q_Diff['TOTAL m3'].sum()*100
+    Percent_Lower =Q_Diff['LOWER m3'].sum()/Q_Diff['TOTAL m3'].sum()*100
     ## add summary stats to bottom of table
-    Q_Diff=Q_Diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER m3':'-','LOWER m3':'-','TOTAL m3':'Average:','% Upper':'%.0f'%Q_Diff['% Upper'].mean(),'% Lower':'%.0f'%Q_Diff['% Lower'].mean()},index=['']))
+    Q_Diff=Q_Diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER m3':'-','LOWER m3':'-','TOTAL m3':'Average:','% Upper':"%.0f"%Percent_Upper,'% Lower':"%.0f"%Percent_Lower},index=['']))
     Q_Diff=Q_Diff[['Storm Start','Storm#','Precip (mm)','UPPER m3','LOWER m3','TOTAL m3','% Upper','% Lower']]
     return Q_Diff
-    
+Q_storm_diff_table()
+
 ## Calculate the percent of total Q with raw vales, BEFORE NORMALIZING by area!
 def plotQ_storm_table(show=False):
     diff = pd.DataFrame({'Qupper':StormsDAM['Qsum']/1000,
@@ -3269,7 +3316,7 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     #plt.suptitle(title)
     show_plot(show)
     return
-Storm_SedFlux(storm_data_LBJ,LBJ_storm_threshold,LBJ_StormIntervals,'LBJ_StormIntervals',show=True)
+#Storm_SedFlux(storm_data_LBJ,LBJ_storm_threshold,LBJ_StormIntervals,'LBJ_StormIntervals',show=True)
 #Storm_SedFlux(storm_data_DAM,DAM_storm_threshold,DAM_StormIntervals,'DAM_StormIntervals',show=True)
 
 def plot_all_storms_individually(storm_threshold,storm_intervals,show=False,save=True):
@@ -3468,57 +3515,58 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     labelbottom='off') # labels along the bottom edge are off
     #plt.suptitle(' start: '+str(start)+' end: '+str(end), fontsize=22)
     ## Precip
-    storm_data['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Timu1')
+    storm_data['Precip'].plot(ax=P,color='k',ls='steps-pre',label='Timu1')
     P_max, P_sum = storm_data['Precip'].max(), storm_data['Precip'].sum()
     P.set_ylabel('Precip mm'),P.set_ylim(-1,Precip['Timu1-15'].max()+2)
     ## Discharge Q
-    storm_data['LBJ-Q'].plot(ax=Q,color='r',label='VILLAGE')
+    storm_data['LBJ-Q'].plot(ax=Q,color='k',label='VILLAGE')
     LBJ_Qmax, LBJ_Qmean, LBJ_Qsum = storm_data['LBJ-Q'].max(), storm_data['LBJ-Q'].mean(), storm_data['LBJ-Q'].sum()
-    storm_data['QUARRY-Q'].plot(ax=Q,color='y',label='QUARRY')
+    storm_data['QUARRY-Q'].plot(ax=Q,color='grey',ls='-.',label='QUARRY')
     QUARRY_Qmax, QUARRY_Qmean, QUARRY_Qsum = storm_data['QUARRY-Q'].max(),storm_data['QUARRY-Q'].mean(),storm_data['QUARRY-Q'].sum()
-    storm_data['DAM-Q'].plot(ax=Q,color='g',label='FOREST')
+    storm_data['DAM-Q'].plot(ax=Q,color='grey',label='FOREST')
     DAM_Qmax, DAM_Qmean, DAM_Qsum = storm_data['DAM-Q'].max(), storm_data['DAM-Q'].mean(), storm_data['DAM-Q'].sum()
     Q.set_ylabel('Q L/sec')#, Q.set_ylim(-1,6000)
     ## Turbidity T
-    storm_data['LBJ-NTU'].plot(ax=T,color='r',label='LBJ-NTU')
+    storm_data['LBJ-NTU'].plot(ax=T,color='k',label='LBJ-NTU')
     LBJ_NTUmax, LBJ_NTUmean = storm_data['LBJ-NTU'].max(), storm_data['LBJ-NTU'].mean()
-    storm_data['QUARRY-NTU'].plot(ax=T,color='y',label='QUARRY-NTU')
-    QUARRY_NTUmax, QUARRY_NTUmean = storm_data['QUARRY-NTU'].max(), storm_data['QUARRY-NTU'].mean()
-    storm_data['DAM-NTU'].plot(ax=T,color='g',label='DAM-NTU')
+    #storm_data['QUARRY-NTU'].plot(ax=T,color='y',label='QUARRY-NTU')
+    #QUARRY_NTUmax, QUARRY_NTUmean = storm_data['QUARRY-NTU'].max(), storm_data['QUARRY-NTU'].mean()
+    storm_data['DAM-NTU'].plot(ax=T,color='grey',label='DAM-NTU')
     DAM_NTUmax, DAM_NTUmean = storm_data['DAM-NTU'].max(), storm_data['DAM-NTU'].mean()
     T.set_ylabel('T (NTU)')#,T.set_ylim(-1,2000)
     ## SSC from Turbidity T-SSC
-    storm_data['LBJ-T-SSC-mg/L'].plot(ax=SSC,color='r',label='LBJ-SSC')
+    storm_data['LBJ-T-SSC-mg/L'].plot(ax=SSC,ls='-',color='k',label='VILLAGE')
     LBJ_SSCmax, LBJ_SSCmean = storm_data['LBJ-T-SSC-mg/L'].max(), storm_data['LBJ-T-SSC-mg/L'].mean()
-    storm_data['QUARRY-T-SSC-mg/L'].plot(ax=SSC,color='y',label='QUARRY-SSC')
+    storm_data['QUARRY-T-SSC-mg/L'].plot(ax=SSC,ls='-.',color='grey',label='QUARRY')
     QUARRY_SSCmax, QUARRY_SSCmean = storm_data['QUARRY-T-SSC-mg/L'].max(), storm_data['QUARRY-T-SSC-mg/L'].mean()
-    storm_data['DAM-T-SSC-mg/L'].plot(ax=SSC,color='g',label='DAM-SSC')
+    storm_data['DAM-T-SSC-mg/L'].plot(ax=SSC,ls='-',color='grey',label='FOREST')
     DAM_SSCmax, DAM_SSCmean = storm_data['DAM-T-SSC-mg/L'].max(), storm_data['DAM-T-SSC-mg/L'].mean()
+    #SSC.legend(loc='best',ncol=1)
     ## Grabs Grab-SSC
-    storm_data['LBJ-Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
-    storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
-    storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
+    storm_data['LBJ-Grab-SSC-mg/L'].plot(ax=SSC,color='k',marker='o',ls='None',markersize=4,label=None)
+    storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='grey',marker='s',ls='None',markersize=4,label=None)
+    storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='grey',marker='^',ls='None',markersize=4,label=None)
     SSC.set_ylabel('SSC mg/L')#, SSC.set_ylim(-1,1500)
     ### SSC interpolated from grab samples GrabInt-SSC
-    storm_data['LBJ-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='r',label='LBJ-SSC')
+    storm_data['LBJ-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='k')#,label='VIL-int')
     LBJ_SSCgrabmax, LBJ_SSCgrabmean = storm_data['LBJ-GrabInt-SSC-mg/L'].max(), storm_data['LBJ-GrabInt-SSC-mg/L'].mean()
-    storm_data['QUARRY-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC')
+    storm_data['QUARRY-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='-.',color='grey')#,label='QUA-int')
     QUARRY_SSCgrabmax, QUARRY_SSCgrabmean = storm_data['QUARRY-GrabInt-SSC-mg/L'].max(), storm_data['QUARRY-GrabInt-SSC-mg/L'].mean()
-    storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='g',label='DAM-SSC')
+    storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='grey')#,label='FOR-int')
     DAM_SSCgrabmax, DAM_SSCgrabmean = storm_data['DAM-GrabInt-SSC-mg/L'].max(), storm_data['DAM-GrabInt-SSC-mg/L'].mean()
     ## Sediment Yield SedFlux
-    storm_data['LBJ-SedFlux-tons/sec'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
+    storm_data['LBJ-SedFlux-tons/sec'].plot(ax=SED,ls='-',color='k',label='VILLAGE')
     LBJ_Smax, LBJ_Smean, LBJ_Ssum = storm_data['LBJ-SedFlux-tons/sec'].max(), storm_data['LBJ-SedFlux-tons/sec'].mean(), storm_data['LBJ-SedFlux-tons/sec'].sum()
-    storm_data['QUARRY-SedFlux-tons/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux',ls='-')
+    storm_data['QUARRY-SedFlux-tons/sec'].plot(ax=SED,ls='-.',color='grey',label='QUARRY')
     QUARRY_Smax, QUARRY_Smean, QUARRY_Ssum = storm_data['QUARRY-SedFlux-tons/sec'].max(), storm_data['QUARRY-SedFlux-tons/sec'].mean(), storm_data['QUARRY-SedFlux-tons/sec'].sum()
-    storm_data['DAM-SedFlux-tons/sec'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
+    storm_data['DAM-SedFlux-tons/sec'].plot(ax=SED,ls='-',color='grey',label='FOREST')
     DAM_Smax, DAM_Smean, DAM_Ssum = storm_data['DAM-SedFlux-tons/sec'].max(), storm_data['DAM-SedFlux-tons/sec'].mean(), storm_data['DAM-SedFlux-tons/sec'].sum()
     SED.set_ylabel('SSY tons/sec')#, SED.set_ylim(-.1,4000)
     ## Cumulative Sediment Load
-    storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='r',ls='--',label='VILLAGE')
-    storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='y',ls='--',label='QUARRY-Cumulative Sed')    
-    storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='g',ls='--',label='FOREST') 
-    SEDcum.set_ylabel('Cum. SSY\ntons'),SEDcum.yaxis.set_ticks_position('right')
+    storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='k',ls='-',label='VILLAGE')
+    storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-.',label='QUARRY')    
+    storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-',label='FOREST') 
+    SEDcum.set_ylabel('Cumulative SSY\ntons'),SEDcum.yaxis.set_ticks_position('right')
     for axis in fig.axes:
         max_yticks = 4
         yloc = plt.MaxNLocator(max_yticks)
@@ -3527,7 +3575,7 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     ## Legends
     #P.legend(loc='best'), 
     Q.legend(loc='best',ncol=2)#, T.legend(loc='best',ncol=3)          
-    #SSC.legend(loc='best',ncol=5),SED.legend(loc='best',ncol=2)
+    #SED.legend(loc='best',ncol=3)#,SSC.legend(loc='best',ncol=5)
     #Shade Storms
     shade_storms=False
     if shade_storms==True:
@@ -3579,13 +3627,15 @@ def compileALLStorms(subset = 'pre'):
     ## Sediment Yield
     ALLStorms=pd.DataFrame({'Supper':SedFluxStorms_DAM['Ssum'],'Supper_PE':SedFluxStorms_DAM['PE'],
     'Slower':SedFluxStorms_LBJ['Ssum']-SedFluxStorms_DAM['Ssum'],
-    'Stotal':SedFluxStorms_LBJ['Ssum'],'Stotal_PE':SedFluxStorms_LBJ['PE']})
+    'Stotal':SedFluxStorms_LBJ['Ssum'],'Stotal_PE':SedFluxStorms_LBJ['PE'],
+    'Squarry':SedFluxStorms_QUARRY['Ssum'],'Squarry_PE':SedFluxStorms_QUARRY['PE']})
     ## Sediment Yield RMSE
     
     ## Qsum
     ALLStorms['Qsumtotal']=SedFluxStorms_LBJ['Qsum']/1000 # L to m3
     ALLStorms['Qsumupper']=SedFluxStorms_DAM['Qsum']/1000 # L to m3
     ALLStorms['Qsumlower']=SedFluxStorms_LBJ['Qsum']-SedFluxStorms_DAM['Qsum']
+    ALLStorms['Qsumquarry'] =SedFluxStorms_QUARRY['Qsum']/1000 #L to m3
     ## Qmax
     ALLStorms['Qmaxupper']=SedFluxStorms_DAM['Qmax']/1000 # L to m3
     ALLStorms['Qmaxlower']=SedFluxStorms_LBJ['Qmax']/1000 # L to m3
@@ -3602,8 +3652,6 @@ ALLStorms = compileALLStorms()
 
 def S_storm_diff_table():
     S_diff = compileALLStorms()
-    S_diff = S_diff[S_diff['Stotal']>0]
-    S_diff = S_diff[S_diff['Supper']>0]
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
     S_diff['UPPER PE %'] = S_diff['Supper_PE'].apply(int)
@@ -3611,19 +3659,60 @@ def S_storm_diff_table():
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
     S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
     S_diff['% Upper'] = S_diff['Supper']/S_diff['Stotal']*100
-    S_diff['% Upper'] = S_diff['% Upper'].apply(np.int)
+    S_diff['% Upper'] = S_diff['% Upper'].dropna().apply(int)
     S_diff['% Lower'] = S_diff['Slower']/S_diff['Stotal']*100
-    S_diff['% Lower'] = S_diff['% Lower'].apply(np.int)
+    S_diff['% Lower'] = S_diff['% Lower'].dropna().apply(int)
     S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
     S_diff = S_diff[S_diff['Precip (mm)']>0]
     ## Filter negative values for S at LBJ    
-    #S_diff = S_diff[S_diff['Slower']>0]
+    S_diff = S_diff[S_diff['Slower']>0]
+    ## Storm Indices
     S_diff['Storm#']=range(1,len(S_diff)+1) 
     S_diff['Storm Start'] = S_diff.index
+    S_diff['Storm Start'] =S_diff['Storm Start'].apply(lambda x: "{:%m/%d/%Y}".format(x))
+    ## summary stats
+    Percent_Upper = S_diff['Supper'].sum()/S_diff['Stotal'].sum()*100
+    Percent_Lower = S_diff['Slower'].sum()/S_diff['Stotal'].sum()*100    
     ## add summary stats to bottom of table
-    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','UPPER PE %':'-','LOWER tons':'-','TOTAL tons':'-','TOTAL PE %':'Average:','% Upper':'%.0f'%S_diff['% Upper'].mean(),'% Lower':'%.0f'%S_diff['% Lower'].mean()},index=['']))
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','UPPER PE %':'-','LOWER tons':'-','TOTAL tons':'-','TOTAL PE %':'Average:','% Upper':"%.0f"%Percent_Upper,'% Lower':"%.0f"%Percent_Lower},index=['']))
     S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER PE %','LOWER tons','TOTAL tons','TOTAL PE %','% Upper','% Lower']]
     return S_diff
+S_storm_diff_table()
+
+def S_storm_diff_table_quarry():
+    S_diff = compileALLStorms()
+    ## Calculate percent contributions from upper and lower watersheds
+    S_diff['UPPER tons']=S_diff['Supper'].round(2)
+    S_diff['UPPER PE %'] = S_diff['Supper_PE'].apply(int)
+    S_diff['LOWER tons']=S_diff['Slower'].round(2)
+    S_diff['QUARRY tons']=S_diff['Squarry'].round(2)
+    S_diff['LOWER-QUARRY tons']= S_diff['Slower'] - S_diff['Squarry'] ## Lower - Quarry gives the contribution from QUarry to the Lower SSY
+    S_diff['LOWER-QUARRY tons']= S_diff['LOWER-QUARRY tons'].round(2)
+    S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
+    S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
+    S_diff['% Upper'] = S_diff['Supper']/S_diff['Stotal']*100
+    S_diff['% Upper'] = S_diff['% Upper'].dropna().apply(int)
+    S_diff['% Quarry'] = S_diff['Squarry']/S_diff['Stotal']*100
+    S_diff['% Quarry'] = S_diff['% Quarry'].dropna().apply(int)    
+    S_diff['% Lower'] = S_diff['Slower']/S_diff['Stotal']*100
+    S_diff['% Lower'] = S_diff['% Lower'].dropna().apply(int)
+    S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
+    S_diff = S_diff[S_diff['Precip (mm)']>0]
+    ## Filter negative values for S at LBJ    
+    S_diff = S_diff[S_diff['LOWER-QUARRY tons']>0]
+    S_diff['Storm#']=range(1,len(S_diff)+1) 
+    S_diff['Storm Start'] = S_diff.index
+    S_diff['Storm Start'] =S_diff['Storm Start'].apply(lambda x: "{:%m/%d/%Y}".format(x))
+    ## Summary Stats    
+    Percent_Upper = S_diff['Supper'].sum()/S_diff['Stotal'].sum()*100
+    Percent_Quarry= S_diff['Squarry'].sum()/S_diff['Stotal'].sum()*100
+    Percent_Lower = S_diff['Slower'].sum()/S_diff['Stotal'].sum()*100
+
+    ## add summary stats to bottom of table
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','UPPER PE %':'-','LOWER tons':'-','QUARRY tons':'-','LOWER-QUARRY tons':'-','TOTAL tons':'-','TOTAL PE %':'Average:','% Upper':"%.0f"%Percent_Upper,'% Quarry':"%.0f"%Percent_Quarry,'% Lower':"%.0f"%Percent_Lower},index=['']))
+    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER PE %','LOWER tons','QUARRY tons','LOWER-QUARRY tons','TOTAL tons','TOTAL PE %','% Upper','% Quarry','% Lower']]
+    return S_diff
+S_storm_diff_table_quarry()
 
 ## Calculate the percent of total SSY with raw vales, BEFORE NORMALIZING by area!
 def plotS_storm_table(show=False):
@@ -3667,7 +3756,7 @@ def plotS_storm_table(show=False):
 #plotS_storm_table(show=True)
     
 def Q_S_storm_diff_summary_table():
-    diff = compileALLStorms().dropna()
+    diff = compileALLStorms()
     ## Calculate percent contributions from upper and lower watersheds
     # Precip
     diff['Psum'] = diff['Pstorms'].apply(int)
@@ -3840,7 +3929,7 @@ def Pearson_r_Table(pvalue=0.05):
     summary['']= summary.index
     summary = summary[['','FOREST','VILLAGE-FOREST','VILLAGE']]
     return summary
-Pearson_r_Table(pvalue=0.05)
+#Pearson_r_Table(pvalue=0.05)
 
 def plotPearsonTable(pvalue=0.05,show=False):
     nrows, ncols = 3,4
@@ -3915,7 +4004,7 @@ def plotPearsonTable(pvalue=0.05,show=False):
     plt.suptitle("Pearson's coefficients for each variable\n as compared to SSY (Mg), p<"+str(pvalue),fontsize=12)  
     show_plot(show)
     return
-plotPearsonTable(pvalue=0.05,show=True)
+#plotPearsonTable(pvalue=0.05,show=True)
 
 def Spearman_r_Table(pvalue=0.05):
     ALLStorms = compileALLStorms()
@@ -3968,7 +4057,7 @@ def Spearman_r_Table(pvalue=0.05):
     summary['']= summary.index
     summary = summary[['','FOREST','VILLAGE-FOREST','VILLAGE']]
     return summary
-Spearman_r_Table(pvalue=0.05)
+#Spearman_r_Table(pvalue=0.05)
 
 def plotSpearmanTable(pvalue=0.05,show=False):
     nrows, ncols = 3,4
@@ -4048,7 +4137,7 @@ def plotSpearmanTable(pvalue=0.05,show=False):
     if show==True:
         plt.show()
     return
-plotSpearmanTable(pvalue=0.05,show=True)
+#plotSpearmanTable(pvalue=0.05,show=True)
     
 def plotCoeffTable(show=False,norm=False):
     if norm==True:
@@ -4112,54 +4201,54 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     ## P vs S at Upper, Total
     ALLStorms_upper = ALLStorms[['Pstorms','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Pstorms','Stotal']].dropna() 
-    ps.plot(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],'.',color='g',label='Upper')
-    ps.plot(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],'.',color='r',label='Total')
+    ps.plot(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',label='Upper')
+    ps.plot(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)
     PS_upper_power = powerfunction(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],xy,ps,linestyle='-',color='g', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
+    PowerFit(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],xy,ps,linestyle='-',color='grey', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
     ## Total Watershed (=LBJ)
     PS_total_power = powerfunction(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],xy,ps,linestyle='-',color='r',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2) 
+    PowerFit(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],xy,ps,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2) 
     ps.set_title('Total Event Precip (mm)')
     ps.set_ylabel(ylabel)
     ## EI vs S at Upper, Total  
     ALLStorms_upper = ALLStorms[['EI','Supper']].dropna()
     ALLStorms_total = ALLStorms[['EI','Stotal']].dropna() 
-    ei.plot(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],'.',color='g',label='Upper')
-    ei.plot(ALLStorms_total['EI'],ALLStorms_total['Stotal'],'.',color='r',label='Total')
+    ei.plot(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',label='Upper')
+    ei.plot(ALLStorms_total['EI'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)
     EI_upper_power = powerfunction(ALLStorms_upper['EI'],ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],xy,ei,linestyle='-',color='g',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
+    PowerFit(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],xy,ei,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
     ## Total Watershed (=LBJ)       
     EI_total_power = powerfunction(ALLStorms_total['EI'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'],xy,ei,linestyle='-',color='r',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2) 
+    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'],xy,ei,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2) 
     ei.set_title('Event Erosivity Index (MJmm ha-1 h-1)')
     #ei.set_ylabel(ylabel)
     ## Qsum vs S at Upper, Total 
     ALLStorms_upper = ALLStorms[['Qsumupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qsumtotal','Stotal']].dropna() 
-    qsums.plot(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],'.',color='g',label='Upper')
-    qsums.plot(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],'.',color='r',label='Total')
+    qsums.plot(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',label='Upper')
+    qsums.plot(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)    
     QsumS_upper_power = powerfunction(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],xy,qsums,linestyle='-',color='g',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
+    PowerFit(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],xy,qsums,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
     ## Total Watershed (=LBJ)
     QsumS_total_power = powerfunction(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],xy,qsums,linestyle='-',color='r',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2) 
+    PowerFit(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],xy,qsums,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2) 
     qsums.set_title('Total Event Discharge '+xlabelQsum)
     qsums.set_ylabel(ylabel)
     #qsums.set_xlabel(xlabelQsum)
     ## Qmax vs S at Upper, Total  
     ALLStorms_upper = ALLStorms[['Qmaxupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna() 
-    qmaxs.plot(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],'.',color='g',label='Upper')
-    qmaxs.plot(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],'.',color='r',label='Total')
+    qmaxs.plot(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',label='Upper')
+    qmaxs.plot(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)       
     QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],xy,qmaxs,linestyle='-',color='g',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
+    PowerFit(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],xy,qmaxs,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
     ## Total Watershed (=LBJ)
     QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='r',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2)
+    PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2)
     qmaxs.set_title('Event Peak Discharge '+xlabelQmax)
     #qmaxs.set_ylabel(ylabel)
     #qmaxs.set_xlabel(xlabelQmax)
@@ -4176,7 +4265,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     show_plot(show,fig)
     savefig(save,filename)
     return
-plotALLStorms_ALLRatings(subset='pre',norm=True,log=True,show=True,save=False,filename='')
+plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
