@@ -1703,14 +1703,7 @@ DAMgrab = SSC[SSC['Location'].isin(['DAM'])]#.resample('5Min',fill_method='pad',
 DAMgrab['index'] = DAMgrab.index
 DAM_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DAM'].ix[1] ## the # in .ix[#] is the row number in SampleCounts above
 
-def Percent_storm_samples(location):
-    storm_samples = len(SSC_dict['Pre-storm'][SSC_dict['Pre-storm']['Location'].isin([location])])
-    all_samples = len(SSC_dict['Pre-ALL'][SSC_dict['Pre-ALL']['Location'].isin([location])]) 
-    percent_storm = storm_samples/all_samples *100
-    return percent_storm
-Percent_storm_Forest = Percent_storm_samples('DAM')
-Percent_storm_Quarry = Percent_storm_samples('DT')
-Percent_storm_Village = Percent_storm_samples('LBJ')
+
 ## ADD Grab samples to Site DataFrames
 LBJ['Grab-SSC-mg/L'] = LBJgrab.drop_duplicates(cols='index')['SSC (mg/L)']
 QUARRY['GrabDT-SSC-mg/L'] = QUARRYgrab.drop_duplicates(cols='index')['SSC (mg/L)']
@@ -2280,18 +2273,19 @@ def Synthetic_Rating_Curves_Fagaalu(param,show=False,save=False,filename=figdir+
     lbj.scatter(LBJ_SRC[param],LBJ_SRC['SSC(mg/L)'],c='k')
     lbj_SRC = pd.ols(y=LBJ_SRC['SSC(mg/L)'],x=LBJ_SRC[param],intercept=False)
     lbj.plot(xy,xy*lbj_SRC.beta[0],ls='-',label='Village_OBS500 '+r'$r^2$'+"%.2f"%lbj_SRC.r2,c='k')
-    comb.plot(xy,xy*lbj_SRC.beta[0],ls='-',label='Village_OBS500 '+r'$r^2$'+"%.2f"%lbj_SRC.r2,c='k')
+    comb.plot(xy,xy*lbj_SRC.beta[0],ls='-',label='Village_OBS500',c='k')
     lbj.set_ylabel('SSC (mg/L)'), lbj.set_title('Village_OBS500 '+r'$r^2=$'+"%.2f"%lbj_SRC.r2)
     ## DAM
     dam.scatter(DAM_SRC[param],DAM_SRC['SSC(mg/L)'],c='grey')
     dam_SRC = pd.ols(y=DAM_SRC['SSC(mg/L)'],x=DAM_SRC[param],intercept=False)
-    dam.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC'+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')
-    comb.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC'+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')
+    dam.plot(xy,xy*dam_SRC.beta[0],ls='-',label='Forest_YSI'+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')
+    comb.plot(xy,xy*dam_SRC.beta[0],ls='-',label='Forest_YSI',c='grey')
     dam.set_title('Forest_YSI '+r'$r^2=$'+"%.2f"%dam_SRC.r2)#, dam.set_ylabel('SSC (mg/L)'), 
     ## COMBINED
     comb.scatter(LBJ_SRC[param],LBJ_SRC['SSC(mg/L)'],c='k')
     comb.scatter(DAM_SRC[param],DAM_SRC['SSC(mg/L)'],c='grey')
-    comb.set_title('All')
+    comb.set_title(' ')
+    comb.legend(loc='best')
     for ax in fig.axes:
         ax.set_xlabel(param)
         ax.set_ylim(0,max_y)
@@ -2301,7 +2295,7 @@ def Synthetic_Rating_Curves_Fagaalu(param,show=False,save=False,filename=figdir+
     show_plot(show)
     savefig(save,filename)
     return
-#Synthetic_Rating_Curves_Fagaalu(param='SS_Mean',show=True,save=False,filename=figdir+'')
+Synthetic_Rating_Curves_Fagaalu(param='SS_Mean',show=True,save=False,filename=figdir+'')
 
 ## PLOT T-SSC rating curves for the YSI turbidimeter
 def plotYSI_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=False):
@@ -3685,16 +3679,16 @@ def S_storm_diff_table_quarry():
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
     S_diff['UPPER PE %'] = S_diff['Supper_PE'].apply(int)
     S_diff['LOWER tons']=S_diff['Slower'].round(2)
-    S_diff['QUARRY tons']=S_diff['Squarry'].round(2)
-    S_diff['LOWER-QUARRY tons']= S_diff['Slower'] - S_diff['Squarry'] ## Lower - Quarry gives the contribution from QUarry to the Lower SSY
+    S_diff['QUARRY tons']=S_diff['Squarry'].round(2) - S_diff['UPPER tons']
+    S_diff['LOWER-QUARRY tons']= S_diff['LOWER tons'] - S_diff['QUARRY tons'] ## Lower - Quarry gives the contribution from QUarry to the Lower SSY
     S_diff['LOWER-QUARRY tons']= S_diff['LOWER-QUARRY tons'].round(2)
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
     S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
-    S_diff['% Upper'] = S_diff['Supper']/S_diff['Stotal']*100
+    S_diff['% Upper'] = S_diff['UPPER tons']/S_diff['TOTAL tons']*100
     S_diff['% Upper'] = S_diff['% Upper'].dropna().apply(int)
-    S_diff['% Quarry'] = S_diff['Squarry']/S_diff['Stotal']*100
+    S_diff['% Quarry'] = S_diff['QUARRY tons']/S_diff['TOTAL tons']*100
     S_diff['% Quarry'] = S_diff['% Quarry'].dropna().apply(int)    
-    S_diff['% Lower'] = S_diff['Slower']/S_diff['Stotal']*100
+    S_diff['% Lower'] = S_diff['LOWER tons']/S_diff['TOTAL tons']*100
     S_diff['% Lower'] = S_diff['% Lower'].dropna().apply(int)
     S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
     S_diff = S_diff[S_diff['Precip (mm)']>0]
@@ -3704,13 +3698,13 @@ def S_storm_diff_table_quarry():
     S_diff['Storm Start'] = S_diff.index
     S_diff['Storm Start'] =S_diff['Storm Start'].apply(lambda x: "{:%m/%d/%Y}".format(x))
     ## Summary Stats    
-    Percent_Upper = S_diff['Supper'].sum()/S_diff['Stotal'].sum()*100
-    Percent_Quarry= S_diff['Squarry'].sum()/S_diff['Stotal'].sum()*100
-    Percent_Lower = S_diff['Slower'].sum()/S_diff['Stotal'].sum()*100
+    Percent_Upper = S_diff['UPPER tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Quarry= S_diff['QUARRY tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Lower = S_diff['LOWER tons'].sum()/S_diff['TOTAL tons'].sum()*100
 
     ## add summary stats to bottom of table
-    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','UPPER PE %':'-','LOWER tons':'-','QUARRY tons':'-','LOWER-QUARRY tons':'-','TOTAL tons':'-','TOTAL PE %':'Average:','% Upper':"%.0f"%Percent_Upper,'% Quarry':"%.0f"%Percent_Quarry,'% Lower':"%.0f"%Percent_Lower},index=['']))
-    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER PE %','LOWER tons','QUARRY tons','LOWER-QUARRY tons','TOTAL tons','TOTAL PE %','% Upper','% Quarry','% Lower']]
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','UPPER PE %':'-','QUARRY tons':'-','LOWER-QUARRY tons':'-','LOWER tons':'-','TOTAL tons':'-','TOTAL PE %':'Average:','% Upper':"%.0f"%Percent_Upper,'% Quarry':"%.0f"%Percent_Quarry,'% Lower':"%.0f"%Percent_Lower},index=['']))
+    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER PE %','QUARRY tons','LOWER-QUARRY tons','LOWER tons','TOTAL tons','TOTAL PE %','% Upper','% Quarry','% Lower']]
     return S_diff
 S_storm_diff_table_quarry()
 
@@ -4264,8 +4258,9 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     plt.tight_layout(pad=0.1)
     show_plot(show,fig)
     savefig(save,filename)
-    return
-plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
+    return PS_upper_power,PS_total_power,EI_upper_power,EI_total_power, QsumS_upper_power,QsumS_total_power,QmaxS_upper_power,QmaxS_total_power
+    
+#plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
