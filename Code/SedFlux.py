@@ -159,12 +159,18 @@ def power(x,a,b):
     y = a*(x**b)
     return y
     
-def powerfunction(x,y,name='power rating'):
+def powerfunction(x,y,name='power rating',pvalue=0.001):
     datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna().apply(np.log10) ## put x and y in a dataframe so you can drop ones that don't match up    
     datadf = datadf[datadf>=-10] ##verify data is valid (not inf)
     regression = pd.ols(y=datadf['y'],x=datadf['x'])
-    pearson = pearson_r(datadf['x'],datadf['y'])[0]
-    spearman = spearman_r(datadf['x'],datadf['y'])[0]
+    if pearson_r(datadf['x'],datadf['y'])[1] < pvalue:
+        pearson = pearson_r(datadf['x'],datadf['y'])[0]
+    else: 
+        pearson = np.nan
+    if  spearman_r(datadf['x'],datadf['y'])[1] < pvalue:
+        spearman = spearman_r(datadf['x'],datadf['y'])[0]
+    else:
+        spearman = np.nan
     coeffdf = pd.DataFrame({'a':[10**regression.beta[1]],'b':[regression.beta[0]],'r2':[regression.r2],'rmse':[regression.rmse],'pearson':[pearson],'spearman':[spearman]},index=[name])
     return coeffdf
 
@@ -2264,30 +2270,24 @@ def Synthetic_Rating_Curves(param,show=False,save=False,filename=figdir+''):
     return
 #Synthetic_Rating_Curves(param='SS_Mean',show=True,save=False)#,filename=figdir+'Synthetic Rating Curves.png')
     
-    ## PLOT T-SSC for  Synthetic Rating Curves
+## PLOT T-SSC for  Synthetic Rating Curves
 def Synthetic_Rating_Curves_Fagaalu(param,show=False,save=False,filename=figdir+''):
-    fig, (lbj,dam,comb)= plt.subplots(1,3,figsize=(8,3),sharex=True,sharey=True,)
-    max_y,max_x = 6000, 6000
+    fig, (lbj,dam)= plt.subplots(1,2,figsize=(6,3),sharex=True,sharey=True,)
+    max_y,max_x = 4000, 4000
     xy = np.linspace(0,max_y)
     ## LBJ    
     lbj.scatter(LBJ_SRC[param],LBJ_SRC['SSC(mg/L)'],c='k')
     lbj_SRC = pd.ols(y=LBJ_SRC['SSC(mg/L)'],x=LBJ_SRC[param],intercept=False)
     lbj.plot(xy,xy*lbj_SRC.beta[0],ls='-',label='Village_OBS500 '+r'$r^2$'+"%.2f"%lbj_SRC.r2,c='k')
-    comb.plot(xy,xy*lbj_SRC.beta[0],ls='-',label='Village_OBS500',c='k')
-    lbj.set_ylabel('SSC (mg/L)'), lbj.set_title('Village_OBS500 '+r'$r^2=$'+"%.2f"%lbj_SRC.r2)
+    lbj.set_xlabel('SS_Mean'), lbj.set_title('Village_OBS500 '+r'$r^2=$'+"%.2f"%lbj_SRC.r2)
     ## DAM
     dam.scatter(DAM_SRC[param],DAM_SRC['SSC(mg/L)'],c='grey')
     dam_SRC = pd.ols(y=DAM_SRC['SSC(mg/L)'],x=DAM_SRC[param],intercept=False)
     dam.plot(xy,xy*dam_SRC.beta[0],ls='-',label='Forest_YSI'+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')
-    comb.plot(xy,xy*dam_SRC.beta[0],ls='-',label='Forest_YSI',c='grey')
-    dam.set_title('Forest_YSI '+r'$r^2=$'+"%.2f"%dam_SRC.r2)#, dam.set_ylabel('SSC (mg/L)'), 
+    dam.set_xlabel('NTU'), dam.set_title('Forest_YSI '+r'$r^2=$'+"%.2f"%dam_SRC.r2)#, dam.set_ylabel('SSC (mg/L)'), 
     ## COMBINED
-    comb.scatter(LBJ_SRC[param],LBJ_SRC['SSC(mg/L)'],c='k')
-    comb.scatter(DAM_SRC[param],DAM_SRC['SSC(mg/L)'],c='grey')
-    comb.set_title(' ')
-    comb.legend(loc='best')
     for ax in fig.axes:
-        ax.set_xlabel(param)
+        ax.set_ylabel('SSC (mg/L)')
         ax.set_ylim(0,max_y)
         ax.set_xlim(0,max_x)
         ax.locator_params(nbins=4)
@@ -3673,40 +3673,44 @@ def S_storm_diff_table():
     return S_diff
 S_storm_diff_table()
 
-def S_storm_diff_table_quarry():
+def S_storm_diff_table_quarry(manual_edit=True):
     S_diff = compileALLStorms()
     ## Calculate percent contributions from upper and lower watersheds
-    S_diff['UPPER tons']=S_diff['Supper'].round(2)
-    S_diff['UPPER PE %'] = S_diff['Supper_PE'].apply(int)
-    S_diff['LOWER tons']=S_diff['Slower'].round(2)
-    S_diff['QUARRY tons']=S_diff['Squarry'].round(2) - S_diff['UPPER tons']
-    S_diff['LOWER-QUARRY tons']= S_diff['LOWER tons'] - S_diff['QUARRY tons'] ## Lower - Quarry gives the contribution from QUarry to the Lower SSY
-    S_diff['LOWER-QUARRY tons']= S_diff['LOWER-QUARRY tons'].round(2)
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
-    S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
-    S_diff['% Upper'] = S_diff['UPPER tons']/S_diff['TOTAL tons']*100
-    S_diff['% Upper'] = S_diff['% Upper'].dropna().apply(int)
+    S_diff['FOREST tons']=S_diff['Supper'].round(2)
+    #S_diff['FOREST PE %'] = S_diff['Supper_PE'].apply(int)
+    S_diff['QUARRY tons']=S_diff['Squarry'].round(2) - S_diff['FOREST tons']
+    S_diff['VILLAGE tons']= S_diff['TOTAL tons'].round(2) - S_diff['FOREST tons'] - S_diff['QUARRY tons'] 
+    #S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
+    S_diff['% Forest'] = S_diff['FOREST tons']/S_diff['TOTAL tons']*100
+    S_diff['% Forest'] = S_diff['% Forest'].dropna().apply(int)
     S_diff['% Quarry'] = S_diff['QUARRY tons']/S_diff['TOTAL tons']*100
     S_diff['% Quarry'] = S_diff['% Quarry'].dropna().apply(int)    
-    S_diff['% Lower'] = S_diff['LOWER tons']/S_diff['TOTAL tons']*100
-    S_diff['% Lower'] = S_diff['% Lower'].dropna().apply(int)
+    S_diff['% Village'] = S_diff['VILLAGE tons']/S_diff['TOTAL tons']*100
+    S_diff['% Village'] = S_diff['% Village'].dropna().apply(int)
     S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
     S_diff = S_diff[S_diff['Precip (mm)']>0]
     ## Filter negative values for S at LBJ    
-    S_diff = S_diff[S_diff['LOWER-QUARRY tons']>0]
+    S_diff = S_diff[S_diff['VILLAGE tons']>0]
     S_diff['Storm#']=range(1,len(S_diff)+1) 
     S_diff['Storm Start'] = S_diff.index
     S_diff['Storm Start'] =S_diff['Storm Start'].apply(lambda x: "{:%m/%d/%Y}".format(x))
+    ## Select storms with valid data
+    if manual_edit == True:
+        S_diff = S_diff[S_diff['Storm Start'].isin(['03/06/2013','04/16/2013','04/23/2013','04/30/2013','06/05/2013','02/14/2014','02/20/2014','02/21/2014'])==True]
     ## Summary Stats    
-    Percent_Upper = S_diff['UPPER tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Forest = S_diff['FOREST tons'].sum()/S_diff['TOTAL tons'].sum()*100
     Percent_Quarry= S_diff['QUARRY tons'].sum()/S_diff['TOTAL tons'].sum()*100
-    Percent_Lower = S_diff['LOWER tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Village = S_diff['VILLAGE tons'].sum()/S_diff['TOTAL tons'].sum()*100
 
     ## add summary stats to bottom of table
-    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','UPPER PE %':'-','QUARRY tons':'-','LOWER-QUARRY tons':'-','LOWER tons':'-','TOTAL tons':'-','TOTAL PE %':'Average:','% Upper':"%.0f"%Percent_Upper,'% Quarry':"%.0f"%Percent_Quarry,'% Lower':"%.0f"%Percent_Lower},index=['']))
-    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER PE %','QUARRY tons','LOWER-QUARRY tons','LOWER tons','TOTAL tons','TOTAL PE %','% Upper','% Quarry','% Lower']]
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','FOREST tons':'-','QUARRY tons':'-','VILLAGE tons':'-',
+    'TOTAL tons':'Average:','% Forest':"%.0f"%Percent_Forest,'% Quarry':"%.0f"%Percent_Quarry,'% Village':"%.0f"%Percent_Village},index=['']))
+    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','FOREST tons','QUARRY tons','VILLAGE tons','TOTAL tons','% Forest','% Quarry','% Village']]
+    
     return S_diff
-S_storm_diff_table_quarry()
+S_storm_diff_table_quarry(manual_edit=False)
+S_storm_diff_table_quarry(manual_edit=True)
 
 ## Calculate the percent of total SSY with raw vales, BEFORE NORMALIZING by area!
 def plotS_storm_table(show=False):
@@ -4193,9 +4197,9 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
         ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = 'SSY (Mg)','Precip (mm)','Erosivity Index',r'$(m^3)$',r'$(m^3/sec)$'
     xy=None ## let the Fit functions plot their own lines
     ## P vs S at Upper, Total
-    ALLStorms_upper = ALLStorms[['Pstorms','Supper']].dropna()
-    ALLStorms_total = ALLStorms[['Pstorms','Stotal']].dropna() 
-    ps.plot(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',label='Upper')
+    ALLStorms_upper = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','Supper']].dropna()
+    ALLStorms_total = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','Stotal']].dropna() 
+    ps.plot(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
     ps.plot(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)
     PS_upper_power = powerfunction(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'])
@@ -4208,7 +4212,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     ## EI vs S at Upper, Total  
     ALLStorms_upper = ALLStorms[['EI','Supper']].dropna()
     ALLStorms_total = ALLStorms[['EI','Stotal']].dropna() 
-    ei.plot(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',label='Upper')
+    ei.plot(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
     ei.plot(ALLStorms_total['EI'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)
     EI_upper_power = powerfunction(ALLStorms_upper['EI'],ALLStorms_upper['Supper'])
@@ -4221,7 +4225,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     ## Qsum vs S at Upper, Total 
     ALLStorms_upper = ALLStorms[['Qsumupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qsumtotal','Stotal']].dropna() 
-    qsums.plot(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',label='Upper')
+    qsums.plot(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
     qsums.plot(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)    
     QsumS_upper_power = powerfunction(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'])
@@ -4235,7 +4239,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     ## Qmax vs S at Upper, Total  
     ALLStorms_upper = ALLStorms[['Qmaxupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna() 
-    qmaxs.plot(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',label='Upper')
+    qmaxs.plot(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
     qmaxs.plot(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)       
     QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'])
@@ -4258,13 +4262,27 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     plt.tight_layout(pad=0.1)
     show_plot(show,fig)
     savefig(save,filename)
-    return PS_upper_power,PS_total_power,EI_upper_power,EI_total_power, QsumS_upper_power,QsumS_total_power,QmaxS_upper_power,QmaxS_total_power
-    
+    return PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power 
 #plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
-#plotALLStorms_ALLRatings(norm=True,log=False,show=True,save=False,filename='')
+#plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
 
+def ALLRatings_table():
+    ALLStorms_ALLRatings =plotALLStorms_ALLRatings(subset='pre',show=False)
+    
+    pearsons = ["%.2f"%rating.pearson[0] for rating in ALLStorms_ALLRatings]
+    spearmans = ["%.2f"%rating.spearman[0] for rating in ALLStorms_ALLRatings]
+    r2s = ["%.2f"%rating.r2[0] for rating in ALLStorms_ALLRatings]
+    rmses = ["%.2f"%10**rating.rmse[0] for rating in ALLStorms_ALLRatings]
+    
+    ALLRatings_stats = pd.DataFrame({'Pearson':pearsons,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses},index =['Psum_upper','Psum_total','EI_upper','EI_total',
+    'Qsum_upper','Qsum_total','Qmax_upper','Qmax_total'])
+    ALLRatings_stats['Model'] = ALLRatings_stats.index
+    ALLRatings_stats = ALLRatings_stats[['Model','Pearson','Spearman','r2','RMSE(tons)']]
+    ALLRatings_stats = ALLRatings_stats.replace('nan','-')
+    return ALLRatings_stats
+ALLRatings_table()
     
 ### Qmax vs S    
 def plotQmaxS(show=True,log=True,save=False,norm=True): 
