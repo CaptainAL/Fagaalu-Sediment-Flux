@@ -2295,7 +2295,7 @@ def Synthetic_Rating_Curves_Fagaalu(param,show=False,save=False,filename=figdir+
     show_plot(show)
     savefig(save,filename)
     return
-Synthetic_Rating_Curves_Fagaalu(param='SS_Mean',show=True,save=False,filename=figdir+'')
+#Synthetic_Rating_Curves_Fagaalu(param='SS_Mean',show=True,save=False,filename=figdir+'')
 
 ## PLOT T-SSC rating curves for the YSI turbidimeter
 def plotYSI_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=False):
@@ -3584,7 +3584,7 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     show_plot(show)
     savefig(save,filename)
     return
-plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=True,save=False,filename='') # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
+#plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=True,save=False,filename='') # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
 
 #### Event Sediment Flux
 AV_Q_measurement_RMSE = 8.5 # these come from Harmel 2009 lookup table in DUET-HWQ
@@ -3788,8 +3788,8 @@ def Q_S_storm_diff_summary_table():
     table_data_dict = {'Storms':len(diff),'Precipitation':'%.0f'%diff['Pstorms'].sum()+' mm',
     'Q Forest MCM':'%.2f'%diff['QupperMCM'].sum() +' MCM','Q Forest mm':'%.0f'%diff['mmQupper'].sum() +' mm',
     'Q Village MCM':'%.2f'%diff['QtotalMCM'].sum() +'MCM','Q Village mm':'%.0f'%diff['mmQtotal'].sum()+' mm',
-    'SSY Forest':'%.1f'%diff['Supper'].sum() +'Mg','SSY* Forest':'%.1f'%diff['km2Supper'].sum() +r'Mg/km^2',
-    'SSY Village':'%.1f'%diff['Stotal'].sum()+'Mg','SSY* Village':'%.1f'%diff['km2Stotal'].sum()+r'Mg/km^2',
+    'SSY Forest':'%.1f'%diff['Supper'].sum() +'Mg','SSY* Forest':'%.1f'%diff['km2Supper'].sum() +r'Mg/km2',
+    'SSY Village':'%.1f'%diff['Stotal'].sum()+'Mg','SSY* Village':'%.1f'%diff['km2Stotal'].sum()+r'Mg/km2',
     'Q Disturbance Ratio':'%.1f'%Q_DR,'SSY Disturbance Ratio':'%.1f'%SSY_DR}
     
     summary =pd.DataFrame(table_data_dict,index=[""])
@@ -3809,7 +3809,7 @@ def Spec_SSY_Quarry():
     diff = diff[diff['QUARRY tons']>0]
     diff['km2SUPPER'] =  diff['Supper'].round(3)/.9 #km2
     percent_increase  = diff['km2SQUARRY'].sum()/diff['km2SUPPER'].sum() *100
-    return '%.1f'%diff['km2SUPPER'].sum()+r'Mg/km^2', '%.1f'%diff['km2SQUARRY'].sum()+r'Mg/km^2', "%.0f"%percent_increase
+    return '%.1f'%diff['km2SUPPER'].sum()+r'Mg/km^2', '%.1f'%diff['km2SQUARRY'].sum()+r'Mg/km2', "%.0f"%percent_increase
 Spec_SSY_Quarry()    
 
 def plotS_storm_table_summary(fs=16,show=False):
@@ -4290,10 +4290,10 @@ def ALLRatings_table():
     alphas= ["%.3f"%rating.a[0] for rating in ALLStorms_ALLRatings]
     betas  = ["%.2f"%rating.b[0] for rating in ALLStorms_ALLRatings]
     
-    ALLRatings_stats = pd.DataFrame({'Pearson':pearsons,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses,'alpha':alphas,'beta':betas},index =['Psum_upper','Psum_total','EI_upper','EI_total',
+    ALLRatings_stats = pd.DataFrame({'Pearson':pearsons,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses,'alpha':alphas,'Beta':betas},index =['Psum_upper','Psum_total','EI_upper','EI_total',
     'Qsum_upper','Qsum_total','Qmax_upper','Qmax_total'])
     ALLRatings_stats['Model'] = ALLRatings_stats.index
-    ALLRatings_stats = ALLRatings_stats[['Model','Pearson','Spearman','r2','RMSE(tons)','alpha','beta']]
+    ALLRatings_stats = ALLRatings_stats[['Model','Pearson','Spearman','r2','RMSE(tons)','alpha','Beta']]
     ALLRatings_stats = ALLRatings_stats.replace('nan','-')
     return ALLRatings_stats
 ALLRatings_table()
