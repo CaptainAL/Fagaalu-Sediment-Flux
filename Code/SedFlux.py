@@ -3771,7 +3771,7 @@ def Q_S_storm_diff_summary_table():
     ## SSY Norm by Area
     diff['km2Supper'] = diff['Supper']/.9
     diff['km2Stotal'] = diff['Stotal']/1.78
-    ## Filter negative values for S at LBJ    
+    ## Filter negative values for S at LBJ (and getting rid of NaNs)    
     diff = diff[diff['Slower']>0]  
     ## Number Storms
     diff['Storm#']=range(1,len(diff)+1)  
@@ -3789,16 +3789,28 @@ def Q_S_storm_diff_summary_table():
     'Q Forest MCM':'%.2f'%diff['QupperMCM'].sum() +' MCM','Q Forest mm':'%.0f'%diff['mmQupper'].sum() +' mm',
     'Q Village MCM':'%.2f'%diff['QtotalMCM'].sum() +'MCM','Q Village mm':'%.0f'%diff['mmQtotal'].sum()+' mm',
     'SSY Forest':'%.1f'%diff['Supper'].sum() +'Mg','SSY* Forest':'%.1f'%diff['km2Supper'].sum() +r'Mg/km^2',
-    'SSY Village':'%.1f'%diff['Stotal'].sum()+'Mg','SSY* Village':'%.1f'%diff['km2Stotal'].sum()+r'Mg/km^2','Q Disturbance Ratio':'%.1f'%Q_DR,'SSY Disturbance Ratio':'%.1f'%SSY_DR}
+    'SSY Village':'%.1f'%diff['Stotal'].sum()+'Mg','SSY* Village':'%.1f'%diff['km2Stotal'].sum()+r'Mg/km^2',
+    'Q Disturbance Ratio':'%.1f'%Q_DR,'SSY Disturbance Ratio':'%.1f'%SSY_DR}
     
     summary =pd.DataFrame(table_data_dict,index=[""])
-    summary = summary[['Storms','Precipitation','Q Forest MCM','Q Forest mm','Q Village MCM','Q Village mm','SSY Forest','SSY* Forest','SSY Village','SSY* Village','Q Disturbance Ratio','SSY Disturbance Ratio']]
+    summary = summary[['Storms','Precipitation','Q Forest MCM','Q Forest mm','Q Village MCM','Q Village mm',
+    'SSY Forest','SSY* Forest','SSY Village','SSY* Village','Q Disturbance Ratio','SSY Disturbance Ratio']]
     summary = summary.T
     summary[' ']= summary.index
     summary = summary[[' ','']]
     return summary
 Q_S_storm_diff_summary_table()
 
+def Spec_SSY_Quarry():
+    diff = compileALLStorms()
+
+    diff['QUARRY tons']=diff['Squarry'].round(3) - diff['Supper'].round(3)
+    diff['km2SQUARRY'] = diff['QUARRY tons']/.27 #km2
+    diff = diff[diff['QUARRY tons']>0]
+    diff['km2SUPPER'] =  diff['Supper'].round(3)/.9 #km2
+    percent_increase  = diff['km2SQUARRY'].sum()/diff['km2SUPPER'].sum() *100
+    return '%.1f'%diff['km2SUPPER'].sum()+r'Mg/km^2', '%.1f'%diff['km2SQUARRY'].sum()+r'Mg/km^2', "%.0f"%percent_increase
+Spec_SSY_Quarry()    
 
 def plotS_storm_table_summary(fs=16,show=False):
     diff = compileALLStorms().dropna()
@@ -4275,11 +4287,13 @@ def ALLRatings_table():
     spearmans = ["%.2f"%rating.spearman[0] for rating in ALLStorms_ALLRatings]
     r2s = ["%.2f"%rating.r2[0] for rating in ALLStorms_ALLRatings]
     rmses = ["%.2f"%10**rating.rmse[0] for rating in ALLStorms_ALLRatings]
+    alphas= ["%.3f"%rating.a[0] for rating in ALLStorms_ALLRatings]
+    betas  = ["%.2f"%rating.b[0] for rating in ALLStorms_ALLRatings]
     
-    ALLRatings_stats = pd.DataFrame({'Pearson':pearsons,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses},index =['Psum_upper','Psum_total','EI_upper','EI_total',
+    ALLRatings_stats = pd.DataFrame({'Pearson':pearsons,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses,'alpha':alphas,'beta':betas},index =['Psum_upper','Psum_total','EI_upper','EI_total',
     'Qsum_upper','Qsum_total','Qmax_upper','Qmax_total'])
     ALLRatings_stats['Model'] = ALLRatings_stats.index
-    ALLRatings_stats = ALLRatings_stats[['Model','Pearson','Spearman','r2','RMSE(tons)']]
+    ALLRatings_stats = ALLRatings_stats[['Model','Pearson','Spearman','r2','RMSE(tons)','alpha','beta']]
     ALLRatings_stats = ALLRatings_stats.replace('nan','-')
     return ALLRatings_stats
 ALLRatings_table()
