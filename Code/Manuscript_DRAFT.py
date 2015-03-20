@@ -87,7 +87,7 @@ SSYEV_models_stats = ALLRatings_table()
 SSYEV_models_stats.table_num = str(tab_count())
 
 #### Appendix
-table_count=0
+table_count,figure_count,equation_count=0, 0, 0
 ### Storm Water Discharge Table
 Q_Diff_table = Q_storm_diff_table() ## function to create table data
 Q_Diff_table.table_num =str(tab_count())
@@ -109,6 +109,7 @@ Quarry_picture = {'filename':maindir+'Figures/Maps/Quarry before and after.tif',
 ## DAM_StageDischarge
 DAM_StageDischarge = {'filename':figdir+"Q/Water Discharge Ratings for FOREST (DAM)",'fig_num':str(fig_count())}
 plotQratingDAM(ms=8,show=False,log=False,save=True,filename=DAM_StageDischarge['filename'])
+
 ## LBJ_StageDischarge
 LBJ_StageDischarge = {'filename':figdir+"Q/Water Discharge Ratings for VILLAGE (LBJ)",'fig_num':str(fig_count())}
 plotQratingLBJ(ms=8,show=False,log=False,save=True,filename=LBJ_StageDischarge['filename'])
@@ -173,6 +174,9 @@ title_title = document.add_heading('TITLE:',level=1)
 title_title.paragraph_format.space_before = 0
 title = document.add_heading('Contributions of human activities to suspended sediment yield during storm events from a steep, small, tropical watershed',level=1)
 title.paragraph_format.space_before = 0
+## subscript/superscript words
+document.add_paragraph("SSYEV, m3, km2, SSYUPPER, SSYLOWER, SSYTOTAL, SSYPRE, SSYFOREST, SSYVILLAGE, SSYQUARRY, alpha, Beta")
+
 #### ABSTRACT
 abstract_title = document.add_heading('ABSTRACT',level=2)
 abstract_title.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -333,7 +337,7 @@ document.add_paragraph("No clear relationship between Q and SSC could be determi
 
 #### Turbidity
 document.add_heading('Turbidity', level=4)
-document.add_paragraph(" A "+'"synthetic"'+" T-SSC relationship (SRC) was developed for the YSI 600OMS turbidimeter at FOREST and the CampbellSci OBS500 at VILLAGE, in 2014, using sediment collected from the streambed near the turbidimeter (Figure "+Synthetic_Rating_Curve['fig_num']+"). These relationships were compared with the T-SSC relationships developed using in situ data collected under storm conditions (Figures "+LBJ_and_DAM_YSI_Rating_Curve['fig_num']+"-"+LBJ_OBSb_Rating_Curve['fig_num']+"). In all instances, the SRC's had a steeper slope than the T-SSC relationships from storm samples, suggesting that even though the sediment used to develop the SRC’s was taken from nearby stream banks, it differed in character from the sediment collected under actual storm conditions. The T-SSC relationships under actual storm conditions all showed acceptable r2 values ("+"%.2f"%LBJ_YSI_rating.r2+"-"+"%.2f"%DAM_YSI_rating.r2+"), so the SRC's were not used to model SSC from T data.")
+document.add_paragraph(" A "+'"synthetic"'+" T-SSC relationship (SRC) was developed for the YSI 600OMS turbidimeter at FOREST and the CampbellSci OBS500 at VILLAGE, in 2014, using sediment collected from the streambed near the turbidimeter (Figure "+Synthetic_Rating_Curve['fig_num']+"). These relationships were compared with the T-SSC relationships developed using in situ data collected under storm conditions (Figures "+LBJ_and_DAM_YSI_Rating_Curve['fig_num']+"-"+LBJ_OBSb_Rating_Curve['fig_num']+"). In all instances, the SRC's had a steeper slope than the T-SSC relationships from storm samples, suggesting that even though the sediment used to develop the SRC's was taken from nearby stream banks, it differed in character from the sediment collected under actual storm conditions. The T-SSC relationships under actual storm conditions all showed acceptable r2 values ("+"%.2f"%LBJ_YSI_rating.r2+"-"+"%.2f"%DAM_YSI_rating.r2+"), so the SRC's were not used to model SSC from T data.")
 ## Synthetic Rating Curves
 if 'Synthetic_Rating_Curve' in locals():
     document.add_picture(Synthetic_Rating_Curve['filename']+'.png',width=Inches(6)) ## add pic from filename defined above
@@ -439,8 +443,8 @@ document.add_paragraph("The correlation coefficients for precipitation and disch
 document.add_paragraph("While Psum and Qsum showed similarly high correlation coefficients, the best model fit according to the coefficient of determination (r2) was found with Qmax for both Upper and Total watersheds. The model fit for Qsum for the Upper watershed was equally high but the Qmax model has the highest r2 for both watersheds, the lowest RMSE, and the highest correlation coefficients. Therefore Qmax was selected as the best predictor of SSYEV for both the Upper and Total watersheds in Faga'alu.")  
 ## Assessing alpha and Beta model parameters
 ratings_table = ALLRatings_table()
-alpha_upper, beta_upper = ratings_table['alpha'].loc['Qmax_upper'], ratings_table['beta'].loc['Qmax_upper']
-alpha_total, beta_total = ratings_table['alpha'].loc['Qmax_total'], ratings_table['beta'].loc['Qmax_total']
+alpha_upper, beta_upper = ratings_table['alpha'].loc['Qmax_upper'], ratings_table['Beta'].loc['Qmax_upper']
+alpha_total, beta_total = ratings_table['alpha'].loc['Qmax_total'], ratings_table['Beta'].loc['Qmax_total']
 document.add_paragraph("Duvert (2012) compiled Qmax-SSY results from seven studies, presenting results from twenty watersheds in addition to the eight from their analysis that ranged from 0.45-1,538km2, and found Beta coefficients (slope in the log-log plots) that ranged from 1.06-2.45, and alpha coefficients (intercepts in the log-log plots) that ranged from 25-5039. The alpha coefficients for the Qmax-SSYEV models in Faga'alu were "+alpha_upper+" and "+alpha_total+", and Beta coefficients were " +beta_upper+" and "+beta_total+"  in the Upper and Total Fagaalu watersheds, respectively. The Beta coefficient values are very consistent with the watersheds presented in Duvert 2012, but the alpha coefficient values are an order of magnitude lower than the lowest values. Several researchers have attempted to explain the difference in alpha (intercept) and Beta (slope) coefficients according to watershed characteristics. A traditional sediment rating curve (Q-SSC) is considered a 'black box' model, and the alpha and Beta coefficients have no physical meaning. However, some physical interpretation has been ascribed to them, with the alpha coefficient representing an erosion severity index, and the Beta coefficient representing the erosive power of the river. High alpha values suggest high availability of easily eroded sediment sources in the watershed, and high Beta values suggest that a small change in stream discharge leads to a large increase in sediment load due to the erosive power of the river or the extent that new sediment sources become available as discharge increases (Asselman, 2000). Similar analysis has been done on event-based sediment yield curves (Qmax-SSYEV models). Rankl (2004) found that Beta coefficients were not statistically different, and he assumed that the Beta exponent was a function of rainfall intensity on hillslopes. Rankl (2004) hypothesized that variability in alpha (the intercept) was a function of sediment availability and erodibility in watersheds, but Duvert et al. (2012) argued that alpha values are also dependent on the regression fitting method (nonlinear method fits higher up on low discharges than linear fit).")
 ## Storm size
 document.add_paragraph("When normalized by area, the Qmax-SSYEV relationship is displaced upward if specific SSY from a given watershed is higher for the same storm size. In Faga'alu the elevated Qmax-SSYEV model is attributed to the additional sediment yields from human-disturbed areas in the quarry and village. If Qmax-SSYEV models converge at higher Qmax values, it indicates diminishing human disturbance for large storms. It was hypothesized that for large storms, SSYEV from the Upper watershed may become the dominant source of total SSY to Faga'alu Bay, however, the results based on all of the models are unclear. Since correlation coefficients and model fits indicated EI30 was a poor predictor, it is ignored. The Psum-SSYEV models indicate that for larger storm events the SSY contributions from the Upper and Lower watersheds are more similar. Conversely, the Qsum- and Qmax-SSYEV models show no change in relative contributions of SSY over the range of storm sizes (Figure "+SSY_models_ALL['fig_num']+").  In that case, the discharge models (Qsum and Qmax) support the conclusion that human disturbance does not diminish with storm size, while the Psum model supports the conclusion that it does diminsh with storm size. ")
@@ -461,7 +465,7 @@ if 'Q_Diff_table' in locals():
 ## 
    
 ## Save Document
-document.save(maindir+'Manuscript/DRAFT.docx')
+document.save(maindir+'Manuscript/DRAFT-Fagaalu_Sediment_Yield_2015.docx')
 
 ## Clean up any open figures
 plt.close('all')

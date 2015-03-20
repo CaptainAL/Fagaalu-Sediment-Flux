@@ -304,7 +304,7 @@ def showstormintervals(ax,storm_threshold,StormsList,shade_color='grey',show=Tru
 ## Year Interval Times
 start2012, stop2012 = dt.datetime(2012,1,1,0,0), dt.datetime(2012,12,31,11,59)    
 start2013, stop2013 = dt.datetime(2013,1,1,0,0), dt.datetime(2013,12,31,11,59)
-start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2014,12,31,11,59)   
+start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2015,1,15,11,59)   
 ## Field Seasons
 fieldstart2012, fieldstop2012 =  dt.datetime(2012,1,5,0,0), dt.datetime(2012,3,29,11,59)    
 fieldstart2013, fieldstop2013 =  dt.datetime(2013,2,4,0,0), dt.datetime(2013,7,17,11,59)    
@@ -1663,8 +1663,12 @@ for storm_index,storm in LBJ_StormIntervals.iterrows():
 ##ALL SSC samples pre-mitigation
 SSC_pre_mitigation = SSC[SSC.index<Mitigation]
 SSC_pre_mitigation_storm_samples = SSC_all_storm_samples[SSC_all_storm_samples.index<Mitigation]
+##ALL SSC samples post-mitigation
+SSC_post_mitigation = SSC[SSC.index>Mitigation]
+SSC_post_mitigation_storm_samples = SSC_all_storm_samples[SSC_all_storm_samples.index>Mitigation]
+
 ## Put SSC subsets in a dictionary
-SSC_dict={'ALL':SSC,'Pre-ALL':SSC_pre_mitigation,'ALL-storm':SSC_all_storm_samples,'Pre-storm':SSC_pre_mitigation_storm_samples}
+SSC_dict={'ALL':SSC,'ALL-storm':SSC_all_storm_samples,'Pre-ALL':SSC_pre_mitigation,'Pre-storm':SSC_pre_mitigation_storm_samples,'Post-ALL':SSC_post_mitigation,'Post-storm':SSC_post_mitigation_storm_samples}
 #SSC_raw_time = loadSSC(SSCXL,'ALL_MASTER')
 #SSC_raw_time[SSC_raw_time['Location'].isin(['LBJ'])]['SSC (mg/L)'].plot(ls='None',marker='.',c='g')
 
@@ -1717,18 +1721,30 @@ QUARRY['GrabR2-SSC-mg/L'] = QUARRY_R2.drop_duplicates(cols='index')['SSC (mg/L)'
 QUARRY['Grab-SSC-mg/L'] = QUARRY_DT_and_R2.drop_duplicates(cols='index')['SSC (mg/L)']
 DAM['Grab-SSC-mg/L'] = DAMgrab.drop_duplicates(cols='index')['SSC (mg/L)']
 
-def plotSSCboxplots(storm_samples_only=False,withR2=False,show=False,save=False,filename=figdir+''):
+def plotSSCboxplots(subset='pre',storm_samples_only=False,withR2=False,show=False,save=False,filename=figdir+''):
     ## Subset SSC
-    if storm_samples_only==True:
+    ## Pre-mitigation
+    if subset=='pre' and storm_samples_only==True:
         SSC = SSC_dict['Pre-storm']
         LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
         QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
         DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
-    elif storm_samples_only==False:
+    elif subset=='pre' and storm_samples_only==False:
         SSC = SSC_dict['Pre-ALL']
         LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
         QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
-        DAMgrab = SSC[SSC['Location'].isin(['DAM'])]    
+        DAMgrab = SSC[SSC['Location'].isin(['DAM'])]   
+    ## Post-mitigation
+    elif subset=='post' and storm_samples_only==True:
+        SSC = SSC_dict['Post-storm']
+        LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
+        DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
+    elif subset=='post' and storm_samples_only==False:
+        SSC = SSC_dict['Post-ALL']
+        LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
+        DAMgrab = SSC[SSC['Location'].isin(['DAM'])]     
     if withR2==True:
         ## Add samples from Autosampler at QUARRY
         print 'Adding R2 samples to QUARRY Grab (DT)'
@@ -1764,18 +1780,26 @@ def plotSSCboxplots(storm_samples_only=False,withR2=False,show=False,save=False,
     show_plot(show)
     savefig(save,filename)
     return
-#plotSSCboxplots(storm_samples_only=False,withR2=False,show=True,save=False,filename='')
-#plotSSCboxplots(storm_samples_only=True,withR2=False,show=True,save=False,filename='')
-#plotSSCboxplots(withR2=True,show=True) # R2 samples not comparable with others
+## Premitigation
+#plotSSCboxplots(subset='pre',storm_samples_only=False,withR2=False,show=True,save=False,filename='')
+#plotSSCboxplots(subset='pre',storm_samples_only=True,withR2=False,show=True,save=False,filename='')
+#plotSSCboxplots(subset='pre',withR2=True,show=True) # R2 samples not comparable with others
+
+## Postmitigation
+#plotSSCboxplots(subset='post',storm_samples_only=False,withR2=False,show=True,save=False,filename='')
 
 ### Build data for Discharge/Concentration Rating Curve   
    
-def plotQvsC(storm_samples_only=False,ms=6,show=False,log=False,save=False,filename=figdir+''):  
+def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,save=False,filename=figdir+''):  
     ## Subset SSC
-    if storm_samples_only==True:
+    if subset=='pre' and storm_samples_only==True:
         SSC = SSC_dict['Pre-storm']
-    elif storm_samples_only==False:
+    elif subset=='pre' and  storm_samples_only==False:
         SSC = SSC_dict['Pre-ALL']
+    elif subset=='post' and storm_samples_only==True:
+        SSC = SSC_dict['Post-storm']
+    elif subset=='post' and  storm_samples_only==False:
+        SSC = SSC_dict['Post-ALL']    
     ## Append Discharge (Q) data
     dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM']['SSC (mg/L)'])
     dam_ssc['Q']=DAM['Q']
@@ -1851,8 +1875,12 @@ def plotQvsC(storm_samples_only=False,ms=6,show=False,log=False,save=False,filen
     show_plot(show,fig)
     savefig(save,filename)
     return
-#plotQvsC(storm_samples_only=False,ms=6,show=True,log=False,save=False,filename=figdir+'')
-#plotQvsC(storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
+## Pre-mitigation
+#plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=True,log=False,save=False,filename=figdir+'')
+#plotQvsC(subset='pre',storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
+## Post-mitgation
+#plotQvsC(subset='post',storm_samples_only=False,ms=6,show=True,log=False,save=False,filename=figdir+'')
+#plotQvsC(subset='post',storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
 #    
 ### Grab samples to SSYev   
 def InterpolateGrabSamples(Stormslist,Data,storm_offset=0):
@@ -3644,8 +3672,8 @@ def compileALLStorms(subset = 'pre'):
     return ALLStorms
 ALLStorms = compileALLStorms()
 
-def S_storm_diff_table():
-    S_diff = compileALLStorms()
+def S_storm_diff_table(subset='pre',):
+    S_diff = compileALLStorms(subset)
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
     S_diff['UPPER PE %'] = S_diff['Supper_PE'].apply(int)
@@ -3673,8 +3701,8 @@ def S_storm_diff_table():
     return S_diff
 S_storm_diff_table()
 
-def S_storm_diff_table_quarry(manual_edit=True):
-    S_diff = compileALLStorms()
+def S_storm_diff_table_quarry(subset='pre',manual_edit=True):
+    S_diff = compileALLStorms(subset)
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
     S_diff['FOREST tons']=S_diff['Supper'].round(2)
@@ -3753,8 +3781,8 @@ def plotS_storm_table(show=False):
     return
 #plotS_storm_table(show=True)
     
-def Q_S_storm_diff_summary_table():
-    diff = compileALLStorms()
+def Q_S_storm_diff_summary_table(subset='pre',):
+    diff = compileALLStorms(subset)
     ## Calculate percent contributions from upper and lower watersheds
     # Precip
     diff['Psum'] = diff['Pstorms'].apply(int)
@@ -3801,8 +3829,8 @@ def Q_S_storm_diff_summary_table():
     return summary
 Q_S_storm_diff_summary_table()
 
-def Spec_SSY_Quarry():
-    diff = compileALLStorms()
+def Spec_SSY_Quarry(subset='post'):
+    diff = compileALLStorms(subset)
 
     diff['QUARRY tons']=diff['Squarry'].round(3) - diff['Supper'].round(3)
     diff['km2SQUARRY'] = diff['QUARRY tons']/.27 #km2
@@ -4279,9 +4307,11 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
 #plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
+    
+#plotALLStorms_ALLRatings(subset='post',ms=4,norm=True,log=True,show=True,save=False,filename='')
 
-def ALLRatings_table():
-    ALLStorms_ALLRatings =plotALLStorms_ALLRatings(subset='pre',show=False)
+def ALLRatings_table(subset='pre'):
+    ALLStorms_ALLRatings =plotALLStorms_ALLRatings(subset,show=False)
     
     pearsons = ["%.2f"%rating.pearson[0] for rating in ALLStorms_ALLRatings]
     spearmans = ["%.2f"%rating.spearman[0] for rating in ALLStorms_ALLRatings]
@@ -4296,7 +4326,7 @@ def ALLRatings_table():
     ALLRatings_stats = ALLRatings_stats[['Model','Pearson','Spearman','r2','RMSE(tons)','alpha','Beta']]
     ALLRatings_stats = ALLRatings_stats.replace('nan','-')
     return ALLRatings_stats
-ALLRatings_table()
+#ALLRatings_table(subset='post')
     
 ### Qmax vs S    
 def plotQmaxS(show=True,log=True,save=False,norm=True): 
