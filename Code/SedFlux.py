@@ -316,7 +316,7 @@ Mitigation = dt.datetime(2014,10,1,0,0)
 def LandCover_table():
     landcoverXL = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx')
     landcover_table = landcoverXL.parse('Fagaalu_Revised')
-    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','Cumulative %','Area km2','% of area','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Bare Land']]
+    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub']]
     # Format Table data                       
     for column in landcover_table.columns:
         try:
@@ -328,7 +328,7 @@ def LandCover_table():
         except:
             pass
     landcover_table = landcover_table[landcover_table['Subwatershed'].isin(['FOREST(UPPER)','QUARRY(LOWER)','VILLAGE(LOWER)','Fagaalu Stream'])==True].reset_index()
-    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','Cumulative %','Area km2','% of area','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Bare Land']]
+    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub']]
     return landcover_table
 LandCover_table()
 
@@ -1743,14 +1743,18 @@ QUARRY['GrabR2-SSC-mg/L'] = QUARRY_R2.drop_duplicates(cols='index')['SSC (mg/L)'
 QUARRY['Grab-SSC-mg/L'] = QUARRY_DT_and_R2.drop_duplicates(cols='index')['SSC (mg/L)']
 DAM['Grab-SSC-mg/L'] = DAMgrab.drop_duplicates(cols='index')['SSC (mg/L)']
 
-def plotSSCboxplots(subset='pre',withR2=False,show=False,save=False,filename=figdir+''):
+def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,filename=figdir+''):
+    #mpl.rc('lines',markersize=300)
+    fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,3),sharey=True)
+    ax1.text(0.01,0.95,'(a) Baseflow',verticalalignment='top', horizontalalignment='left',transform=ax1.transAxes,color='k',fontsize=10,fontweight='bold')
+    ax2.text(0.01,0.95,'(b) Stormflow',verticalalignment='top', horizontalalignment='left',transform=ax2.transAxes,color='k',fontsize=10,fontweight='bold')        
+    
     ## Subset SSC
-    ## Pre-mitigation
-    SSC = SSC_dict[subset]
+    ## Pre-mitigation baseflow
+    SSC = SSC_dict[subset[0]]
     LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
     QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
     DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
-    
     if withR2==True:
         ## Add samples from Autosampler at QUARRY
         print 'Adding R2 samples to QUARRY Grab (DT)'
@@ -1764,24 +1768,46 @@ def plotSSCboxplots(subset='pre',withR2=False,show=False,save=False,filename=fig
     GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
     GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
     GrabSampleCategories = np.concatenate([[1]*len(DAMgrab['SSC (mg/L)']),[2]*len(QUARRYgrab['SSC (mg/L)']),[3]*len(LBJgrab['SSC (mg/L)'])])
-    #mpl.rc('lines',markersize=300)
-    fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,3))
-    ax1.text(0.1,0.95,'(a)',verticalalignment='top', horizontalalignment='right',transform=ax1.transAxes,color='k',fontsize=10,fontweight='bold')
-    ax2.text(0.1,0.95,'(b)',verticalalignment='top', horizontalalignment='right',transform=ax2.transAxes,color='k',fontsize=10,fontweight='bold')
-
     GrabSamples.columns = ['FG1','FG2','FG3']
     bp1 = GrabSamples.boxplot(ax=ax1)
+    ax1.scatter(GrabSampleCategories,GrabSampleVals,s=40,marker='+',c='grey',label='SSC (mg/L)')    
+    
+    ## Subset SSC
+    ## Pre-mitigation stormflow
+    SSC = SSC_dict[subset[1]]
+    LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
+    QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
+    DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
+    if withR2==True:
+        ## Add samples from Autosampler at QUARRY
+        print 'Adding R2 samples to QUARRY Grab (DT)'
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])]
+    elif withR2==False:
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]  
+    ## Compile
+    GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],
+                                 LBJgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)']],ignore_index=True,axis=1)    
+    GrabSamples.columns = ['DAM','QUARRY','LBJ']
+    GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
+    GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
+    GrabSampleCategories = np.concatenate([[1]*len(DAMgrab['SSC (mg/L)']),[2]*len(QUARRYgrab['SSC (mg/L)']),[3]*len(LBJgrab['SSC (mg/L)'])])
+    GrabSamples.columns = ['FG1','FG2','FG3']    
     bp2 = GrabSamples.boxplot(ax=ax2)
+    ax2.scatter(GrabSampleCategories,GrabSampleVals,s=40,marker='+',c='grey',label='SSC (mg/L)')    
+    
+    ## Format plots
     plt.setp(bp1['boxes'], color='black'), plt.setp(bp2['boxes'], color='black')
     plt.setp(bp1['whiskers'], color='black'), plt.setp(bp2['whiskers'], color='black')
     plt.setp(bp1['fliers'], color='grey', marker='+'), plt.setp(bp2['fliers'], color='grey', marker='+') 
     plt.setp(bp1['medians'], color='black', marker='+'), plt.setp(bp2['medians'], color='black', marker='+') 
-        
-    ax1.scatter(GrabSampleCategories,GrabSampleVals,s=40,marker='+',c='grey',label='SSC (mg/L)')
-    ax1.legend()
-    ax2.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')
-    ax1.set_yscale('log')
-    ax2.set_ylim(0,600)    
+
+    ## Add Mean values
+    ax1.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')
+    ax2.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')    
+    
+    ax1.legend(), ax2.legend()    
+    if log==True:
+        ax1.set_yscale('log'), ax2.set_yscale('log')   
     ax1.set_ylabel('SSC (mg/L)'),ax1.set_xlabel('Location'),ax2.set_xlabel('Location')
     #plt.suptitle("Suspended Sediment Concentrations at sampling locations in Fag'alu",fontsize=16)
     plt.legend()
@@ -1790,7 +1816,7 @@ def plotSSCboxplots(subset='pre',withR2=False,show=False,save=False,filename=fig
     savefig(save,filename)
     return
 ## Premitigation
-#plotSSCboxplots(subset='Pre-baseflow',withR2=False,show=True,save=False,filename='')
+plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
 #plotSSCboxplots(subset='Pre-storm',withR2=False,show=True,save=False,filename='')
 #plotSSCboxplots(subset='pre',withR2=True,show=True) # R2 samples not comparable with others
 
@@ -1828,10 +1854,20 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     quarQC =  pd.ols(y=quarry_ssc['SSC (mg/L)'],x=quarry_ssc['Q'])
     lbjQC = pd.ols(y=lbj_ssc['SSC (mg/L)'],x=lbj_ssc['Q'])
 
-    fig, (up,quar,down) = plt.subplots(1,3,figsize=(8,3))
+    fig=plt.figure(figsize=(10,6))
+    ts_log = plt.subplot2grid((3,3),(0,0),colspan=3)
+    ts = plt.subplot2grid((3,3),(1,0),colspan=3)
+    up = plt.subplot2grid((3,3),(2,0))
+    quar = plt.subplot2grid((3,3),(2,1))
+    down = plt.subplot2grid((3,3),(2,2))
+    ts_log.text(0.05,0.95,'(a)',verticalalignment='top', horizontalalignment='right',transform=ts_log.transAxes,color='k',fontsize=10,fontweight='bold')
+    ts.text(0.05,0.95,'(b)',verticalalignment='top', horizontalalignment='right',transform=ts.transAxes,color='k',fontsize=10,fontweight='bold')
+    up.text(0.1,0.95,'(c)',verticalalignment='top', horizontalalignment='right',transform=up.transAxes,color='k',fontsize=10,fontweight='bold')
+    quar.text(0.1,0.95,'(d)',verticalalignment='top', horizontalalignment='right',transform=quar.transAxes,color='k',fontsize=10,fontweight='bold')
+    down.text(0.1,0.95,'(e)',verticalalignment='top', horizontalalignment='right',transform=down.transAxes,color='k',fontsize=10,fontweight='bold')
+    #fig, (up,quar,down) = plt.subplots(1,3,figsize=(8,3))
     mpl.rc('lines',markersize=ms)
     mpl.rc('grid',alpha=0.0) 
-    
     ## plot LBJ samples
     down.set_title('FG3',fontsize=10)
     down.loglog(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
@@ -1851,23 +1887,38 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     storm_Q_DAM = DAM[DAM['stage']==DAM_storm_threshold.round(0)]['Q'][0]
     storm_Q_LBJ = LBJ[LBJ['stage']==LBJ_storm_threshold.round(0)]['Q'][0]
     up.axvline(x=storm_Q_DAM,ls='--',color='k'),quar.axvline(x=storm_Q_DAM,ls='--',color='k'),down.axvline(x=storm_Q_LBJ,ls='--',color='k')  
-    #up.text(54,800,'storm threshold',rotation='vertical')#, quar.text(54,800,'storm threshold',rotation='vertical'), down.text(150,800,'storm threshold',rotation='vertical')      
-    ## Regression 
-    #plotregressionline(lbj_ssc['Q'],lbjQC,down,'k--')
-    #plotregressionline(quarry_ssc['Q'],quarQC,quar,'k--')
-    #plotregressionline(dam_ssc['Q'],damQC,up,'k--')
     ## Limits
     down.set_ylim(10**0,10**5), quar.set_ylim(10**0,10**5), up.set_ylim(10**0,10**5)
     down.set_xlim(10**1,10**5),quar.set_xlim(10**1,10**5),up.set_xlim(10**1,10**5)
     up.set_ylabel('SSC (mg/L)'), up.set_xlabel('Q (L/sec)'), quar.set_xlabel('Q (L/sec)'), down.set_xlabel('Q (L/sec)')
     up.legend(loc='best'), quar.legend(loc='best'), down.legend(loc='best')
+    ## Time series plot
+    DAM_Stormflow_conditions = DAM[DAM['stage']==DAM_storm_threshold.round(0)]['Q'][0]
+    QUARRY_Stormflow_conditions = (DAM_Stormflow_conditions/.9)*1.17 
+    SSC = SSC_dict['Pre-ALL']
+    dam_ssc = dam_ssc[dam_ssc['Q'] <  DAM_Stormflow_conditions]
+    quarry_ssc = quarry_ssc[quarry_ssc['Q'] < QUARRY_Stormflow_conditions]
+    #log
+    dam_ssc['SSC (mg/L)'].plot(ax=ts_log,ls='None',marker='s',fillstyle='none',color='grey',label='FG1')
+    quarry_ssc['SSC (mg/L)'].plot(ax=ts_log,ls='None',marker='o',fillstyle='none',color='k',label='FG2')
+    ts_log.legend(),ts_log.set_ylabel('SSC mg/L'),ts_log.set_yscale('log')
+    ts_log.axvline(dt.datetime(2012,8,1),0,13000,c='k',ls='--'),ts_log.text(dt.datetime(2012,8,1),5000,'Baseflow sediment mitigtaion at quarry')
+    ts_log.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+    ts_log.spines['bottom'].set_visible(False)
+    #linear
+    dam_ssc['SSC (mg/L)'].plot(ax=ts,ls='None',marker='s',fillstyle='none',color='grey',label='FG1')
+    quarry_ssc['SSC (mg/L)'].plot(ax=ts,ls='None',marker='o',fillstyle='none',color='k',label='FG2')
+    ts.legend(),ts.set_ylabel('SSC mg/L')#,ts.set_yscale('log')
+    ts.axvline(dt.datetime(2012,8,1),0,13000,c='k',ls='--')
+    ts.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+    ts.spines['bottom'].set_visible(False)
     
     plt.tight_layout(pad=0.1)
     show_plot(show,fig)
     savefig(save,filename)
     return
 ## Pre-mitigation
-#plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=True,log=True,save=False,filename=figdir+'')
+plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=True,log=True,save=False,filename=figdir+'')
 #plotQvsC(subset='pre',storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
 ## Post-mitgation
 #plotQvsC(subset='post',storm_samples_only=False,ms=6,show=True,log=False,save=False,filename=figdir+'')
@@ -2938,6 +2989,7 @@ LBJ['T-SedFlux-tons/15min']=LBJ['T-SedFlux-tons/sec']*900. ## 15min x 60sec/min 
 LBJ['SSC-mg/L'] = LBJ['T-SSC-mg/L'].where(LBJ['T-SSC-mg/L']>=0,LBJ['GrabInt-SSC-mg/L'])
 LBJ['SSC-mg/L-RMSE'] = LBJ['T-SSC-mg/L-RMSE'].where(LBJ['T-SSC-mg/L-RMSE']>=0,LBJ['GrabInt-SSC-mg/L-RMSE'])
 LBJ['SedFlux-tons/sec']=LBJ['T-SedFlux-tons/sec'].where(LBJ['T-SedFlux-tons/sec']>=0,LBJ['GrabInt-SedFlux-tons/sec'])
+LBJ['SedFlux-kg/sec']=LBJ['SedFlux-tons/sec']*10**3 ## tons x 10**3 = kg
 LBJ['SedFlux-tons/15min']=LBJ['T-SedFlux-tons/15min'].where(LBJ['T-SedFlux-tons/15min']>=0,LBJ['GrabInt-SedFlux-tons/15min'])
 
 
@@ -2955,6 +3007,7 @@ QUARRY['T-SedFlux-tons/15min']=QUARRY['T-SedFlux-tons/sec']*900. ## 15min x 60se
 QUARRY['SSC-mg/L'] = QUARRY['T-SSC-mg/L'].where(QUARRY['T-SSC-mg/L']>=0,QUARRY['GrabInt-SSC-mg/L'])
 QUARRY['SSC-mg/L-RMSE'] = QUARRY['T-SSC-mg/L-RMSE'].where(QUARRY['T-SSC-mg/L-RMSE']>=0,QUARRY['GrabInt-SSC-mg/L-RMSE'])
 QUARRY['SedFlux-tons/sec']=QUARRY['T-SedFlux-tons/sec'].where(QUARRY['T-SedFlux-tons/sec']>=0,QUARRY['GrabInt-SedFlux-tons/sec'])
+QUARRY['SedFlux-kg/sec']=QUARRY['SedFlux-tons/sec']*10**3 ## tons x 10**3 = kg
 QUARRY['SedFlux-tons/15min']=QUARRY['T-SedFlux-tons/15min'].where(QUARRY['T-SedFlux-tons/15min']>=0,QUARRY['GrabInt-SedFlux-tons/15min'])
 
 ### DAM Turbidity
@@ -2985,6 +3038,7 @@ DAM['T-SedFlux-tons/15min']=DAM['T-SedFlux-tons/sec']*900. ## 15min x 60sec/min 
 DAM['SSC-mg/L'] = DAM['T-SSC-mg/L'].where(DAM['T-SSC-mg/L']>=0,DAM['GrabInt-SSC-mg/L'])
 DAM['SSC-mg/L-RMSE'] = DAM['T-SSC-mg/L-RMSE'].where(DAM['T-SSC-mg/L-RMSE']>=0,DAM['GrabInt-SSC-mg/L-RMSE'])
 DAM['SedFlux-tons/sec']=DAM['T-SedFlux-tons/sec'].where(DAM['T-SedFlux-tons/sec']>=0,DAM['GrabInt-SedFlux-tons/sec'])
+DAM['SedFlux-kg/sec']=DAM['SedFlux-tons/sec']*10**3 ## tons x 10**3 = kg
 DAM['SedFlux-tons/15min']=DAM['T-SedFlux-tons/15min'].where(DAM['T-SedFlux-tons/15min']>=0,DAM['GrabInt-SedFlux-tons/15min'])
 
 
@@ -3174,6 +3228,94 @@ def plotQ_storm_table(show=False):
         plt.show()
     return
 #plotQ_storm_table(True)
+
+### ALL SSY Data
+def SSY_Data(storm_threshold,storm_intervals,title,show=False):
+    #storm_data = storm_data[dt.datetime(2014,2,14,14,30):dt.datetime(2014,2,14,19,30)]
+    fig, (P,Q,T,SSC,SED) = plt.subplots(nrows=5,ncols=1,sharex=True) 
+    P.tick_params(\
+    axis='x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom='off',      # ticks along the bottom edge are off
+    top='off',         # ticks along the top edge are off
+    labelbottom='off') # labels along the bottom edge are off
+    ## Precip
+    PrecipFilled['Precip'].plot(ax=P,color='b',ls='steps-pre',label='RG1')
+    max_yticks =4
+    yloc = MaxNLocator(max_yticks)
+    P.yaxis.set_major_locator(yloc) 
+    P.set_ylabel('P\nmm/15min'), P.grid(False)
+    P.set_ylim(0,28)
+    ## Discharge
+    LBJ['Q'].plot(ax=Q,color='r',label='VILLAGE')
+    #storm_data['QUARRY-Q''].plot(ax=Q,color='y',label='QUARRY-Q')
+    DAM['Q'].plot(ax=Q,color='g',label='FOREST')
+    Q.legend()
+    Q.set_ylabel('Q\nL/s'),#, Q.set_yscale('log')
+    Q.spines['bottom'].set_visible(False),Q.grid(False)
+    Q.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+    max_yticks = 4
+    yloc = plt.MaxNLocator(max_yticks)    
+    Q.yaxis.set_major_locator(yloc)    
+    ## SSC grab samples
+    LBJ['Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='VILLAGE')
+    QUARRY['Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY')
+    DAM['Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='FOREST')
+    ## Turbidity
+    LBJ['NTU'].plot(ax=T,color='r',label='VILLAGE')
+    QUARRY['NTU'].plot(ax=T,color='r',alpha=0.8,label='QUARRY')
+    DAM['NTU'].plot(ax=T,color='g',label='FOREST')
+    T.set_ylabel('T NTU'),T.set_ylim(-1)
+    max_yticks = 4
+    yloc = plt.MaxNLocator(max_yticks)
+    T.yaxis.set_major_locator(yloc) 
+    T.grid(False), T.spines['bottom'].set_visible(False)
+    T.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+    ## SSC from turbidity
+    LBJ['T-SSC-mg/L'].plot(ax=SSC,color='r',label='VILLAGE')
+    QUARRY['T-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY')
+    DAM['T-SSC-mg/L'].plot(ax=SSC,color='g')
+    ### SSC interpolated from grab samples
+    LBJ['GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='r',label='VILLAGE')
+    QUARRY['GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC-grab')
+    DAM['GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='g',label='FOREST')
+    SSC.set_ylabel('SSC\nmg/L')#, SSC.set_ylim(0,1400)
+    max_yticks = 4
+    yloc = plt.MaxNLocator(max_yticks)
+    SSC.yaxis.set_major_locator(yloc) 
+    SSC.grid(False),SSC.spines['bottom'].set_visible(False)
+    SSC.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+    ## Sediment Yield from Interpolated grab samples
+    LBJ['GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='--')
+    QUARRY['GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux-grab',ls='--')
+    DAM['GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='g',label='FOREST',ls='--')
+    ## Sediment discharge from Turbidity Measurements
+    LBJ['T-SedFlux-kg/sec']=LBJ['T-SedFlux-tons/sec']/1000
+    LBJ['T-SedFlux-kg/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='-')
+    QUARRY['T-SedFlux-kg/sec']=QUARRY['T-SedFlux-tons/sec']/1000    
+    QUARRY['T-SedFlux-kg/sec'].plot(ax=SED,color='y',label='QUARRY',ls='-')
+    DAM['T-SedFlux-kg/sec']=DAM['T-SedFlux-tons/sec']/1000
+    DAM['T-SedFlux-kg/sec'].plot(ax=SED,color='g',label='FOREST',ls='-')
+    SED.set_ylabel('SSY\nkg/s')#, SED.set_yscale('log')#, SED.set_ylim(0,10)
+    max_yticks = 3
+    yloc = plt.MaxNLocator(max_yticks)
+    SED.yaxis.set_major_locator(yloc) 
+    SED.grid(False), SED.spines['bottom'].set_visible(False)
+
+    #QP.legend(loc=0), P.legend(loc=1)             
+    #SSC.legend(loc=0),SED.legend(loc=1)
+    #Shade Storms
+    showstormintervals(P,storm_threshold,storm_intervals)
+    showstormintervals(Q,storm_threshold,storm_intervals)
+    showstormintervals(T,storm_threshold,storm_intervals)
+    showstormintervals(SSC,storm_threshold,storm_intervals)
+    showstormintervals(SED,storm_threshold,storm_intervals)
+    #plt.suptitle(title)
+    plt.tight_layout(pad=0.1)
+    show_plot(show)
+    return
+SSY_Data(LBJ_storm_threshold,LBJ_StormIntervals,'LBJ_StormIntervals',show=True)
+
 
 #### Event Sediment Flux Data
 def stormdata(StormIntervals,print_stats=False):
@@ -3573,13 +3715,13 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='grey')#,label='FOR-int')
     DAM_SSCgrabmax, DAM_SSCgrabmean = storm_data['DAM-GrabInt-SSC-mg/L'].max(), storm_data['DAM-GrabInt-SSC-mg/L'].mean()
     ## Sediment Yield SedFlux
-    storm_data['LBJ-SedFlux-tons/sec'].plot(ax=SED,ls='-',color='k',label='VILLAGE')
+    storm_data['LBJ-SedFlux-kg/sec'].plot(ax=SED,ls='-',color='k',label='VILLAGE')
     LBJ_Smax, LBJ_Smean, LBJ_Ssum = storm_data['LBJ-SedFlux-tons/sec'].max(), storm_data['LBJ-SedFlux-tons/sec'].mean(), storm_data['LBJ-SedFlux-tons/sec'].sum()
-    storm_data['QUARRY-SedFlux-tons/sec'].plot(ax=SED,ls='-.',color='grey',label='QUARRY')
+    storm_data['QUARRY-SedFlux-kg/sec'].plot(ax=SED,ls='-.',color='grey',label='QUARRY')
     QUARRY_Smax, QUARRY_Smean, QUARRY_Ssum = storm_data['QUARRY-SedFlux-tons/sec'].max(), storm_data['QUARRY-SedFlux-tons/sec'].mean(), storm_data['QUARRY-SedFlux-tons/sec'].sum()
-    storm_data['DAM-SedFlux-tons/sec'].plot(ax=SED,ls='-',color='grey',label='FOREST')
+    storm_data['DAM-SedFlux-kg/sec'].plot(ax=SED,ls='-',color='grey',label='FOREST')
     DAM_Smax, DAM_Smean, DAM_Ssum = storm_data['DAM-SedFlux-tons/sec'].max(), storm_data['DAM-SedFlux-tons/sec'].mean(), storm_data['DAM-SedFlux-tons/sec'].sum()
-    SED.set_ylabel('SSY tons/sec')#, SED.set_ylim(-.1,4000)
+    SED.set_ylabel('SSY kg/sec')#, SED.set_ylim(-.1,4000)
     ## Cumulative Sediment Load
     storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='k',ls='-',label='VILLAGE')
     storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-.',label='QUARRY')    
