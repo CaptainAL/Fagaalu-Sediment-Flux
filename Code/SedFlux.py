@@ -83,6 +83,17 @@ def pltdefault():
     #figdir = datadir+'samoa/WATERSHED_ANALYSIS/GoodFigures/rawfigoutput/'
     return  
     
+
+def letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold'):
+    sub_plot_count = 0
+    sub_plot_letters = {0:'(a)',1:'(b)',2:'(c)',3:'(d)',4:'(e)',5:'(f)',6:'(g)',7:'(h)',8:'(i)'}
+    for ax in fig.axes:
+        ax.text(x,y,sub_plot_letters[sub_plot_count],verticalalignment=vertical, horizontalalignment=horizontal,transform=ax.transAxes,color=Color,fontsize=font_size,fontweight=font_weight)
+        sub_plot_count+=1
+    plt.draw()
+    return 
+
+    
 ## Figure formatting
 #publishable =  plotsettings.Set('GlobEnvChange')    ## plotsettings.py
 #publishable.set_figsize(n_columns = 2, n_rows = 2)
@@ -1816,7 +1827,7 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     savefig(save,filename)
     return
 ## Premitigation
-plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
+#plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
 #plotSSCboxplots(subset='Pre-storm',withR2=False,show=True,save=False,filename='')
 #plotSSCboxplots(subset='pre',withR2=True,show=True) # R2 samples not comparable with others
 
@@ -1918,7 +1929,7 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     savefig(save,filename)
     return
 ## Pre-mitigation
-plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=True,log=True,save=False,filename=figdir+'')
+#plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=True,log=True,save=False,filename=figdir+'')
 #plotQvsC(subset='pre',storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
 ## Post-mitgation
 #plotQvsC(subset='post',storm_samples_only=False,ms=6,show=True,log=False,save=False,filename=figdir+'')
@@ -2436,52 +2447,44 @@ def plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=True,Use_All_SS
         elif storm_samples_only==False:
             SSC = SSC_dict['Pre-ALL']   
     
-    fig, (ntu,ntu_zoom) = plt.subplots(1,2,figsize=(8,4))
-    ntu.text(0.1,0.95,'(a)',verticalalignment='top', horizontalalignment='right',transform=ntu.transAxes,color='k',fontsize=10,fontweight='bold')
-    ntu_zoom.text(0.1,0.95,'(b)',verticalalignment='top', horizontalalignment='right',transform=ntu_zoom.transAxes,color='k',fontsize=10,fontweight='bold')
+    fig, (ntu_fg3,ntu_fg1) = plt.subplots(1,2,figsize=(8,4))
     max_y, max_x = LBJ_YSI['NTU'].max(),LBJ_YSI['NTU'].max()
     xy = np.linspace(0,max_y)  
     ## LBJ
     lbj=NTU_SSCrating(SSC,LBJ_YSI['NTU'],location='LBJ',T_interval='15Min',Intercept=False,log=False)
-    ntu.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',c='k',label='FG3')
-    ntu.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='FG3 YSI '+r'$r^2$'+"%.2f"%lbj[0].r2)
-    labelindex_subplot(ntu,lbj[1].index,lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'])    
+    ntu_fg3.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',c='k',label='FG3')
+    ntu_fg3.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='FG3 YSI '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    labelindex_subplot(ntu_fg3,lbj[1].index,lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'])  
     ## DAM
     dam=NTU_SSCrating(SSC,DAM_YSI['NTU'],location='DAM',T_interval='15Min',Intercept=False,log=False)
-    ntu.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',fillstyle='none',c='k',label='FG1')
-    ntu.plot(xy,xy*dam[0].beta[0],ls='--',c='k',label='FG1 YSI '+r'$r^2$'+"%.2f"%dam[0].r2)
-    ntu.legend()
-    labelindex_subplot(ntu,dam[1].index,dam[1]['T-NTU'],dam[1]['SSC (mg/L)'])    
-    ## Zoom in 
-    ntu_zoom.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',c='k',label='FG3')
-    ntu_zoom.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='FG3 '+r'$r^2$'+"%.2f"%lbj[0].r2)
-    ntu_zoom.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',fillstyle='none',c='k',label='FG1')
-    ntu_zoom.plot(xy,xy*dam[0].beta[0],ls='--',c='k',label='FG1 '+r'$r^2$'+"%.2f"%dam[0].r2)   
+    ntu_fg1.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',fillstyle='none',c='k',label='FG1')
+    ntu_fg1.plot(xy,xy*dam[0].beta[0],ls='-',c='grey',label='FG1 YSI '+r'$r^2$'+"%.2f"%dam[0].r2)
+    labelindex_subplot(ntu_fg1,dam[1].index,dam[1]['T-NTU'],dam[1]['SSC (mg/L)'])    
+    ## DAM SRC
     if show_DAM_SRC==True:
         try:
             DAM_SRC==None
         except:
             dam_SRC = pd.ols(y=DAM_SRC['SSC(mg/L)'],x=DAM_SRC['SS_Mean'],intercept=False)
-            ntu.plot(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],ls='none',marker='^',fillstyle='none',c='grey',label='DAM_SRC')
-            ntu.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC '+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')  
-            ntu_zoom.plot(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],ls='none',marker='^',fillstyle='none',c='grey',label='DAM_SRC')
-            ntu_zoom.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC '+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')  
-        
-    ntu.set_xlabel('NTU')
-    ntu.set_xlim(0,4000), ntu.set_ylim(0,4000)
-    ntu_zoom.set_xlim(0,1000), ntu_zoom.set_ylim(0,1000)    
-    ntu.legend()
+            ntu_fg1.plot(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],ls='none',marker='^',fillstyle='none',c='grey',label='DAM_SRC')
+            ntu_fg1.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC '+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')  
+    ## Format subplots
+    ntu_fg3.set_xlabel('NTU'), ntu_fg1.set_xlabel('NTU')
+    ntu_fg3.set_xlim(0,1000), ntu_fg3.set_ylim(0,1000)
+    ntu_fg1.set_xlim(0,200), ntu_fg1.set_ylim(0,200)    
+    ntu_fg3.legend(), ntu_fg1.legend()
     plt.tight_layout(pad=0.1)
     for ax in fig.axes:
         ax.locator_params(nbins=4)
+    letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     show_plot(show)
     savefig(save,filename)
     return
-#plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=True,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='') ## Pre-mitigation
+#plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=False,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='') ## Pre-mitigation
 #plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=True,Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='') ## Pre-mitigation, storm only
 
 ## PLOT T-SSC rating for OBSa (BS and SS Avg only)
-def OBSa_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename=''):
+def OBSa_compare_ratings(df,df_SRC,SSC_loc,plot_SRC=True,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='',sub_plot_count=0):
     ## Subset SSC
     if Use_All_SSC==True:
         if storm_samples_only==True:
@@ -2495,43 +2498,45 @@ def OBSa_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=
             SSC = SSC_dict['Pre-ALL']   
         
     fig, ((bs_avg),(ss_avg)) = plt.subplots(1,2,figsize=(8,4))#,sharex=True,sharey=True)
-    max_y, max_x = 4000, 4000
+    max_y, max_x = 1000, 1000
     xy = np.linspace(0,max_y)
 
     ## BS Avg
     bs_average=NTU_SSCrating(SSC,df['Turb_BS_Avg'],location=SSC_loc,T_interval='5Min',Intercept=False,log=False)
     bs_avg.scatter(bs_average[1]['T-NTU'],bs_average[1]['SSC (mg/L)'],c='k')
-    bs_avg.plot(xy,xy*bs_average[0].beta[0],ls='-',c='k',label='BS_Avg'+r'$r^2$'+"%.2f"%bs_average[0].r2)
-    bs_avg.set_title(SSC_loc+' BS_Avg '+r'$r^2=$'+"%.2f"%bs_average[0].r2)
+    bs_avg.plot(xy,xy*bs_average[0].beta[0],ls='-',c='k',label='BS_Avg '+r'$r^2$'+"%.2f"%bs_average[0].r2)
+    #bs_avg.set_title(SSC_loc+' BS_Avg '+r'$r^2=$'+"%.2f"%bs_average[0].r2)
     bs_avg.set_xlabel('BS Avg')
     ## BS Mean SRC
-    bs_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Mean'],intercept=False)
-    bs_avg.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
-    bs_avg.plot(xy,xy*bs_mean_SRC.beta[0],ls='--',c='grey',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2)
+    #bs_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Mean'],intercept=False)
+    #bs_avg.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
+    #bs_avg.plot(xy,xy*bs_mean_SRC.beta[0],ls='--',c='grey',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2)
     bs_avg.legend()
     ## SS Avg
     ss_average=NTU_SSCrating(SSC,df['Turb_SS_Avg'],location=SSC_loc,T_interval='5Min',Intercept=False,log=False)
     ss_avg.scatter(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'],c='k')
-    ss_avg.plot(xy,xy*ss_average[0].beta[0],ls='-',c='k',label='SS_Avg'+r'$r^2$'+"%.2f"%ss_average[0].r2)   
-    ss_avg.set_title(SSC_loc+' SS_Avg '+r'$r^2=$'+"%.2f"%ss_average[0].r2) 
+    ss_avg.plot(xy,xy*ss_average[0].beta[0],ls='-',c='k',label='SS_Avg '+r'$r^2$'+"%.2f"%ss_average[0].r2)   
+    #ss_avg.set_title(SSC_loc+' SS_Avg '+r'$r^2=$'+"%.2f"%ss_average[0].r2) 
     ss_avg.set_xlabel('SS Avg')
     ## SS Mean SRC
-    ss_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Mean'],intercept=False)
-    ss_avg.scatter(df_SRC['SS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
-    ss_avg.plot(xy,xy*ss_mean_SRC.beta[0],ls='--',c='grey',label='SS_Mean_SRC'+r'$r^2$'+"%.2f"%ss_mean_SRC.r2)
+    #ss_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Mean'],intercept=False)
+    #ss_avg.scatter(df_SRC['SS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
+    #ss_avg.plot(xy,xy*ss_mean_SRC.beta[0],ls='--',c='grey',label='SS_Mean_SRC'+r'$r^2$'+"%.2f"%ss_mean_SRC.r2)
     ss_avg.legend()
     plt.tight_layout(pad=0.1)
     for ax in fig.axes:
         ax.locator_params(nbins=4)
         ax.set_xlim(0,max_x), ax.set_ylim(0,max_y)
+        
+    letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     show_plot(show)
     savefig(save,filename)
     return
-#OBSa_compare_ratings(df=LBJ_OBSa,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='')  
+#OBSa_compare_ratings(df=LBJ_OBSa,df_SRC=LBJ_SRC,SSC_loc='LBJ',plot_SRC=True,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='')  
 #OBSa_compare_ratings(df=LBJ_OBSa,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='')  
     
 ## PLOT T-SSC ratings with all parameters (BS and SS Mean, Median, Min, Max)
-def OBSb_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename=''):
+def OBSb_compare_ratings(df,df_SRC,SSC_loc,plot_SRC=False,Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='',sub_plot_count=0):
     ## Subset SSC
     if Use_All_SSC==True:
         if storm_samples_only==True:
@@ -2544,94 +2549,99 @@ def OBSb_compare_ratings(df,df_SRC,SSC_loc,Use_All_SSC=False,storm_samples_only=
         elif storm_samples_only==False:
             SSC = SSC_dict['Pre-ALL']  
     fig, ((bs_med,bs_mea,bs_min,bs_max),(ss_med,ss_mea,ss_min,ss_max)) = plt.subplots(2,4,figsize=(12,6))#,sharex=True,sharey=True)
-    max_y, max_x = 2000, 2000
+            
+    max_y, max_x = 1000, 1000
     xy = np.linspace(0,max_y)
     ## BS Median
     bs_median=NTU_SSCrating(SSC,df['Turb_BS_Median'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
     bs_med.scatter(bs_median[1]['T-NTU'],bs_median[1]['SSC (mg/L)'],c='k')
     bs_med.plot(xy,xy*bs_median[0].beta[0],ls='-',c='k',label='BS_Median'+r'$r^2$'+"%.2f"%bs_median[0].r2)
-    ## BS Median SRC
-    bs_median_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Median'],intercept=False)
-    bs_med.scatter(df_SRC['BS_Median'],df_SRC['SSC(mg/L)'],c='grey')
-    bs_med.plot(xy,xy*bs_median_SRC.beta[0],ls='--',c='grey',label='BS_Median_SRC'+r'$r^2$'+"%.2f"%bs_median_SRC.r2)
-    bs_med.set_title('BS_Median '+r'$r^2=$'+"%.2f"%bs_median[0].r2)
-    bs_med.set_ylabel('SSC (mg/L)'),bs_med.set_xlabel('BS Median')
+    #bs_med.set_title('BS_Median '+r'$r^2=$'+"%.2f"%bs_median[0].r2)
+    bs_med.set_ylabel('SSC (mg/L)'),bs_med.set_xlabel('BS Median') 
     ## BS Mean
     bs_mean=NTU_SSCrating(SSC,df['Turb_BS_Mean'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
     bs_mea.scatter(bs_mean[1]['T-NTU'],bs_mean[1]['SSC (mg/L)'],c='k')
     bs_mea.plot(xy,xy*bs_mean[0].beta[0],ls='-',c='k',label='BS_Mean'+r'$r^2$'+"%.2f"%bs_mean[0].r2)
-    ## BS Mean SRC
-    bs_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Mean'],intercept=False)
-    bs_mea.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
-    bs_mea.plot(xy,xy*bs_mean_SRC.beta[0],ls='--',c='grey',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2)
-    bs_mea.set_title('BS_Mean '+r'$r^2=$'+"%.2f"%bs_mean[0].r2)
+    #bs_mea.set_title('BS_Mean '+r'$r^2=$'+"%.2f"%bs_mean[0].r2)  
     bs_mea.set_xlabel('BS Mean')
     ## BS Min
     bs_minimum=NTU_SSCrating(SSC,df['Turb_BS_Min'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
     bs_min.scatter(bs_minimum[1]['T-NTU'],bs_minimum[1]['SSC (mg/L)'],c='k')
     bs_min.plot(xy,xy*bs_minimum[0].beta[0],ls='-',c='k',label='BS_Min'+r'$r^2$'+"%.2f"%bs_minimum[0].r2)
-    ## BS Min SRC
-    bs_min_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Min'],intercept=False)
-    bs_min.scatter(df_SRC['BS_Min'],df_SRC['SSC(mg/L)'],c='grey')
-    bs_min.plot(xy,xy*bs_min_SRC.beta[0],ls='--',c='grey',label='BS_Min_SRC'+r'$r^2$'+"%.2f"%bs_min_SRC.r2)
-    bs_min.set_title('BS_Min '+r'$r^2=$'+"%.2f"%bs_minimum[0].r2)
+    #bs_min.set_title('BS_Min '+r'$r^2=$'+"%.2f"%bs_minimum[0].r2)
     bs_min.set_xlabel('BS Min')
     ## BS Max
     bs_maximum=NTU_SSCrating(SSC,df['Turb_BS_Max'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
     bs_max.scatter(bs_maximum[1]['T-NTU'],bs_maximum[1]['SSC (mg/L)'],c='k')
     bs_max.plot(xy,xy*bs_maximum[0].beta[0],ls='-',c='k',label='BS_Max'+r'$r^2$'+"%.2f"%bs_maximum[0].r2)    
-    ## BS Max SRC
-    bs_max_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Max'],intercept=False)
-    bs_max.scatter(df_SRC['BS_Max'],df_SRC['SSC(mg/L)'],c='grey')
-    bs_max.plot(xy,xy*bs_max_SRC.beta[0],ls='--',c='grey',label='BS_Max_SRC'+r'$r^2$'+"%.2f"%bs_max_SRC.r2)
-    bs_max.set_title('BS_Max '+r'$r^2=$'+"%.2f"%bs_maximum[0].r2)
+    #bs_max.set_title('BS_Max '+r'$r^2=$'+"%.2f"%bs_maximum[0].r2)    
     bs_max.set_xlabel('BS Max')
     ## SS Median
     ss_median=NTU_SSCrating(SSC,df['Turb_SS_Median'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
     ss_med.scatter(ss_median[1]['T-NTU'],ss_median[1]['SSC (mg/L)'],c='k')
     ss_med.plot(xy,xy*ss_median[0].beta[0],ls='-',c='k',label='SS_Median'+r'$r^2$'+"%.2f"%ss_median[0].r2)
-    ## SS Median SRC
-    ss_median_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Median'],intercept=False)
-    ss_med.scatter(df_SRC['SS_Median'],df_SRC['SSC(mg/L)'],c='grey')
-    ss_med.plot(xy,xy*ss_median_SRC.beta[0],ls='--',c='grey',label='SS_Median_SRC'+r'$r^2$'+"%.2f"%ss_median_SRC.r2)
-    ss_med.set_title('SS_Median '+r'$r^2=$'+"%.2f"%ss_median[0].r2)
+    #ss_med.set_title('SS_Median '+r'$r^2=$'+"%.2f"%ss_median[0].r2)
     ss_med.set_ylabel('SSC (mg/L)'),ss_med.set_xlabel('SS Median')
     ## SS Mean
     ss_mean=NTU_SSCrating(SSC,df['Turb_SS_Mean'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
     ss_mea.scatter(ss_mean[1]['T-NTU'],ss_mean[1]['SSC (mg/L)'],c='k')
     ss_mea.plot(xy,xy*ss_mean[0].beta[0],ls='-',c='k',label='SS_Mean'+r'$r^2$'+"%.2f"%ss_mean[0].r2)
-    ## SS Mean SRC
-    ss_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Mean'],intercept=False)
-    ss_mea.scatter(df_SRC['SS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
-    ss_mea.plot(xy,xy*ss_mean_SRC.beta[0],ls='--',c='grey',label='SS_Mean_SRC'+r'$r^2$'+"%.2f"%ss_mean_SRC.r2)
-    ss_mea.set_title('SS_Mean '+r'$r^2=$'+"%.2f"%ss_mean[0].r2)
+    #ss_mea.set_title('SS_Mean '+r'$r^2=$'+"%.2f"%ss_mean[0].r2)    
     ss_mea.set_xlabel('SS Mean')
     ## SS Min
     ss_minimum=NTU_SSCrating(SSC,df['Turb_SS_Min'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
     ss_min.scatter(ss_minimum[1]['T-NTU'],ss_minimum[1]['SSC (mg/L)'],c='k')
     ss_min.plot(xy,xy*ss_minimum[0].beta[0],ls='-',c='k',label='SS_Min'+r'$r^2$'+"%.2f"%ss_minimum[0].r2)
-    ## BS Min SRC
-    ss_min_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Min'],intercept=False)
-    ss_min.scatter(df_SRC['SS_Min'],df_SRC['SSC(mg/L)'],c='grey')
-    ss_min.plot(xy,xy*ss_min_SRC.beta[0],ls='--',c='grey',label='SS_Min_SRC'+r'$r^2$'+"%.2f"%ss_min_SRC.r2)
-    ss_min.set_title('SS_Min '+r'$r^2=$'+"%.2f"%ss_minimum[0].r2)
+    #ss_min.set_title('SS_Min '+r'$r^2=$'+"%.2f"%ss_minimum[0].r2)    
     ss_min.set_xlabel('SS Min')
     ## SS Max
     ss_maximum=NTU_SSCrating(SSC,df['Turb_SS_Max'],location=SSC_loc,T_interval='15Min',Intercept=False,log=False)
     ss_max.scatter(ss_maximum[1]['T-NTU'],ss_maximum[1]['SSC (mg/L)'],c='k')
     ss_max.plot(xy,xy*ss_maximum[0].beta[0],ls='-',c='k',label='SS_Max'+r'$r^2$'+"%.2f"%ss_maximum[0].r2)    
-    ss_max.set_title('SS_Max '+r'$r^2=$'+"%.2f"%ss_maximum[0].r2)
+    #ss_max.set_title('SS_Max '+r'$r^2=$'+"%.2f"%ss_maximum[0].r2)
     ss_max.set_xlabel('SS Max')
+    if plot_SRC==True:
+        ## BS Median SRC
+        bs_median_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Median'],intercept=False)
+        bs_med.scatter(df_SRC['BS_Median'],df_SRC['SSC(mg/L)'],c='grey')
+        bs_med.plot(xy,xy*bs_median_SRC.beta[0],ls='--',c='grey',label='BS_Median_SRC'+r'$r^2$'+"%.2f"%bs_median_SRC.r2)
+        ## BS Mean SRC
+        bs_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Mean'],intercept=False)
+        bs_mea.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
+        bs_mea.plot(xy,xy*bs_mean_SRC.beta[0],ls='--',c='grey',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2)
+        ## BS Min SRC
+        bs_min_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Min'],intercept=False)
+        bs_min.scatter(df_SRC['BS_Min'],df_SRC['SSC(mg/L)'],c='grey')
+        bs_min.plot(xy,xy*bs_min_SRC.beta[0],ls='--',c='grey',label='BS_Min_SRC'+r'$r^2$'+"%.2f"%bs_min_SRC.r2)
+        ## BS Max SRC
+        bs_max_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Max'],intercept=False)
+        bs_max.scatter(df_SRC['BS_Max'],df_SRC['SSC(mg/L)'],c='grey')
+        bs_max.plot(xy,xy*bs_max_SRC.beta[0],ls='--',c='grey',label='BS_Max_SRC'+r'$r^2$'+"%.2f"%bs_max_SRC.r2)
+        ## SS Median SRC
+        ss_median_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Median'],intercept=False)
+        ss_med.scatter(df_SRC['SS_Median'],df_SRC['SSC(mg/L)'],c='grey')
+        ss_med.plot(xy,xy*ss_median_SRC.beta[0],ls='--',c='grey',label='SS_Median_SRC'+r'$r^2$'+"%.2f"%ss_median_SRC.r2)
+        ## SS Mean SRC
+        ss_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Mean'],intercept=False)
+        ss_mea.scatter(df_SRC['SS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
+        ss_mea.plot(xy,xy*ss_mean_SRC.beta[0],ls='--',c='grey',label='SS_Mean_SRC'+r'$r^2$'+"%.2f"%ss_mean_SRC.r2)
+        ## SS Min SRC
+        ss_min_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['SS_Min'],intercept=False)
+        ss_min.scatter(df_SRC['SS_Min'],df_SRC['SSC(mg/L)'],c='grey')
+        ss_min.plot(xy,xy*ss_min_SRC.beta[0],ls='--',c='grey',label='SS_Min_SRC'+r'$r^2$'+"%.2f"%ss_min_SRC.r2) 
+
     #fig.canvas.manager.set_window_title(SSC_loc)
     for ax in fig.axes:
         ax.locator_params(nbins=4,axis='y'), ax.locator_params(nbins=3,axis='x')
         ax.set_xlim(0,max_x), ax.set_ylim(0,max_y)
+        ax.legend()
+    letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     plt.tight_layout(pad=0.1)
     show_plot(show)
     savefig(save,filename)
     return
 ## LBJ
-#OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=True,storm_samples_only=False,show=True,save=False,filename='')  ## ALL SSC
+OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',plot_SRC=False,Use_All_SSC=True,storm_samples_only=False,show=True,save=False,filename='')  ## ALL SSC
 #OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=True,storm_samples_only=True,show=True,save=False,filename='')   ## ALL SSC, storm only
 #OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='') ## Pre-mitigation
 #OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='')## Pre-mitigation, storm only
@@ -3314,7 +3324,7 @@ def SSY_Data(storm_threshold,storm_intervals,title,show=False):
     plt.tight_layout(pad=0.1)
     show_plot(show)
     return
-SSY_Data(LBJ_storm_threshold,LBJ_StormIntervals,'LBJ_StormIntervals',show=True)
+#SSY_Data(LBJ_storm_threshold,LBJ_StormIntervals,'LBJ_StormIntervals',show=True)
 
 
 #### Event Sediment Flux Data
@@ -3745,6 +3755,7 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
         T.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), SSC.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         SED.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         SEDcum.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+    letter_subplots(fig,x=0.01,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     plt.tight_layout(pad=0.1)        
     #title=str(start.year)+'-'+str(start.month)+'-'+str(start.day)
     show_plot(show)
@@ -4437,6 +4448,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
         ax.autoscale_view(True,True,True)
     logaxes(log,fig) 
     plt.grid(b=False,axis='both')
+    letter_subplots(fig,x=0.05,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     plt.tight_layout(pad=0.1)
     show_plot(show,fig)
     savefig(save,filename)
