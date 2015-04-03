@@ -2641,7 +2641,7 @@ def OBSb_compare_ratings(df,df_SRC,SSC_loc,plot_SRC=False,Use_All_SSC=False,stor
     savefig(save,filename)
     return
 ## LBJ
-OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',plot_SRC=False,Use_All_SSC=True,storm_samples_only=False,show=True,save=False,filename='')  ## ALL SSC
+#OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',plot_SRC=False,Use_All_SSC=True,storm_samples_only=False,show=True,save=False,filename='')  ## ALL SSC
 #OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=True,storm_samples_only=True,show=True,save=False,filename='')   ## ALL SSC, storm only
 #OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='') ## Pre-mitigation
 #OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ',Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='')## Pre-mitigation, storm only
@@ -3793,6 +3793,23 @@ SedFluxStorms_DAM['Stage-Q-model-RMSE'] = StormSums(DAM_StormIntervals,DAM['Q-RM
 SedFluxStorms_DAM['T-SSC-model-RMSE'] = StormSums(DAM_StormIntervals,DAM['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
 SedFluxStorms_DAM['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(SedFluxStorms_DAM['Stage-Q-model-RMSE']**2. + SedFluxStorms_DAM['T-SSC-model-RMSE']**2.))**0.5 ## Calculate Cumulative Probable Error Harmel  2009
 
+
+### Grab vs T for SSY
+## LBJ
+LBJ_GrabInt_storms = StormSums(LBJ_StormIntervals,LBJ['GrabInt-SedFlux-tons/15min']).dropna()
+LBJ_GrabInt_storms['datasource'] = 'g'
+LBJ_T_SSC_storms = StormSums(LBJ_StormIntervals,LBJ['T-SedFlux-tons/15min']).dropna()
+LBJ_T_SSC_storms['datasource'] = 'T'
+SedFluxStorms_LBJ['datasource']= LBJ_T_SSC_storms['datasource']
+SedFluxStorms_LBJ['datasource']=SedFluxStorms_LBJ['datasource'].fillna(LBJ_GrabInt_storms['datasource'])
+## DAM
+DAM_GrabInt_storms = StormSums(LBJ_StormIntervals,DAM['GrabInt-SedFlux-tons/15min']).dropna()
+DAM_GrabInt_storms['datasource'] = 'g'
+DAM_T_SSC_storms = StormSums(LBJ_StormIntervals,DAM['T-SedFlux-tons/15min']).dropna()
+DAM_T_SSC_storms['datasource'] = 'T'
+SedFluxStorms_DAM['datasource']= DAM_T_SSC_storms['datasource']
+SedFluxStorms_DAM['datasource']=SedFluxStorms_DAM['datasource'].fillna(DAM_GrabInt_storms['datasource'])
+
 #### Calculate correlation coefficients and sediment rating curves    
 def compileALLStorms(subset = 'pre'):
     ## Sediment Yield
@@ -3800,7 +3817,9 @@ def compileALLStorms(subset = 'pre'):
     'Slower':SedFluxStorms_LBJ['Ssum']-SedFluxStorms_DAM['Ssum'],
     'Stotal':SedFluxStorms_LBJ['Ssum'],'Stotal_PE':SedFluxStorms_LBJ['PE'],
     'Squarry':SedFluxStorms_QUARRY['Ssum'],'Squarry_PE':SedFluxStorms_QUARRY['PE']})
-    ## Sediment Yield RMSE
+    ## Sediment Yield datasource
+    ALLStorms['SSY_data_source_total'] = SedFluxStorms_LBJ['datasource']
+    ALLStorms['SSY_data_source_upper'] = SedFluxStorms_DAM['datasource']
     
     ## Qsum
     ALLStorms['Qsumtotal']=SedFluxStorms_LBJ['Qsum']/1000 # L to m3
@@ -3825,14 +3844,16 @@ def S_storm_diff_table(subset='pre',):
     S_diff = compileALLStorms(subset)
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
+    S_diff['UPPER SSY data source'] = S_diff['SSY_data_source_upper']
     S_diff['UPPER PE %'] = S_diff['Supper_PE'].apply(int)
     S_diff['LOWER tons']=S_diff['Slower'].round(2)
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
+    S_diff['TOTAL SSY data source'] = S_diff['SSY_data_source_total']
     S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
-    S_diff['% Upper'] = S_diff['Supper']/S_diff['Stotal']*100
-    S_diff['% Upper'] = S_diff['% Upper'].dropna().apply(int)
-    S_diff['% Lower'] = S_diff['Slower']/S_diff['Stotal']*100
-    S_diff['% Lower'] = S_diff['% Lower'].dropna().apply(int)
+    S_diff['% UPPER'] = S_diff['Supper']/S_diff['Stotal']*100
+    S_diff['% UPPER'] = S_diff['% UPPER'].dropna().apply(int)
+    S_diff['% LOWER'] = S_diff['Slower']/S_diff['Stotal']*100
+    S_diff['% LOWER'] = S_diff['% LOWER'].dropna().apply(int)
     S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
     S_diff = S_diff[S_diff['Precip (mm)']>0]
     ## Filter negative values for S at LBJ    
@@ -3845,8 +3866,8 @@ def S_storm_diff_table(subset='pre',):
     Percent_Upper = S_diff['Supper'].sum()/S_diff['Stotal'].sum()*100
     Percent_Lower = S_diff['Slower'].sum()/S_diff['Stotal'].sum()*100    
     ## add summary stats to bottom of table
-    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER tons':'-','UPPER PE %':'-','LOWER tons':'-','TOTAL tons':'-','TOTAL PE %':'Average:','% Upper':"%.0f"%Percent_Upper,'% Lower':"%.0f"%Percent_Lower},index=['']))
-    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER PE %','LOWER tons','TOTAL tons','TOTAL PE %','% Upper','% Lower']]
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'Total/Avg:','Storm#':"%.0f"%len(S_diff),'Precip (mm)':"%.0f"%S_diff['Precip (mm)'].sum(),'UPPER tons':"%.0f"%S_diff['UPPER tons'].sum(),'UPPER SSY data source':' ','UPPER PE %':"%.0f"%S_diff['UPPER PE %'].mean(),'LOWER tons':"%.0f"%S_diff['LOWER tons'].sum(),'TOTAL tons':"%.0f"%S_diff['TOTAL tons'].sum(),'TOTAL SSY data source':' ','TOTAL PE %':"%.0f"%S_diff['TOTAL PE %'].mean(),'% UPPER':"%.0f"%Percent_Upper,'% LOWER':"%.0f"%Percent_Lower},index=['Total/Avg:']))
+    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER SSY data source','UPPER PE %','LOWER tons','TOTAL tons','TOTAL SSY data source','TOTAL PE %','% UPPER','% LOWER']]
     return S_diff
 S_storm_diff_table()
 
@@ -3854,21 +3875,21 @@ def S_storm_diff_table_quarry(subset='pre',manual_edit=True):
     S_diff = compileALLStorms(subset)
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
-    S_diff['FOREST tons']=S_diff['Supper'].round(2)
+    S_diff['UPPER tons']=S_diff['Supper'].round(2)
     #S_diff['FOREST PE %'] = S_diff['Supper_PE'].apply(int)
-    S_diff['QUARRY tons']=S_diff['Squarry'].round(2) - S_diff['FOREST tons']
-    S_diff['VILLAGE tons']= S_diff['TOTAL tons'].round(2) - S_diff['FOREST tons'] - S_diff['QUARRY tons'] 
+    S_diff['LOWER_QUARRY tons']=S_diff['Squarry'].round(2) - S_diff['UPPER tons']
+    S_diff['LOWER_VILLAGE tons']= S_diff['TOTAL tons'].round(2) - S_diff['UPPER tons'] - S_diff['LOWER_QUARRY tons'] 
     #S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
-    S_diff['% Forest'] = S_diff['FOREST tons']/S_diff['TOTAL tons']*100
-    S_diff['% Forest'] = S_diff['% Forest'].dropna().apply(int)
-    S_diff['% Quarry'] = S_diff['QUARRY tons']/S_diff['TOTAL tons']*100
-    S_diff['% Quarry'] = S_diff['% Quarry'].dropna().apply(int)    
-    S_diff['% Village'] = S_diff['VILLAGE tons']/S_diff['TOTAL tons']*100
-    S_diff['% Village'] = S_diff['% Village'].dropna().apply(int)
+    S_diff['% UPPER'] = S_diff['UPPER tons']/S_diff['TOTAL tons']*100
+    S_diff['% UPPER'] = S_diff['% UPPER'].dropna().apply(int)
+    S_diff['% LOWER_QUARRY'] = S_diff['LOWER_QUARRY tons']/S_diff['TOTAL tons']*100
+    S_diff['% LOWER_QUARRY'] = S_diff['% LOWER_QUARRY'].dropna().apply(int)    
+    S_diff['% LOWER_VILLAGE'] = S_diff['LOWER_VILLAGE tons']/S_diff['TOTAL tons']*100
+    S_diff['% LOWER_VILLAGE'] = S_diff['% LOWER_VILLAGE'].dropna().apply(int)
     S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
     S_diff = S_diff[S_diff['Precip (mm)']>0]
     ## Filter negative values for S at LBJ    
-    S_diff = S_diff[S_diff['VILLAGE tons']>0]
+    S_diff = S_diff[S_diff['LOWER_VILLAGE tons']>0]
     S_diff['Storm#']=range(1,len(S_diff)+1) 
     S_diff['Storm Start'] = S_diff.index
     S_diff['Storm Start'] =S_diff['Storm Start'].apply(lambda x: "{:%m/%d/%Y}".format(x))
@@ -3876,15 +3897,14 @@ def S_storm_diff_table_quarry(subset='pre',manual_edit=True):
     if manual_edit == True:
         S_diff = S_diff[S_diff['Storm Start'].isin(['03/06/2013','04/16/2013','04/23/2013','04/30/2013','06/05/2013','02/14/2014','02/20/2014','02/21/2014'])==True]
     ## Summary Stats    
-    Percent_Forest = S_diff['FOREST tons'].sum()/S_diff['TOTAL tons'].sum()*100
-    Percent_Quarry= S_diff['QUARRY tons'].sum()/S_diff['TOTAL tons'].sum()*100
-    Percent_Village = S_diff['VILLAGE tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Forest = S_diff['UPPER tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Quarry= S_diff['LOWER_QUARRY tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Village = S_diff['LOWER_VILLAGE tons'].sum()/S_diff['TOTAL tons'].sum()*100
 
     ## add summary stats to bottom of table
-    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','FOREST tons':'-','QUARRY tons':'-','VILLAGE tons':'-',
-    'TOTAL tons':'Average:','% Forest':"%.0f"%Percent_Forest,'% Quarry':"%.0f"%Percent_Quarry,'% Village':"%.0f"%Percent_Village},index=['']))
-    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','FOREST tons','QUARRY tons','VILLAGE tons','TOTAL tons','% Forest','% Quarry','% Village']]
-    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'Total/Avg:','Storm#':"%.0f"%len(S_diff),'Precip (mm)':"%.0f"%S_diff['Precip (mm)'].sum(),'UPPER tons':"%.0f"%S_diff['UPPER tons'].sum(),'LOWER_QUARRY tons':"%.0f"%S_diff['LOWER_QUARRY tons'].sum(),'LOWER_VILLAGE tons':"%.0f"%S_diff['LOWER_VILLAGE tons'].sum(),
+    'TOTAL tons':"%.0f"%S_diff['TOTAL tons'].sum(),'% UPPER':"%.0f"%Percent_Forest,'% LOWER_QUARRY':"%.0f"%Percent_Quarry,'% LOWER_VILLAGE':"%.0f"%Percent_Village},index=['']))
+    S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','LOWER_QUARRY tons','LOWER_VILLAGE tons','TOTAL tons','% UPPER','% LOWER_QUARRY','% LOWER_VILLAGE']]
     return S_diff
 S_storm_diff_table_quarry(manual_edit=False)
 S_storm_diff_table_quarry(manual_edit=True)
@@ -3933,6 +3953,7 @@ def plotS_storm_table(show=False):
 def Q_S_storm_diff_summary_table(subset='pre',):
     diff = compileALLStorms(subset)
     ## Calculate percent contributions from upper and lower watersheds
+    
     # Precip
     diff['Psum'] = diff['Pstorms'].apply(int)
     diff = diff[diff['Psum']>0]
@@ -3962,20 +3983,20 @@ def Q_S_storm_diff_summary_table(subset='pre',):
     Q_DR = Q/Qpre   
 
     ## Summarize
-    table_data_dict = {'Storms':len(diff),'Precipitation':'%.0f'%diff['Pstorms'].sum()+' mm',
-    'Q Forest MCM':'%.2f'%diff['QupperMCM'].sum() +' MCM','Q Forest mm':'%.0f'%diff['mmQupper'].sum() +' mm',
-    'Q Village MCM':'%.2f'%diff['QtotalMCM'].sum() +'MCM','Q Village mm':'%.0f'%diff['mmQtotal'].sum()+' mm',
-    'SSY Forest':'%.1f'%diff['Supper'].sum() +'Mg','SSY* Forest':'%.1f'%diff['km2Supper'].sum() +r'Mg/km2',
-    'SSY Village':'%.1f'%diff['Stotal'].sum()+'Mg','SSY* Village':'%.1f'%diff['km2Stotal'].sum()+r'Mg/km2',
-    'Q Disturbance Ratio':'%.1f'%Q_DR,'SSY Disturbance Ratio':'%.1f'%SSY_DR}
+    table_data_dict = {
+    'Storms':(len(diff),'','',''),
+    'Precipitation (mm)':('%.0f'%diff['Pstorms'].sum(),'','',''),
+    'subwatershed':('','UPPER','LOWER',''),
+    'Q (MCM)':('','%.2f'%diff['QupperMCM'].sum(),'%.2f'%diff['QtotalMCM'].sum(),''),
+    'Q (mm)':('','%.0f'%diff['mmQupper'].sum(),'%.0f'%diff['mmQtotal'].sum(),''),
+    'Q Disturbance Ratio':('','','','%.1f'%Q_DR),
+    'SSY (Mg)':('','%.1f'%diff['Supper'].sum(),'%.1f'%diff['Stotal'].sum(),''),
+    'Spec SSY (Mg/km2)':('','%.1f'%diff['km2Supper'].sum(),'%.1f'%diff['km2Stotal'].sum(),''),
+    'SSY Disturbance Ratio':('','','','%.1f'%SSY_DR)}
     
-    summary =pd.DataFrame(table_data_dict,index=[""])
-    summary = summary[['Storms','Precipitation','Q Forest MCM','Q Forest mm','Q Village MCM','Q Village mm',
-    'SSY Forest','SSY* Forest','SSY Village','SSY* Village','Q Disturbance Ratio','SSY Disturbance Ratio']]
-    summary = summary.T
-    summary[' ']= summary.index
-    summary = summary[[' ','']]
-    return summary
+    summary =pd.DataFrame.from_dict(table_data_dict)[['Storms','Precipitation (mm)','subwatershed','Q (MCM)','Q (mm)','Q Disturbance Ratio','SSY (Mg)','Spec SSY (Mg/km2)','SSY Disturbance Ratio']].T
+    summary[4] = summary.index
+    return summary[[4,0,1,2,3]]
 Q_S_storm_diff_summary_table()
 
 def Spec_SSY_Quarry(subset='post'):
@@ -4375,7 +4396,7 @@ def plotCoeffTable(show=False,norm=False):
 def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,save=False,filename=''):  
     mpl.rc('lines',markersize=ms)
     mpl.rc('grid',alpha=0)
-    fig, ((ps,ei),(qsums,qmaxs)) = plt.subplots(2,2,figsize=(8,6))
+    fig, ((ps,ei),(qsums,qmaxs)) = plt.subplots(2,2,figsize=(8,6),sharex=False,sharey=True)
     title = 'All sediment rating curves for all predictors'
     ## Normalize by area
     if norm==True:
@@ -4396,64 +4417,66 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     ## Total Watershed (=LBJ)
     PS_total_power = powerfunction(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'])
     PowerFit(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],xy,ps,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2) 
-    ps.set_title('Total Event Precip (mm)')
-    ps.set_ylabel(ylabel)
+    ps.set_xlabel('Total Event Precip (mm)'),ps.set_ylabel(ylabel)
+    ps.set_xlim(10**0,10**3),ps.set_ylim(10**-3.1,10**2.2)
+    ps.legend(loc='lower right',fancybox=True) 
     ## EI vs S at Upper, Total  
     ALLStorms_upper = ALLStorms[['EI','Supper']].dropna()
     ALLStorms_total = ALLStorms[['EI','Stotal']].dropna() 
-    ei.plot(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
-    ei.plot(ALLStorms_total['EI'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
+    ei.plot(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
+    ei.plot(ALLStorms_total['EI'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)
     EI_upper_power = powerfunction(ALLStorms_upper['EI'],ALLStorms_upper['Supper'])
     PowerFit(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],xy,ei,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
     ## Total Watershed (=LBJ)       
     EI_total_power = powerfunction(ALLStorms_total['EI'],ALLStorms_total['Stotal'])
     PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'],xy,ei,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2) 
-    ei.set_title('Event Erosivity Index (MJmm ha-1 h-1)')
-    #ei.set_ylabel(ylabel)
+    ei.set_xlabel('Event Erosivity Index (MJmm ha-1 h-1)')#ei.set_ylabel(ylabel)
+    ei.set_xlim(10**1,10**3)#,ps.set_ylim(10**-3,10**2.2)
+    ei.legend(loc='lower left',fancybox=True) 
     ## Qsum vs S at Upper, Total 
     ALLStorms_upper = ALLStorms[['Qsumupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qsumtotal','Stotal']].dropna() 
-    qsums.plot(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
-    qsums.plot(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
+    qsums.plot(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
+    qsums.plot(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)    
     QsumS_upper_power = powerfunction(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'])
     PowerFit(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],xy,qsums,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
     ## Total Watershed (=LBJ)
     QsumS_total_power = powerfunction(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'])
     PowerFit(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],xy,qsums,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2) 
-    qsums.set_title('Total Event Discharge '+xlabelQsum)
-    qsums.set_ylabel(ylabel)
-    #qsums.set_xlabel(xlabelQsum)
+    qsums.set_xlabel('Total Event Discharge '+xlabelQsum)
+    qsums.set_ylabel(ylabel)#qsums.set_xlabel(xlabelQsum)
+    qsums.set_xlim(10**2.5,10**6)#, qsums.set_ylim(10**-3.1,10**2.2)
+    qsums.legend(loc='lower right',fancybox=True) 
     ## Qmax vs S at Upper, Total  
     ALLStorms_upper = ALLStorms[['Qmaxupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna() 
-    qmaxs.plot(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
-    qmaxs.plot(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o',label='Total')
+    qmaxs.plot(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
+    qmaxs.plot(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)       
     QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'])
     PowerFit(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],xy,qmaxs,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
     ## Total Watershed (=LBJ)
     QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'])
     PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2)
-    qmaxs.set_title('Event Peak Discharge '+xlabelQmax)
-    #qmaxs.set_ylabel(ylabel)
-    #qmaxs.set_xlabel(xlabelQmax)
-
-    l1,l2,l3 = plt.plot(None,None,'g-',None,None,'y-',None,None,'r-')
-    #fig.legend((l1,l2,l3),('UPPER','TOTAL'), 'upper left',fancybox=True)
+    qmaxs.set_xlabel('Event Peak Discharge '+xlabelQmax)
+    #qmaxs.set_ylabel(ylabel)#qmaxs.set_xlabel(xlabelQmax)
+    qmaxs.set_xlim(10**-1.2,10**1)#, qmaxs.set_ylim(10**-3,10**2.2)
+    qmaxs.legend(loc='lower right',fancybox=True) 
+    
+    letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     for ax in fig.axes:
-        ax.legend(loc='best',fancybox=True) 
         ax.grid(False)          
-        ax.autoscale_view(True,True,True)
+        #ax.autoscale_view(True,True,True)
     logaxes(log,fig) 
     plt.grid(b=False,axis='both')
-    letter_subplots(fig,x=0.05,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
+    
     plt.tight_layout(pad=0.1)
     show_plot(show,fig)
     savefig(save,filename)
     return PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power 
-#plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
+plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
