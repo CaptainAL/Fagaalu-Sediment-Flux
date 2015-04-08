@@ -327,7 +327,7 @@ Mitigation = dt.datetime(2014,10,1,0,0)
 def LandCover_table():
     landcoverXL = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx')
     landcover_table = landcoverXL.parse('Fagaalu_Revised')
-    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub']]
+    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
     # Format Table data                       
     for column in landcover_table.columns:
         try:
@@ -339,7 +339,7 @@ def LandCover_table():
         except:
             pass
     landcover_table = landcover_table[landcover_table['Subwatershed'].isin(['FOREST(UPPER)','QUARRY(LOWER)','VILLAGE(LOWER)','Fagaalu Stream'])==True].reset_index()
-    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub']]
+    landcover_table = landcover_table[['Subwatershed','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
     return landcover_table
 LandCover_table()
 
@@ -1617,32 +1617,32 @@ QUARRYq['stage']=PT3['stage'] ## put unaltered stage back in
 DAMq= (DAM*900)## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
 DAMq['stage']=PT3['stage'] ## put unaltered stage back in
 
-def plotdischargeintervals(fig,ax,start,stop):
-    LBJ['Q'][start:stop].dropna().plot(ax=ax,c='k',label='LBJ (Q-Mannings)')
-    ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='k')
-    DAM['Q'][start:stop].dropna().plot(ax=ax,c='grey',ls='-',label='DAM (Q-HEC-RAS)')
-    ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='grey')
-    ax.set_ylim(0,LBJ['Q'].max()+500)
-    return
+
     
 def QYears(log=False,show=False,save=False,filename=''):
     mpl.rc('lines',markersize=6)
     fig, (Q2012,Q2013,Q2014)=plt.subplots(3)
-    plotdischargeintervals(fig,Q2012,start2012,stop2012)
-    plotdischargeintervals(fig,Q2013,start2013,stop2013)
-    plotdischargeintervals(fig,Q2014,start2014,stop2014)
+    for ax in fig.axes:
+        ax.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='k',label='FG3 (Q-Mannings)')
+        ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='k')
+        ax.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='grey',label='FG1(Q-HEC-RAS)')
+        ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='grey')
+        ax.set_ylim(0,LBJ['Q'].max()+500)    
+    Q2012.set_xlim(start2012,stop2012),Q2013.set_xlim(start2013,stop2013),Q2014.set_xlim(start2014,stop2014)
     
     Q2014.legend()
     Q2013.set_ylabel('Discharge (Q) L/sec')
     Q2012.set_title("Discharge (Q) L/sec at the Upstream and Downstream Sites, Faga'alu")
     for ax in fig.axes:
-        ax.locator_params(nbins=10,axis='y')
-
+        ax.locator_params(nbins=6,axis='y')
+        ax.xaxis.set_major_locator(mpl.dates.MonthLocator(interval=2))
+        ax.xaxis.set_major_formatter(mpl.dates.DateFormatter('%b %Y'))
+        
     plt.tight_layout(pad=0.1)
     show_plot(show,fig)
     savefig(save,filename)
     return
-#QYears(log=False,show=True,save=False,filename='')
+QYears(log=True,show=True,save=False,filename='')
     
     
 ### ..
@@ -3866,10 +3866,55 @@ def S_storm_diff_table(subset='pre',):
     Percent_Upper = S_diff['Supper'].sum()/S_diff['Stotal'].sum()*100
     Percent_Lower = S_diff['Slower'].sum()/S_diff['Stotal'].sum()*100    
     ## add summary stats to bottom of table
-    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'Total/Avg:','Storm#':"%.0f"%len(S_diff),'Precip (mm)':"%.0f"%S_diff['Precip (mm)'].sum(),'UPPER tons':"%.0f"%S_diff['UPPER tons'].sum(),'UPPER SSY data source':' ','UPPER PE %':"%.0f"%S_diff['UPPER PE %'].mean(),'LOWER tons':"%.0f"%S_diff['LOWER tons'].sum(),'TOTAL tons':"%.0f"%S_diff['TOTAL tons'].sum(),'TOTAL SSY data source':' ','TOTAL PE %':"%.0f"%S_diff['TOTAL PE %'].mean(),'% UPPER':"%.0f"%Percent_Upper,'% LOWER':"%.0f"%Percent_Lower},index=['Total/Avg:']))
+    # Total/Avg
+    SSY_UPPER, SSY_LOWER, SSY_TOTAL = S_diff['UPPER tons'].sum(), S_diff['LOWER tons'].sum(), S_diff['TOTAL tons'].sum()
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'Total/Avg:','Storm#':"%.0f"%len(S_diff),'Precip (mm)':"%.0f"%S_diff['Precip (mm)'].sum(),'UPPER tons':"%.0f"%SSY_UPPER,'UPPER SSY data source':' ','UPPER PE %':"%.0f"%S_diff['UPPER PE %'].mean(),'LOWER tons':"%.0f"%SSY_LOWER,'TOTAL tons':"%.0f"%SSY_TOTAL,'TOTAL SSY data source':' ','TOTAL PE %':"%.0f"%S_diff['TOTAL PE %'].mean(),'% UPPER':"%.0f"%Percent_Upper,'% LOWER':"%.0f"%Percent_Lower},index=['Total/Avg:']))
+    
+    # sSSY
+    sSSY_UPPER, sSSY_LOWER, sSSY_TOTAL = SSY_UPPER/0.9, SSY_LOWER/0.88, SSY_TOTAL/1.78
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'Tons/km2','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%sSSY_UPPER,'UPPER SSY data source':' ','UPPER PE %':'','LOWER tons':"%.0f"%sSSY_LOWER,'TOTAL tons':"%.0f"%sSSY_TOTAL,'TOTAL SSY data source':' ','TOTAL PE %':'','% UPPER':'-','% LOWER':'-'}, index=['Tons/km2']))
+    
+    # sSSY:sSSY_UPPER
+    DR_sSSY_UPPER, DR_sSSY_LOWER, DR_sSSY_TOTAL = sSSY_UPPER/sSSY_UPPER,sSSY_LOWER/sSSY_UPPER,sSSY_TOTAL/sSSY_UPPER
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'sSSY:sSSY_UPPER','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%DR_sSSY_UPPER,'UPPER SSY data source':' ','UPPER PE %':'','LOWER tons':"%.0f"%DR_sSSY_LOWER,'TOTAL tons':"%.0f"%DR_sSSY_TOTAL,'TOTAL SSY data source':' ','TOTAL PE %':'','% UPPER':'-','% LOWER':'-'}, index=['sSSY:sSSY_UPPER']))
+    
+    # fraction Disturbed = % disturbed from % Disturbed in Land cover table
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'fraction disturbed (%)','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%0.4,'UPPER SSY data source':' ','UPPER PE %':'','LOWER tons':"%.0f"%5.2,'TOTAL tons':"%.0f"%6.8,'TOTAL SSY data source':' ','TOTAL PE %':'','% UPPER':'-','% LOWER':'-'}, index=['fraction disturbed (%)']))
+    
+    # SSY from forested areas of subwatersheds = SSY forest (tons) =  sSSY_UPPER x (1-disturbed_fraction) x subwatershed area
+    def SSY_from_forest(sSSY_UPPER,disturbed_fraction,subwatershed_area):
+        SSY_forest = sSSY_UPPER*(1-disturbed_fraction)*subwatershed_area
+        return SSY_forest
+    SSY_forest_UPPER,SSY_forest_LOWER,SSY_forest_TOTAL = SSY_from_forest(sSSY_UPPER,0.004,0.9),SSY_from_forest(sSSY_UPPER,0.052,0.88),          SSY_from_forest(sSSY_UPPER,0.068,1.78)
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'SSY from forested areas (tons)','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%SSY_forest_UPPER,'UPPER SSY data source':' ','UPPER PE %':'','LOWER tons':"%.0f"%SSY_forest_LOWER,'TOTAL tons':"%.0f"%SSY_forest_TOTAL,'TOTAL SSY data source':' ','TOTAL PE %':'','% UPPER':'-','% LOWER':'-'}, index=['SSY from forested areas (tons)']))
+    
+    # SSY from disturbed areas
+    SSY_disturbed_UPPER, SSY_disturbed_LOWER,SSY_disturbed_TOTAL = SSY_UPPER-SSY_forest_UPPER, SSY_LOWER-SSY_forest_LOWER, SSY_TOTAL-SSY_forest_TOTAL
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'SSY from disturbed areas (tons)','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%SSY_disturbed_UPPER,'UPPER SSY data source':' ','UPPER PE %':'','LOWER tons':"%.0f"%SSY_disturbed_LOWER,'TOTAL tons':"%.0f"%SSY_disturbed_TOTAL,'TOTAL SSY data source':' ','TOTAL PE %':'','% UPPER':'-','% LOWER':'-'}, index=['SSY from disturbed areas (tons)']))
+    
+    # sSSY from disturbed areas = SSY_disturbed/(fraction_disturbed x subwatershed area)
+    sSSY_disturbed_UPPER, sSSY_disturbed_LOWER, sSSY_disturbed_TOTAL = SSY_disturbed_UPPER/(0.004*0.9), SSY_disturbed_LOWER/(0.052*0.88), SSY_disturbed_TOTAL/(0.068*1.78)
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'sSSY from disturbed areas (tons/km2)','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%sSSY_disturbed_UPPER,'UPPER SSY data source':' ','UPPER PE %':'','LOWER tons':"%.0f"%sSSY_disturbed_LOWER,'TOTAL tons':"%.0f"%sSSY_disturbed_TOTAL,'TOTAL SSY data source':' ','TOTAL PE %':'','% UPPER':'-','% LOWER':'-'}, index=['sSSY from disturbed areas (tons/km2)']))        
+    
+    # % from disturbed parts of waterhshed
+    SSY_percent_dist_UPPER, SSY_percent_dist_LOWER, SSY_percent_dist_TOTAL = SSY_disturbed_UPPER/SSY_UPPER*100, SSY_disturbed_LOWER/SSY_LOWER*100, SSY_disturbed_TOTAL/SSY_TOTAL*100
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'% SSY from disturbed areas','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%SSY_percent_dist_UPPER,'UPPER SSY data source':' ','UPPER PE %':'','LOWER tons':"%.0f"%SSY_percent_dist_LOWER,'TOTAL tons':"%.0f"%SSY_percent_dist_TOTAL,'TOTAL SSY data source':' ','TOTAL PE %':'','% UPPER':'-','% LOWER':'-'}, index=['% SSY from disturbed areas']))  
+    
+    # sSSY_DR
+    sSSY_DR_LOWER, sSSY_DR_TOTAL= sSSY_disturbed_LOWER/sSSY_UPPER, sSSY_disturbed_TOTAL/sSSY_UPPER
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'DR for sSSY from disturbed areas','Storm#':'','Precip (mm)':'','UPPER tons':'-','UPPER SSY data source':' ','UPPER PE %':'','LOWER tons':"%.0f"%sSSY_DR_LOWER,'TOTAL tons':"%.0f"%sSSY_DR_TOTAL,'TOTAL SSY data source':' ','TOTAL PE %':'','% UPPER':'-','% LOWER':'-'}, index=['DR for sSSY from disturbed areas']))     
+    
+    LOWER_percent_of_TOTAL_SSY = (SSY_disturbed_LOWER)/SSY_TOTAL * 100
+    TOTAL_percent_of_TOTAL_SSY = (SSY_disturbed_TOTAL)/SSY_TOTAL * 100
+    ## Order columns
     S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','UPPER SSY data source','UPPER PE %','LOWER tons','TOTAL tons','TOTAL SSY data source','TOTAL PE %','% UPPER','% LOWER']]
-    return S_diff
-S_storm_diff_table()
+    return S_diff, "%.0f"%LOWER_percent_of_TOTAL_SSY, "%.0f"%TOTAL_percent_of_TOTAL_SSY
+#S_storm_diff_table()
 
 def S_storm_diff_table_quarry(subset='pre',manual_edit=True):
     S_diff = compileALLStorms(subset)
@@ -3902,12 +3947,58 @@ def S_storm_diff_table_quarry(subset='pre',manual_edit=True):
     Percent_Village = S_diff['LOWER_VILLAGE tons'].sum()/S_diff['TOTAL tons'].sum()*100
 
     ## add summary stats to bottom of table
-    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'Total/Avg:','Storm#':"%.0f"%len(S_diff),'Precip (mm)':"%.0f"%S_diff['Precip (mm)'].sum(),'UPPER tons':"%.0f"%S_diff['UPPER tons'].sum(),'LOWER_QUARRY tons':"%.0f"%S_diff['LOWER_QUARRY tons'].sum(),'LOWER_VILLAGE tons':"%.0f"%S_diff['LOWER_VILLAGE tons'].sum(),
-    'TOTAL tons':"%.0f"%S_diff['TOTAL tons'].sum(),'% UPPER':"%.0f"%Percent_Forest,'% LOWER_QUARRY':"%.0f"%Percent_Quarry,'% LOWER_VILLAGE':"%.0f"%Percent_Village},index=['']))
+    # Total/Avg
+    SSY_UPPER, SSY_QUARRY, SSY_VILLAGE, SSY_TOTAL = S_diff['UPPER tons'].sum(), S_diff['LOWER_QUARRY tons'].sum(), S_diff['LOWER_VILLAGE tons'].sum(), S_diff['TOTAL tons'].sum()
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'Total/Avg:','Storm#':"%.0f"%len(S_diff),'Precip (mm)':"%.0f"%S_diff['Precip (mm)'].sum(),'UPPER tons':"%.0f"%SSY_UPPER,'LOWER_QUARRY tons':"%.0f"%SSY_QUARRY,'LOWER_VILLAGE tons':"%.0f"%SSY_VILLAGE,'TOTAL tons':"%.0f"%SSY_TOTAL,'% UPPER':"%.0f"%Percent_Forest,'% LOWER_QUARRY':"%.0f"%Percent_Quarry,'% LOWER_VILLAGE':"%.0f"%Percent_Village},index=['Total/Avg']))
+    
+    # sSSY
+    sSSY_UPPER, sSSY_QUARRY, sSSY_VILLAGE, sSSY_TOTAL = SSY_UPPER/0.9, SSY_QUARRY/0.27, SSY_VILLAGE/0.61, SSY_TOTAL/1.78
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'Tons/km2','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%sSSY_UPPER,'LOWER_QUARRY tons':"%.0f"%sSSY_QUARRY,'LOWER_VILLAGE tons':"%.0f"%sSSY_VILLAGE,'TOTAL tons':"%.0f"%sSSY_TOTAL,'% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-'}, index=['Tons/km2']))
+    
+    # sSSY:sSSY_UPPER
+    DR_sSSY_UPPER, DR_sSSY_QUARRY, DR_sSSY_VILLAGE, DR_sSSY_TOTAL = sSSY_UPPER/sSSY_UPPER,sSSY_QUARRY/sSSY_UPPER,sSSY_VILLAGE/sSSY_UPPER,sSSY_TOTAL/sSSY_UPPER
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'sSSY:sSSY_UPPER','Storm#':'','Precip (mm)':'','UPPER tons':"%.1f"%DR_sSSY_UPPER,'LOWER_QUARRY tons':"%.2f"%DR_sSSY_QUARRY,'LOWER_VILLAGE tons':"%.1f"%DR_sSSY_VILLAGE,'TOTAL tons':"%.1f"%DR_sSSY_TOTAL,'% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-'}, index=['sSSY:sSSY_UPPER']))
+    
+    # fraction Disturbed = % disturbed from % Disturbed in Land cover table
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'fraction disturbed (%)','Storm#':'','Precip (mm)':'','UPPER tons':"%.1f"%0.4,'LOWER_QUARRY tons':"%.1f"%6.5,'LOWER_VILLAGE tons':"%.1f"%4.9,'TOTAL tons':"%.1f"%6.8,'% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-'}, index=['fraction disturbed (%)']))
+    
+    # SSY from forested areas of subwatersheds = SSY forest (tons) =  sSSY_UPPER x (1-disturbed_fraction) x subwatershed area
+    def SSY_from_forest(sSSY_UPPER,disturbed_fraction,subwatershed_area):
+        SSY_forest = sSSY_UPPER*(1-disturbed_fraction)*subwatershed_area
+        return SSY_forest
+    SSY_forest_UPPER,SSY_forest_QUARRY,SSY_forest_VILLAGE,SSY_forest_TOTAL = SSY_from_forest(sSSY_UPPER,0.004,0.9),SSY_from_forest(sSSY_UPPER,0.065,0.27),           SSY_from_forest(sSSY_UPPER,0.049,0.61),SSY_from_forest(sSSY_UPPER,0.068,1.78)
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'SSY from forested areas (tons)','Storm#':'','Precip (mm)':'','UPPER tons':"%.1f"%SSY_forest_UPPER,'LOWER_QUARRY tons':"%.1f"%SSY_forest_QUARRY,'LOWER_VILLAGE tons':"%.1f"%SSY_forest_VILLAGE,'TOTAL tons':"%.1f"%SSY_forest_TOTAL,'% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-'}, index=['SSY from forested areas (tons)']))
+    
+    # SSY from disturbed areas
+    SSY_disturbed_UPPER, SSY_disturbed_QUARRY,SSY_disturbed_VILLAGE,SSY_disturbed_TOTAL = SSY_UPPER-SSY_forest_UPPER, SSY_QUARRY-SSY_forest_QUARRY,SSY_VILLAGE-SSY_forest_VILLAGE, SSY_TOTAL-SSY_forest_TOTAL
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'SSY from disturbed areas (tons)','Storm#':'','Precip (mm)':'','UPPER tons':"%.1f"%SSY_disturbed_UPPER,'LOWER_QUARRY tons':"%.2f"%SSY_disturbed_QUARRY,'LOWER_VILLAGE tons':"%.1f"%SSY_disturbed_VILLAGE,'TOTAL tons':"%.1f"%SSY_disturbed_TOTAL,'% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-'}, index=['SSY from disturbed areas (tons)']))
+    
+    # sSSY from disturbed areas = SSY_disturbed/(fraction_disturbed x subwatershed area)
+    sSSY_disturbed_UPPER, sSSY_disturbed_QUARRY, sSSY_disturbed_VILLAGE, sSSY_disturbed_TOTAL = SSY_disturbed_UPPER/(0.004*0.9), SSY_disturbed_QUARRY/(0.065*0.27), SSY_disturbed_VILLAGE/(0.049*0.61), SSY_disturbed_TOTAL/(0.068*1.78)
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'sSSY from disturbed areas (tons/km2)','Storm#':'','Precip (mm)':'','UPPER tons':"%.1f"%sSSY_disturbed_UPPER,'LOWER_QUARRY tons':"%.1f"%sSSY_disturbed_QUARRY,'LOWER_VILLAGE tons':"%.1f"%sSSY_disturbed_VILLAGE,'TOTAL tons':"%.1f"%sSSY_disturbed_TOTAL,'% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-'}, index=['sSSY from disturbed areas (tons/km2)']))        
+    
+    # % from disturbed parts of waterhshed
+    SSY_percent_dist_UPPER, SSY_percent_dist_QUARRY, SSY_percent_dist_VILLAGE, SSY_percent_dist_TOTAL = SSY_disturbed_UPPER/SSY_UPPER*100, SSY_disturbed_QUARRY/SSY_QUARRY*100, SSY_disturbed_VILLAGE/SSY_VILLAGE*100, SSY_disturbed_TOTAL/SSY_TOTAL*100
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'% SSY from disturbed areas','Storm#':'','Precip (mm)':'','UPPER tons':"%.0f"%SSY_percent_dist_UPPER,'LOWER_QUARRY tons':"%.0f"%SSY_percent_dist_QUARRY,'LOWER_VILLAGE tons':"%.0f"%SSY_percent_dist_VILLAGE,'TOTAL tons':"%.0f"%SSY_percent_dist_TOTAL,'% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-'}, index=['% SSY from disturbed areas']))  
+    
+    # sSSY_DR
+    sSSY_DR_QUARRY, sSSY_DR_VILLAGE, sSSY_DR_TOTAL= sSSY_disturbed_QUARRY/sSSY_UPPER, sSSY_disturbed_VILLAGE/sSSY_UPPER, sSSY_disturbed_TOTAL/sSSY_UPPER
+    
+    S_diff=S_diff.append(pd.DataFrame({'Storm Start':'DR for sSSY from disturbed areas','Storm#':'','Precip (mm)':'','UPPER tons':'','LOWER_QUARRY tons':"%.1f"%sSSY_DR_QUARRY,'LOWER_VILLAGE tons':"%.1f"%sSSY_DR_VILLAGE,'TOTAL tons':"%.1f"%sSSY_DR_TOTAL,'% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-'}, index=['DR for sSSY from disturbed areas']))     
+    
+    QUARRY_percent_of_TOTAL_SSY = SSY_disturbed_QUARRY/SSY_TOTAL * 100
+    VILLAGE_percent_of_TOTAL_SSY = SSY_disturbed_VILLAGE/SSY_TOTAL * 100
+    QUA_VIL_percent_of_TOTAL_SSY = (SSY_disturbed_QUARRY+SSY_disturbed_VILLAGE)/SSY_TOTAL * 100
+    
+    # Order columns    
     S_diff=S_diff[['Storm Start','Storm#','Precip (mm)','UPPER tons','LOWER_QUARRY tons','LOWER_VILLAGE tons','TOTAL tons','% UPPER','% LOWER_QUARRY','% LOWER_VILLAGE']]
-    return S_diff
-S_storm_diff_table_quarry(manual_edit=False)
-S_storm_diff_table_quarry(manual_edit=True)
+    return S_diff, "%.0f"%QUARRY_percent_of_TOTAL_SSY, "%.0f"%VILLAGE_percent_of_TOTAL_SSY, "%.0f"%QUA_VIL_percent_of_TOTAL_SSY
+#S_storm_diff_table_quarry(manual_edit=False)
+#S_storm_diff_table_quarry(manual_edit=True)
 
 ## Calculate the percent of total SSY with raw vales, BEFORE NORMALIZING by area!
 def plotS_storm_table(show=False):
@@ -3950,7 +4041,7 @@ def plotS_storm_table(show=False):
     return
 #plotS_storm_table(show=True)
     
-def Q_S_storm_diff_summary_table(subset='pre',):
+def Q_S_storm_diff_summary_table(subset='pre'):
     diff = compileALLStorms(subset)
     ## Calculate percent contributions from upper and lower watersheds
     
@@ -3984,19 +4075,19 @@ def Q_S_storm_diff_summary_table(subset='pre',):
 
     ## Summarize
     table_data_dict = {
-    'Storms':(len(diff),'','',''),
-    'Precipitation (mm)':('%.0f'%diff['Pstorms'].sum(),'','',''),
-    'subwatershed':('','UPPER','LOWER',''),
-    'Q (MCM)':('','%.2f'%diff['QupperMCM'].sum(),'%.2f'%diff['QtotalMCM'].sum(),''),
-    'Q (mm)':('','%.0f'%diff['mmQupper'].sum(),'%.0f'%diff['mmQtotal'].sum(),''),
-    'Q Disturbance Ratio':('','','','%.1f'%Q_DR),
-    'SSY (Mg)':('','%.1f'%diff['Supper'].sum(),'%.1f'%diff['Stotal'].sum(),''),
-    'Spec SSY (Mg/km2)':('','%.1f'%diff['km2Supper'].sum(),'%.1f'%diff['km2Stotal'].sum(),''),
-    'SSY Disturbance Ratio':('','','','%.1f'%SSY_DR)}
+    'Storms':(len(diff),''),
+    'Precipitation (mm)':('%.0f'%diff['Pstorms'].sum(),''),
+    'subwatershed':('UPPER','LOWER'),
+    'Q (MCM)':('%.2f'%diff['QupperMCM'].sum(),'%.2f'%diff['QtotalMCM'].sum()),
+    'Q (mm)':('%.0f'%diff['mmQupper'].sum(),'%.0f'%diff['mmQtotal'].sum()),
+    'Q Disturbance Ratio':('-','%.1f'%Q_DR),
+    'SSY (Mg)':('%.1f'%diff['Supper'].sum(),'%.1f'%diff['Stotal'].sum()),
+    'Spec SSY (Mg/km2)':('%.1f'%diff['km2Supper'].sum(),'%.1f'%diff['km2Stotal'].sum()),
+    'SSY Disturbance Ratio':('-','%.1f'%SSY_DR)}
     
-    summary =pd.DataFrame.from_dict(table_data_dict)[['Storms','Precipitation (mm)','subwatershed','Q (MCM)','Q (mm)','Q Disturbance Ratio','SSY (Mg)','Spec SSY (Mg/km2)','SSY Disturbance Ratio']].T
-    summary[4] = summary.index
-    return summary[[4,0,1,2,3]]
+    summary =pd.DataFrame(table_data_dict,index=[str(n) for n in range(1,3)])[['Storms','Precipitation (mm)','subwatershed','Q (MCM)','Q (mm)','Q Disturbance Ratio','SSY (Mg)','Spec SSY (Mg/km2)','SSY Disturbance Ratio']].T
+    summary['0'] = summary.index
+    return summary[['0','1', '2']]
 Q_S_storm_diff_summary_table()
 
 def Spec_SSY_Quarry(subset='post'):
@@ -4705,6 +4796,27 @@ def plotQmaxSseparate(show=True,log=True,save=False,norm=True):
     savefig(save,title)
     return
 #plotQmaxSseparate(show=True,log=True,save=False,norm=True)  
+
+
+
+#### Predict Annual SSY
+## Models
+PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power = plotALLStorms_ALLRatings(subset='pre',show=False)
+
+def predict_SSY(model,data,start,stop,watershed_area):
+    a,b = model.iloc[0][['a','b']]
+    SSY_predicted = a * ((data[start:stop]) **b)
+    SSY = SSY_predicted.sum()
+    spec_SSY  = SSY/watershed_area
+    return "%.0f"%SSY, "%.0f"%spec_SSY
+    
+## Total
+SSY_Total_2012, spec_SSY_Total_2012 = predict_SSY(QmaxS_total_power,SedFluxStorms_LBJ['Qmax']/1000,start2012,stop2012,1.78)
+SSY_Total_2014, spec_SSY_Total_2014 = predict_SSY(QmaxS_total_power,SedFluxStorms_LBJ['Qmax']/1000,start2014,dt.datetime(2014,12,31),1.78)
+
+## Upper
+SSY_Upper_2012, spec_SSY_Upper_2012 = predict_SSY(QmaxS_upper_power,SedFluxStorms_DAM['Qmax']/1000,start2012,stop2012,.88)
+SSY_Upper_2014, spec_SSY_Upper_2014 = predict_SSY(QmaxS_upper_power,SedFluxStorms_DAM['Qmax']/1000,start2014,dt.datetime(2014,12,31),.88)
 
 plt.show()
 elapsed = dt.datetime.now() - start_time 
