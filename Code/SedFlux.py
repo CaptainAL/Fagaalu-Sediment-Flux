@@ -4882,8 +4882,6 @@ SSY_Total_2014, sSSY_Total_2014 = predict_SSY(QmaxS_total_power,SedFluxStorms_LB
 SSY_Upper_2012, sSSY_Upper_2012 = predict_SSY(QmaxS_upper_power,SedFluxStorms_DAM['Qmax']/1000,start2012,stop2012,0.9)
 SSY_Upper_2014, sSSY_Upper_2014 = predict_SSY(QmaxS_upper_power,SedFluxStorms_DAM['Qmax']/1000,start2014,dt.datetime(2014,12,31),0.9)
 
-
-
 ## Use LBJ_Qmax to DAM_Qmax relationship to fill gaps in LBJ Q
 Storms_Qmax = pd.DataFrame({'LBJ_Qmax':SedFluxStorms_LBJ['Qmax'],'DAM_Qmax':SedFluxStorms_DAM['Qmax']})
 #plt.plot(Storms_Qmax['DAM_Qmax'],Storms_Qmax['LBJ_Qmax'],ls='none',marker='.')
@@ -4940,7 +4938,7 @@ def Annual_SSY_tables():
     Annual_sSSY_table = Annual_sSSY_table[['','sSSY Qmax (2014)','sSSY Table 2','sSSY Table 3','sSSY ALL']]
     
     return Annual_SSY_table, Annual_sSSY_table
-Annual_SSY_tables()
+#Annual_SSY_tables()
 
 
 plt.show()
