@@ -3754,11 +3754,11 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     P_max, P_sum = storm_data['Precip'].max(), storm_data['Precip'].sum()
     P.set_ylabel('Precip mm'),P.set_ylim(-1,Precip['Timu1-15'].max()+2)
     ## Discharge Q
-    storm_data['LBJ-Q'].plot(ax=Q,color='k',label='VILLAGE')
+    storm_data['LBJ-Q'].plot(ax=Q,color='k',label='FG3')
     LBJ_Qmax, LBJ_Qmean, LBJ_Qsum = storm_data['LBJ-Q'].max(), storm_data['LBJ-Q'].mean(), storm_data['LBJ-Q'].sum()
-    storm_data['QUARRY-Q'].plot(ax=Q,color='grey',ls='-.',label='QUARRY')
+    storm_data['QUARRY-Q'].plot(ax=Q,color='grey',ls='-.',label='FG2')
     QUARRY_Qmax, QUARRY_Qmean, QUARRY_Qsum = storm_data['QUARRY-Q'].max(),storm_data['QUARRY-Q'].mean(),storm_data['QUARRY-Q'].sum()
-    storm_data['DAM-Q'].plot(ax=Q,color='grey',label='FOREST')
+    storm_data['DAM-Q'].plot(ax=Q,color='grey',label='FG1')
     DAM_Qmax, DAM_Qmean, DAM_Qsum = storm_data['DAM-Q'].max(), storm_data['DAM-Q'].mean(), storm_data['DAM-Q'].sum()
     Q.set_ylabel('Q L/sec')#, Q.set_ylim(-1,6000)
     ## Turbidity T
@@ -3790,17 +3790,17 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='grey')#,label='FOR-int')
     DAM_SSCgrabmax, DAM_SSCgrabmean = storm_data['DAM-GrabInt-SSC-mg/L'].max(), storm_data['DAM-GrabInt-SSC-mg/L'].mean()
     ## Sediment Yield SedFlux
-    storm_data['LBJ-SedFlux-kg/sec'].plot(ax=SED,ls='-',color='k',label='VILLAGE')
+    storm_data['LBJ-SedFlux-kg/sec'].plot(ax=SED,ls='-',color='k',label='FG3')
     LBJ_Smax, LBJ_Smean, LBJ_Ssum = storm_data['LBJ-SedFlux-tons/sec'].max(), storm_data['LBJ-SedFlux-tons/sec'].mean(), storm_data['LBJ-SedFlux-tons/sec'].sum()
-    storm_data['QUARRY-SedFlux-kg/sec'].plot(ax=SED,ls='-.',color='grey',label='QUARRY')
+    storm_data['QUARRY-SedFlux-kg/sec'].plot(ax=SED,ls='-.',color='grey',label='FG2')
     QUARRY_Smax, QUARRY_Smean, QUARRY_Ssum = storm_data['QUARRY-SedFlux-tons/sec'].max(), storm_data['QUARRY-SedFlux-tons/sec'].mean(), storm_data['QUARRY-SedFlux-tons/sec'].sum()
-    storm_data['DAM-SedFlux-kg/sec'].plot(ax=SED,ls='-',color='grey',label='FOREST')
+    storm_data['DAM-SedFlux-kg/sec'].plot(ax=SED,ls='-',color='grey',label='FG1')
     DAM_Smax, DAM_Smean, DAM_Ssum = storm_data['DAM-SedFlux-tons/sec'].max(), storm_data['DAM-SedFlux-tons/sec'].mean(), storm_data['DAM-SedFlux-tons/sec'].sum()
     SED.set_ylabel('SSY kg/sec')#, SED.set_ylim(-.1,4000)
     ## Cumulative Sediment Load
-    storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='k',ls='-',label='VILLAGE')
-    storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-.',label='QUARRY')    
-    storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-',label='FOREST') 
+    storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='k',ls='-',label='FG3')
+    storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-.',label='FG2')    
+    storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-',label='FG1') 
     SEDcum.set_ylabel('Cumulative SSY\ntons'),SEDcum.yaxis.set_ticks_position('right')
     for axis in fig.axes:
         max_yticks = 4
@@ -3820,13 +3820,13 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
         T.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), SSC.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         SED.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
         SEDcum.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-    letter_subplots(fig,x=0.01,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
+    letter_subplots(fig,x=0.10,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     plt.tight_layout(pad=0.1)        
     #title=str(start.year)+'-'+str(start.month)+'-'+str(start.day)
     show_plot(show)
     savefig(save,filename)
     return
-#plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=True,save=False,filename='') # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
+plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=True,save=False,filename='') # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
 
 #### Event Sediment Flux
 AV_Q_measurement_RMSE = 8.5 # these come from Harmel 2009 lookup table in DUET-HWQ
