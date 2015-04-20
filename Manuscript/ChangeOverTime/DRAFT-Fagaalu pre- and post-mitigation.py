@@ -79,15 +79,15 @@ landcover_table.table_num = str(tab_count())
 
 ### Storm Sediment Discharge Table
 ## Prepare table data
-S_Diff_table = S_storm_diff_table(subset='post') ## function to create table data
+S_Diff_table = S_storm_diff_table(subset='post')[0] ## function to create table data
 S_Diff_table.table_num = str(tab_count())
 
-S_Diff_table_quarry = S_storm_diff_table_quarry(subset='post',manual_edit=False)
+S_Diff_table_quarry = S_storm_diff_table_quarry(subset='post',manual_edit=False)[0]
 S_Diff_table_quarry.table_num = str(tab_count())
 
 ### Storm Q and SSY summary table
-Q_S_Diff_summary_table = Q_S_storm_diff_summary_table(subset='post')
-Q_S_Diff_summary_table.table_num = str(tab_count())
+#Q_S_Diff_summary_table = Q_S_storm_diff_summary_table(subset='post')
+#Q_S_Diff_summary_table.table_num = str(tab_count())
 
 ### Model statistics table
 SSYEV_models_stats = ALLRatings_table(subset='post')
@@ -109,25 +109,20 @@ def fig_count():
 #### Study Area Map
 Study_Area_map = {'filename':maindir+'Figures/Maps/FagaaluInstruments land only map.tif', 'fig_num':str(fig_count())}
 ## Quarry_picture
-Quarry_picture = {'filename':maindir+'Figures/Maps/Quarry before and after.tif','fig_num':str(fig_count())}
+Quarry_picture_1 = {'filename':maindir+'Figures/Maps/Quarry_Mitigation/3_Retention ponds aerial.jpg','fig_num':str(fig_count())}
+Quarry_picture_2 = {'filename':maindir+'Figures/Maps/Quarry_Mitigation/4_Retention ponds.jpg','fig_num':str(fig_count())}
+
 
 ## RESULTS
-####  Stage-Discharge Rating Curves
-## DAM_StageDischarge
-DAM_StageDischarge = {'filename':figdir+"Q/Water Discharge Ratings for FOREST (DAM)",'fig_num':str(fig_count())}
-plotQratingDAM(ms=8,show=False,log=False,save=True,filename=DAM_StageDischarge['filename'])
-
-## LBJ_StageDischarge
-LBJ_StageDischarge = {'filename':figdir+"Q/Water Discharge Ratings for VILLAGE (LBJ)",'fig_num':str(fig_count())}
-plotQratingLBJ(ms=8,show=False,log=False,save=True,filename=LBJ_StageDischarge['filename'])
 
 ####  SSC
 ## SSC Boxplots
-SSC_Boxplots = {'filename':figdir+'SSC/Grab sample boxplots','fig_num':str(fig_count())}
-plotSSCboxplots(subset='post',storm_samples_only=True,withR2=False,show=False,save=True,filename=SSC_Boxplots['filename'])
+SSC_Boxplot_pre_and_posts= {'filename':figdir+'SSC/Grab sample boxplots baseflow and stormflow pre and post mitigation','fig_num':str(fig_count())}
+plotSSCboxplots_pre_and_post(withR2=False,log=True,show=False,save=True,filename=SSC_Boxplots['filename'])
+
 ## Discharge vs Sediment Concentration
-Discharge_Concentration = {'filename':figdir+'SSC/Water discharge vs Sediment concentration','fig_num':str(fig_count())}
-plotQvsC(subset='post',storm_samples_only=False,ms=6,show=False,log=False,save=True,filename=Discharge_Concentration['filename'])
+Discharge_Concentration = {'filename':figdir+'SSC/Water discharge vs Sediment concentration pre and post mitigation','fig_num':str(fig_count())}
+plotQvsC_pre_and_post(storm_samples_only=False,ms=6,show=False,log=False,save=True,filename=Discharge_Concentration['filename'])
 
 ####  T-SSC Rating Curves
 ## Synthetic Rating Curves
@@ -151,7 +146,7 @@ Post_Example_Storm = {'filename':figdir+'storm_figures/Post_Example_Storm','fig_
 plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[116],show=False,save=True,filename=Post_Example_Storm['filename']) 
 
 #### SSY models
-SSY_models_ALL = {'filename':figdir+'SSY/SSY Models ALL','fig_num':str(fig_count())}
+SSY_models_ALL = {'filename':figdir+'SSY/SSY Models ALL post mitigation','fig_num':str(fig_count())}
 ALLStorms_ALLRatings = plotALLStorms_ALLRatings(subset='post',ms=4,norm=True,log=True,show=False,save=True,filename=SSY_models_ALL['filename'])
 
 ###### EQUATIONS ############################################################################################################################################
@@ -314,12 +309,14 @@ document.add_paragraph("Using the stage threshold method and manual separation o
 #### Comparing SSY from disturbed and undisturbed subwatersheds
 document.add_heading('Comparing SSY from disturbed and undisturbed subwatersheds',level=3)
 
-Percent_Upper_S = S_storm_diff_table(subset='post')['% Upper'][-1]
-Percent_Lower_S = S_storm_diff_table(subset='post')['% Lower'][-1]
-Percent_Upper_S_min, Percent_Upper_S_max =  "%.0f"%S_storm_diff_table(subset='post')['% Upper'].astype(float).min(), "%.0f"%S_storm_diff_table(subset='post')['% Upper'].astype(float).max()
-Percent_Lower_S_min, Percent_Lower_S_max =  "%.0f"%S_storm_diff_table(subset='post')['% Lower'].astype(float).min(), "%.0f"%S_storm_diff_table(subset='post')['% Lower'].astype(float).max()
+Percent_Upper_S_2 = S_Diff_table['% UPPER']['Total/Avg:']
+Percent_Lower_S = S_Diff_table['% LOWER']['Total/Avg:']
+S_Diff_table_percents = S_Diff_table[S_Diff_table['% UPPER']!='-']
+Percent_Upper_S_min, Percent_Upper_S_max =  "%0.1f"%S_Diff_table_percents['% UPPER'].astype(float).min(), "%.0f"%S_Diff_table_percents['% UPPER'].astype(float).max()
+Percent_Lower_S_min, Percent_Lower_S_max =  "%.0f"%S_Diff_table_percents['% LOWER'].astype(float).min(), "%.0f"%S_Diff_table_percents['% LOWER'].astype(float).max()
 
-document.add_paragraph("The Upper and Lower subwatersheds are similar in size, 0.90km2 and 0.88km2, so assuming the specific SSY is similar in both watersheds, they should account for roughly the same percentage sediment contribution to the total. However, for the "+"%.0f"%len(S_storm_diff_table(subset='post'))+" storms with valid data from both FOREST and VILLAGE, SSY from the UPPER subwatershed (SSYUPPER) ranged from "+Percent_Upper_S_min+"-"+Percent_Upper_S_max +"%, and accounted for an average of "+Percent_Upper_S+"% of Total SSY. SSY from the Lower watershed (SSYLOWER) ranged from "+Percent_Lower_S_min+"-"+Percent_Lower_S_max +"%, and accounted for an average of "+Percent_Lower_S+"% of Total SSY (Table "+S_Diff_table.table_num+"). This suggests that human disturbance in the Lower subwatershed has significantly increased Total SSY to Faga'alu Bay despite the relatively high amount of impervious surface associated with buildings and road surfaces in the village area.")
+
+document.add_paragraph("The Upper and Lower subwatersheds are similar in size, 0.90km2 and 0.88km2, so assuming the specific SSY is similar in both watersheds, they should account for roughly the same percentage sediment contribution to the total. However, for the "+"%.0f"%len(S_storm_diff_table(subset='post'))+" storms with valid data from both FOREST and VILLAGE, SSY from the UPPER subwatershed (SSYUPPER) ranged from "+Percent_Upper_S_min+"-"+Percent_Upper_S_max +"%, and accounted for an average of "+Percent_Upper_S_2+"% of Total SSY. SSY from the Lower watershed (SSYLOWER) ranged from "+Percent_Lower_S_min+"-"+Percent_Lower_S_max +"%, and accounted for an average of "+Percent_Lower_S+"% of Total SSY (Table "+S_Diff_table.table_num+"). This suggests that human disturbance in the Lower subwatershed has significantly increased Total SSY to Faga'alu Bay despite the relatively high amount of impervious surface associated with buildings and road surfaces in the village area.")
 
 ## Storm Sediment Table
 if 'S_Diff_table' in locals():
@@ -327,27 +324,31 @@ if 'S_Diff_table' in locals():
 
 document.add_paragraph('')
 
-Percent_QUARRY_S = S_storm_diff_table_quarry(subset='post',manual_edit=False)['% Quarry'][-1]
-Percent_FOREST_S = S_storm_diff_table_quarry(subset='post',manual_edit=False)['% Forest'][-1]
-Percent_VILLAGE_S = S_storm_diff_table_quarry(subset='post',manual_edit=False)['% Village'][-1]
+Percent_UPPER_S_3 = S_Diff_table_quarry['% UPPER']['Total/Avg:']
+Percent_QUARRY_S = S_Diff_table_quarry['% LOWER_QUARRY']['Total/Avg:']
+Percent_VILLAGE_S = S_Diff_table_quarry['% LOWER_VILLAGE']['Total/Avg:']
 
-document.add_paragraph("SSYEV data measured at QUARRY was available for "+"%.0f"%No_of_Storm_Intervals_QUA_S+" of the storms in Table "+S_Diff_table.table_num+", so SSYEV from the quarry and village areas could be calculated to determine the relative sediement contribution from these sources. For the measured storms, Total SSY was comprised of an average of "+Percent_FOREST_S+"% from the Upper subwatershed, "+Percent_QUARRY_S+"% from the Quarry subwatershed, and "+Percent_VILLAGE_S+"% from the Lower subwatershed (downstream of the Quarry). For the storms with valid SSY data at FOREST and QUARRY (and not necessarily VILLAGE), specific SSY from the Quarry subwatershed was "+Spec_SSY_Quarry(subset='post')[2]+"% higher than specific SSY from the Upper subwatershed ("+Spec_SSY_Quarry(subset='post')[1]+" and "+Spec_SSY_Quarry(subset='post')[0]+"). This suggests that the quarry is the most significant sediment source in Faga'alu watershed,  and has significantly increased Total SSY above natural levels.")
+SSY_UPPER_3, sSSY_UPPER_3 = S_Diff_table_quarry['UPPER tons']['Total/Avg:'], S_Diff_table_quarry['UPPER tons']['Tons/km2'] 
+SSY_LOWER_QUARRY, sSSY_LOWER_QUARRY = S_Diff_table_quarry['LOWER_QUARRY tons']['Total/Avg:'], S_Diff_table_quarry['LOWER_QUARRY tons']['Tons/km2']
+SSY_LOWER_VILLAGE, sSSY_LOWER_VILLAGE = S_Diff_table_quarry['LOWER_VILLAGE tons']['Total/Avg:'], S_Diff_table_quarry['LOWER_VILLAGE tons']['Tons/km2']
+SSY_TOTAL_3, sSSY_TOTAL_3 = S_Diff_table_quarry['TOTAL tons']['Total/Avg:'], S_Diff_table_quarry['TOTAL tons']['Tons/km2']
+P_measured_3, P_measured_3_perc_ann = S_Diff_table_quarry['Precip (mm)']['Total/Avg:'], "%.0f"%(float(S_Diff_table_quarry['Precip (mm)']['Total/Avg:'])/4000 *100)
+
+Area_UPPER, Area_LOWER_QUARRY, Area_LOWER_VILLAGE = landcover_table.ix[0]['Area km2'], landcover_table.ix[1]['Area km2'], landcover_table.ix[2]['Area km2']
+disturbed_area_LOWER_QUARRY = Area_LOWER_QUARRY * float(S_Diff_table_quarry['LOWER_QUARRY tons']['fraction disturbed (%)'])/100
+disturbed_area_LOWER_VILLAGE = Area_LOWER_VILLAGE * float(S_Diff_table_quarry['LOWER_VILLAGE tons']['fraction disturbed (%)'])/100
+
+document.add_paragraph("SSYEV data measured at FG2 was available for "+"%.0f"%No_of_Storm_Intervals_QUA_S+" of the storms in Table "+S_Diff_table.table_num+", so SSYEV from the LOWER subwatershed including the quarry (SSYLOWER_QUARRY) and the village areas below the quarry (SSYLOWER_VILLAGE) could be calculated to determine the relative sediment contribution from these sources (Table "+S_Diff_table_quarry.table_num+").")
 
 if 'S_Diff_table_quarry' in locals():
     dataframe_to_table(df=S_Diff_table_quarry,table_num=S_Diff_table_quarry.table_num,caption="Sediment discharge from subwatersheds in Faga'alu",fontsize=9)
 #document.add_paragraph("Storm on 2/3/12 has a potential outlier at DT at beginning of storm, which makes the SSYquarry huge! Storm at 2/5/12 doesn't have adequate SSC samples for quarry and its a multipeaked event so the SSY doesn't fall back to low levels like the LBJ and DAM T data suggest it should. Storm 3/6/13 looks like may have missed the second peak but the data looks comparable between sites. Storm 4/16/13 doesn't have alot of points but maybe they're adequate? Storm 4/23/13 looks good. Storm 4/30/13 has inadequate SSC data for all locations after the first peak; can maybe change the storm interval? Storm 6/5/13 has inadequate SSC data for all locations for the first peak, decent data for LBJ and DT for second peak but not for DAM; can maybe change the storm interval? Storm 2/14/14 looks good. Storm 2/20/14 looks good. Storm 2/21/14 looks good. Storm 2/27/14 looks kinda shitty. So good storms are: 3/6/13, 4/16/13? 4/23/13, 4/30/13?, 6/5/13?, 2/14/14, 2/20/14, 2/21/14") 
 
-## Disturbance Ratio
-SSYspec_Forest = Q_S_Diff_summary_table.ix['SSY* Forest'][''][:4]
-SSYspec_Village = Q_S_Diff_summary_table.ix['SSY* Village'][''][:4]
-DR_S = Q_S_Diff_summary_table.ix['SSY Disturbance Ratio'][''][:4]
-DR_Q = Q_S_Diff_summary_table.ix['Q Disturbance Ratio'][''][:4]
-document.add_paragraph("The specific SSY for both FOREST and VILLAGE were calculated by summing all storms from Table "+S_Diff_table.table_num+" and dividing by the subwatershed area. The DR for SSY was "+DR_S+", meaning human disturbance, mainly from the quarry has increased Total SSY "+DR_S+"x over undisturbed levels.") 
-document.add_paragraph("The DR for water discharge (Q) was also calculated to determine if observed changes in SSY were attributable to errors in quantifying Q, and if urbanization has affected the total water discharge from the watershed. The DR for water discharge was "+DR_Q+", suggesting that specific water discharge from the subwatersheds is the same, which is expected since they are similar sizes. It is unexpected that urbanization has not increased water discharge, since the relatively large amounts of impervious surface in the village area are assumed to increase runoff. However, the village area is relatively flat with high depression storage, which is hypothesized to increase infiltration and reduces storm runoff, and small in comparison to the forest areas in the watershed (Table "+landcover_table.table_num+").")  
-## Summary Q, S, and DR table
-if 'Q_S_Diff_summary_table' in locals():
-    dataframe_to_table(df=Q_S_Diff_summary_table,table_num=Q_S_Diff_summary_table.table_num,caption="Total Q and SSY",fontsize=11)
-    
+document.add_paragraph("For the measured storms in Table "+S_Diff_table_quarry.table_num+", TOTAL SSY was "+SSY_TOTAL_3+" tons, comprised of an average of "+Percent_UPPER_S_3+"% from the UPPER subwatershed, "+Percent_QUARRY_S+"% from LOWER_QUARRY subwatershed, and "+Percent_VILLAGE_S+"% from the LOWER_VILLAGE subwatershed. sSSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds and TOTAL watershed was "+sSSY_UPPER_3+", "+sSSY_LOWER_QUARRY+", "+sSSY_LOWER_VILLAGE+", and "+sSSY_TOTAL_3+", respectively. sSSY from LOWER_QUARRY and LOWER_VILLAGE was "+S_Diff_table_quarry['LOWER_QUARRY tons']['DR']+" and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['DR']+" times higher, respectively, than sSSY from UPPER subwatershed, suggesting human disturbance has significantly increased SSY over natural levels, particularly at the quarry. sSSY from the TOTAL watershed was "+S_Diff_table_quarry['TOTAL tons']['DR']+" times higher than the UPPER subwatershed, similar to the larger range of storms in Table "+S_Diff_table.table_num+", where specific SSY was "+S_Diff_table['TOTAL tons']['DR']+" times higher.")
+
+
+
+  
     
 #### Fitting SSY models
 document.add_heading('Predicting SSYEV from storm metrics',level=3)
