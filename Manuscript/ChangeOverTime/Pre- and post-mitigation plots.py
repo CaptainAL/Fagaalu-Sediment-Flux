@@ -474,11 +474,11 @@ def plotQvsC_pre_and_post(storm_samples_only=False,ms=6,show=False,log=False,sav
     lbj_ssc['Q']=LBJ['Q']
     lbj_ssc=lbj_ssc.dropna()
     ## loglog DAM samples
-    ax1.loglog(dam_ssc['Q'],dam_ssc['SSC (mg/L)'],'s',markersize=3,fillstyle='none',c='k',label='Post')
+    ax1.loglog(dam_ssc['Q'],dam_ssc['SSC (mg/L)'],'s',markersize=2,c='k',label='Post')
     ## loglog quarry samples
-    ax2.loglog(quarry_ssc['Q'],quarry_ssc['SSC (mg/L)'],'s',markersize=3,fillstyle='none',c='k',label='Post')
+    ax2.loglog(quarry_ssc['Q'],quarry_ssc['SSC (mg/L)'],'s',markersize=2,c='k',label='Post')
     ## plot LBJ samples
-    ax3.loglog(lbj_ssc['Q'],lbj_ssc['SSC (mg/L)'],'s',markersize=3,fillstyle='none',c='k',label='Post')
+    ax3.loglog(lbj_ssc['Q'],lbj_ssc['SSC (mg/L)'],'s',markersize=2,c='k',label='Post')
 
     ## plot a line marking storm threshold and label it
     storm_Q_DAM = DAM[DAM['stage']==DAM_storm_threshold.round(0)]['Q'][0]
@@ -496,4 +496,4 @@ def plotQvsC_pre_and_post(storm_samples_only=False,ms=6,show=False,log=False,sav
     show_plot(show,fig)
     savefig(save,filename)
     return
-plotQvsC_pre_and_post(storm_samples_only=False,ms=4,show=True,log=True,save=False,filename=figdir+'')
+plotQvsC_pre_and_post(storm_samples_only=False,ms=3,show=True,log=True,save=False,filename=figdir+'')

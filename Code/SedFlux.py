@@ -1622,28 +1622,29 @@ DAMq['stage']=PT3['stage'] ## put unaltered stage back in
 def QYears(log=False,show=False,save=False,filename=''):
     mpl.rc('lines',markersize=6)
     fig, (Q2012,Q2013,Q2014)=plt.subplots(3)
+    letter_subplots(fig,0.1,0.95,'top','right','k',font_size=10,font_weight='bold')
+    
     for ax in fig.axes:
-        ax.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='k',label='FG3 (Q-Mannings)')
+        ax.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='k',label='Q FG3 (Mannings)')
         ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='k')
-        ax.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='grey',label='FG1(Q-HEC-RAS)')
+        ax.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='grey',label='Q FG1(HEC-RAS)')
         ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='grey')
         ax.set_ylim(0,LBJ['Q'].max()+500)    
     Q2012.set_xlim(start2012,stop2012),Q2013.set_xlim(start2013,stop2013),Q2014.set_xlim(start2014,stop2014)
-    
-    Q2014.legend()
+    Q2012.legend(loc='best')
     Q2013.set_ylabel('Discharge (Q) L/sec')
-    Q2012.set_title("Discharge (Q) L/sec at the Upstream and Downstream Sites, Faga'alu")
+    #Q2012.set_title("Discharge (Q) L/sec at the Upstream and Downstream Sites, Faga'alu")
     for ax in fig.axes:
         ax.locator_params(nbins=6,axis='y')
         ax.xaxis.set_major_locator(mpl.dates.MonthLocator(interval=2))
         ax.xaxis.set_major_formatter(mpl.dates.DateFormatter('%b %Y'))
         
     plt.tight_layout(pad=0.1)
+    logaxes(log,fig)
     show_plot(show,fig)
     savefig(save,filename)
     return
-#QYears(log=True,show=True,save=False,filename='')
-    
+#QYears(log=False,show=True,save=False,filename='')
     
 ### ..
 ## Import SSC Data
@@ -2512,19 +2513,19 @@ def plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=True,Use_All_SS
         elif storm_samples_only==False:
             SSC = SSC_dict['Pre-ALL']   
     
-    fig, (ntu_fg3,ntu_fg1) = plt.subplots(1,2,figsize=(8,4))
+    fig, ntu= plt.subplots(1,1,figsize=(4,4))
     max_y, max_x = LBJ_YSI['NTU'].max(),LBJ_YSI['NTU'].max()
     xy = np.linspace(0,max_y)  
     ## LBJ
     lbj=NTU_SSCrating(SSC,LBJ_YSI['NTU'],location='LBJ',T_interval='15Min',Intercept=False,log=False)
-    ntu_fg3.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',c='k',label='FG3')
-    ntu_fg3.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='FG3 YSI '+r'$r^2$'+"%.2f"%lbj[0].r2)
-    labelindex_subplot(ntu_fg3,lbj[1].index,lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'])  
+    ntu.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',c='grey',label='FG3')
+    ntu.plot(xy,xy*lbj[0].beta[0],ls='-',c='grey',label='FG3 YSI '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    labelindex_subplot(ntu,lbj[1].index,lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'])  
     ## DAM
     dam=NTU_SSCrating(SSC,DAM_YSI['NTU'],location='DAM',T_interval='15Min',Intercept=False,log=False)
-    ntu_fg1.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',fillstyle='none',c='k',label='FG1')
-    ntu_fg1.plot(xy,xy*dam[0].beta[0],ls='-',c='grey',label='FG1 YSI '+r'$r^2$'+"%.2f"%dam[0].r2)
-    labelindex_subplot(ntu_fg1,dam[1].index,dam[1]['T-NTU'],dam[1]['SSC (mg/L)'])    
+    ntu.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',c='k',label='FG1')
+    ntu.plot(xy,xy*dam[0].beta[0],ls='-',c='k',label='FG1 YSI '+r'$r^2$'+"%.2f"%dam[0].r2)
+    labelindex_subplot(ntu,dam[1].index,dam[1]['T-NTU'],dam[1]['SSC (mg/L)'])    
     ## DAM SRC
     if show_DAM_SRC==True:
         try:
@@ -2534,18 +2535,18 @@ def plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=True,Use_All_SS
             ntu_fg1.plot(DAM_SRC['SS_Mean'],DAM_SRC['SSC(mg/L)'],ls='none',marker='^',fillstyle='none',c='grey',label='DAM_SRC')
             ntu_fg1.plot(xy,xy*dam_SRC.beta[0],ls='-',label='DAM_SRC '+r'$r^2$'+"%.2f"%dam_SRC.r2,c='grey')  
     ## Format subplots
-    ntu_fg3.set_xlabel('NTU'), ntu_fg1.set_xlabel('NTU')
-    ntu_fg3.set_xlim(0,1000), ntu_fg3.set_ylim(0,1000)
-    ntu_fg1.set_xlim(0,200), ntu_fg1.set_ylim(0,200)    
-    ntu_fg3.legend(), ntu_fg1.legend()
+    ntu.set_xlabel('NTU')
+    ntu.set_xlim(0,1000)
+    ntu.set_ylim(0,1000)
+    ntu.legend()
     plt.tight_layout(pad=0.1)
     for ax in fig.axes:
         ax.locator_params(nbins=4)
-    letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
+    #letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     show_plot(show)
     savefig(save,filename)
     return
-#plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=False,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='') ## Pre-mitigation
+plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=False,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='') ## Pre-mitigation
 #plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=True,Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='') ## Pre-mitigation, storm only
 
 ## PLOT T-SSC rating for OBSa (BS and SS Avg only)
@@ -2562,21 +2563,10 @@ def OBSa_compare_ratings(df,df_SRC,SSC_loc,plot_SRC=True,Use_All_SSC=False,storm
         elif storm_samples_only==False:
             SSC = SSC_dict['Pre-ALL']   
         
-    fig, ((bs_avg),(ss_avg)) = plt.subplots(1,2,figsize=(8,4))#,sharex=True,sharey=True)
+    fig, (ss_avg) = plt.subplots(1,1,figsize=(4,4))#,sharex=True,sharey=True)
     max_y, max_x = 1000, 1000
     xy = np.linspace(0,max_y)
 
-    ## BS Avg
-    bs_average=NTU_SSCrating(SSC,df['Turb_BS_Avg'],location=SSC_loc,T_interval='5Min',Intercept=False,log=False)
-    bs_avg.scatter(bs_average[1]['T-NTU'],bs_average[1]['SSC (mg/L)'],c='k')
-    bs_avg.plot(xy,xy*bs_average[0].beta[0],ls='-',c='k',label='BS_Avg '+r'$r^2$'+"%.2f"%bs_average[0].r2)
-    #bs_avg.set_title(SSC_loc+' BS_Avg '+r'$r^2=$'+"%.2f"%bs_average[0].r2)
-    bs_avg.set_xlabel('BS Avg')
-    ## BS Mean SRC
-    #bs_mean_SRC = pd.ols(y=df_SRC['SSC(mg/L)'],x=df_SRC['BS_Mean'],intercept=False)
-    #bs_avg.scatter(df_SRC['BS_Mean'],df_SRC['SSC(mg/L)'],c='grey')
-    #bs_avg.plot(xy,xy*bs_mean_SRC.beta[0],ls='--',c='grey',label='BS_Mean_SRC'+r'$r^2$'+"%.2f"%bs_mean_SRC.r2)
-    bs_avg.legend()
     ## SS Avg
     ss_average=NTU_SSCrating(SSC,df['Turb_SS_Avg'],location=SSC_loc,T_interval='5Min',Intercept=False,log=False)
     ss_avg.scatter(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'],c='k')
@@ -2593,7 +2583,7 @@ def OBSa_compare_ratings(df,df_SRC,SSC_loc,plot_SRC=True,Use_All_SSC=False,storm
         ax.locator_params(nbins=4)
         ax.set_xlim(0,max_x), ax.set_ylim(0,max_y)
         
-    letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
+    #letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     show_plot(show)
     savefig(save,filename)
     return
@@ -2714,7 +2704,62 @@ def OBSb_compare_ratings(df,df_SRC,SSC_loc,plot_SRC=False,Use_All_SSC=False,stor
 #OBSb_compare_ratings(df=LBJ_OBSb,df_SRC=LBJ_SRC,SSC_loc='LBJ R2',Use_All_SSC=True,storm_samples_only=False)  
 ## QUARRY
 #OBSb_compare_ratings(df=QUARRY_OBS,df_SRC=QUARRY_SRC,SSC_loc='R2',Use_All_SSC=True)   
-
+    
+def plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='',sub_plot_count=0):
+    ## Subset SSC
+    if Use_All_SSC==True:
+        if storm_samples_only==True:
+            SSC = SSC_dict['ALL-storm']
+        elif storm_samples_only==False:
+            SSC = SSC_dict['ALL']
+    elif Use_All_SSC==False:
+        if storm_samples_only==True:
+            SSC = SSC_dict['Pre-storm']
+        elif storm_samples_only==False:
+            SSC = SSC_dict['Pre-ALL']  
+    fig, (ysi,obsa,obsb) = plt.subplots(1,3,figsize=(8,3))#,sharex=True,sharey=True)
+            
+    max_y, max_x = 1100, 1100
+    xy = np.linspace(0,max_y)
+    
+    ## LBJ and DAM YSI
+    ## LBJ
+    lbj=NTU_SSCrating(SSC,LBJ_YSI['NTU'],location='LBJ',T_interval='15Min',Intercept=False,log=False)
+    ysi.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',markersize=4,c='grey',label='FG3')
+    ysi.plot(xy,xy*lbj[0].beta[0],ls='-',c='grey',label='FG3 '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    ## DAM
+    dam=NTU_SSCrating(SSC,DAM_YSI['NTU'],location='DAM',T_interval='15Min',Intercept=False,log=False)
+    ysi.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',markersize=4,c='k',label='FG1')
+    ysi.plot(xy,xy*dam[0].beta[0],ls='-',c='k',label='FG1 '+r'$r^2$'+"%.2f"%dam[0].r2)
+    ysi.set_xlabel('NTU')
+    ysi.set_ylabel('SSC (mg/L)')
+    ysi.legend(ncol=2,fontsize=8,columnspacing=0.1)
+    ## LBJ OBSa
+    ## SS Avg
+    ss_average=NTU_SSCrating(SSC,LBJ_OBSa['Turb_SS_Avg'],location='LBJ',T_interval='5Min',Intercept=False,log=False)
+    obsa.scatter(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'],c='k')
+    obsa.plot(xy,xy*ss_average[0].beta[0],ls='-',c='k',label='SS_Avg '+r'$r^2$'+"%.2f"%ss_average[0].r2)   
+    obsa.set_xlabel('SS Avg')
+    obsa.yaxis.set_visible(False)
+    obsa.legend(fontsize=8)
+    ## LBJ OBSb
+    ## SS Mean
+    ss_mean=NTU_SSCrating(SSC,LBJ_OBSb['Turb_SS_Mean'],location='LBJ',T_interval='15Min',Intercept=False,log=False)
+    obsb.scatter(ss_mean[1]['T-NTU'],ss_mean[1]['SSC (mg/L)'],c='k')
+    obsb.plot(xy,xy*ss_mean[0].beta[0],ls='-',c='k',label='SS_Mean '+r'$r^2$'+"%.2f"%ss_mean[0].r2) 
+    obsb.set_xlabel('SS Mean')
+    obsb.yaxis.set_visible(False)
+    obsb.legend(fontsize=8)
+    for ax in fig.axes:
+        ax.locator_params(nbins=4,axis='y'), ax.locator_params(nbins=3,axis='x')
+        ax.set_xlim(0,max_x), ax.set_ylim(0,max_y)
+        
+    letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
+    plt.tight_layout(pad=0.1)
+    show_plot(show)
+    savefig(save,filename)
+    return
+#plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='',sub_plot_count=0)
 
 ### Choose OBS parameters
 LBJ_OBSa['NTU']=LBJ_OBSa['Turb_SS_Avg']
