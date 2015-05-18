@@ -177,7 +177,7 @@ PE_eq.eq_num = eq_count()
 #### TITLE
 title_title = document.add_heading('TITLE:',level=1)
 title_title.paragraph_format.space_before = 0
-title = document.add_heading('Contributions of human activities to suspended sediment yield during storm events from a steep, small, tropical watershed',level=1)
+title = document.add_heading('Assessing the effectiveness of sediment management at an open quarry in American Samoa',level=1)
 title.paragraph_format.space_before = 0
 ## subscript/superscript words
 document.add_paragraph("SSYEV, m3, km2, SSYUPPER, SSYLOWER, SSYTOTAL, SSYPRE, SSYFOREST, SSYVILLAGE, SSYQUARRY, alpha, Beta")

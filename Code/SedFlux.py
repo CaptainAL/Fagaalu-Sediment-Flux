@@ -170,7 +170,7 @@ def power(x,a,b):
     y = a*(x**b)
     return y
     
-def powerfunction(x,y,name='power rating',pvalue=0.001):
+def powerfunction(x,y,name='power rating',pvalue=0.01):
     datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna().apply(np.log10) ## put x and y in a dataframe so you can drop ones that don't match up    
     datadf = datadf[datadf>=-10] ##verify data is valid (not inf)
     regression = pd.ols(y=datadf['y'],x=datadf['x'])
@@ -3910,16 +3910,18 @@ SedFluxStorms_DAM['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.
 ### Grab vs T for SSY
 ## LBJ
 LBJ_GrabInt_storms = StormSums(LBJ_StormIntervals,LBJ['GrabInt-SedFlux-tons/15min']).dropna()
-LBJ_GrabInt_storms['datasource'] = 'g'
+LBJ_GrabInt_storms['datasource'] = 'int. grab'
 LBJ_T_SSC_storms = StormSums(LBJ_StormIntervals,LBJ['T-SedFlux-tons/15min']).dropna()
-LBJ_T_SSC_storms['datasource'] = 'T'
+LBJ_T_SSC_storms['datasource'] = 'T-YSI'
+LBJ_T_SSC_storms['datasource'].ix[dt.datetime(2013,1,1):] = 'T-OBS'
 SedFluxStorms_LBJ['datasource']= LBJ_T_SSC_storms['datasource']
 SedFluxStorms_LBJ['datasource']=SedFluxStorms_LBJ['datasource'].fillna(LBJ_GrabInt_storms['datasource'])
 ## DAM
 DAM_GrabInt_storms = StormSums(LBJ_StormIntervals,DAM['GrabInt-SedFlux-tons/15min']).dropna()
-DAM_GrabInt_storms['datasource'] = 'g'
+DAM_GrabInt_storms['datasource'] = 'int. grab'
 DAM_T_SSC_storms = StormSums(LBJ_StormIntervals,DAM['T-SedFlux-tons/15min']).dropna()
-DAM_T_SSC_storms['datasource'] = 'T'
+DAM_T_SSC_storms['datasource'] = 'T-TS'
+DAM_T_SSC_storms['datasource'].ix[dt.datetime(2013,1,1):] = 'T-YSI'
 SedFluxStorms_DAM['datasource']= DAM_T_SSC_storms['datasource']
 SedFluxStorms_DAM['datasource']=SedFluxStorms_DAM['datasource'].fillna(DAM_GrabInt_storms['datasource'])
 
