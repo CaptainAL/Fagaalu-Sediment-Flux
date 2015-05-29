@@ -3875,7 +3875,7 @@ plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=True
 
 #### Event Sediment Flux
 AV_Q_measurement_RMSE = 8.5 # these come from Harmel 2009 lookup table in DUET-HWQ
-SSC_measurement_RMSE = 13. # these come from Harmel 2009 lookup table in DUET-HWQ
+SSC_measurement_RMSE = 12.4 + 3.9 # includes collection and lab analysis; these come from Harmel 2009 lookup table in DUET-HWQ
 #### LBJ Event-wise Sediment Flux DataFrame
 SedFluxStorms_LBJ = StormSums(LBJ_StormIntervals,LBJ['SedFlux-tons/15min'])
 SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
