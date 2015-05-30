@@ -2315,7 +2315,7 @@ def plot_P_Q_T(lwidth=0.5, show=False):
     ntu.plot_date(DAM['NTU'].index,DAM['NTU'],ls='-',marker='None',c='g',label='FOREST 15min NTU')
     ntu.yaxis.set_major_locator(my_locator)
     ##plot all Grab samples at location 
-    ssc = fig.add_axes(ntu.get_position(), frameon=False, sharex=ntu,sharey=ntu)
+    ssc = fig.add_axes(ntu.get_position(), frameon=False, sharex=ntu)#,sharey=ntu)
     ssc.plot_date(LBJ['Grab-SSC-mg/L'].index,LBJ['Grab-SSC-mg/L'],'.',markeredgecolor='grey',color='r',label='VILLAGE SSC grab')
     ssc.plot_date(QUARRY['GrabDT-SSC-mg/L'].index,QUARRY['GrabDT-SSC-mg/L'],'.',markeredgecolor='grey',color='grey',label='QUARRY SSC grab (DT)')
     ssc.plot_date(QUARRY['GrabR2-SSC-mg/L'].index,QUARRY['GrabR2-SSC-mg/L'],'.',markeredgecolor='grey',color='y',label='QUARRY SSC (R2)')
@@ -2325,6 +2325,7 @@ def plot_P_Q_T(lwidth=0.5, show=False):
     ssc.yaxis.set_major_locator(my_locator)
     ssc.yaxis.set_ticks_position('right'),ssc.yaxis.set_label_position('right')
     ssc.set_ylabel('SSC (mg/L)'),ssc.legend(loc='upper right')
+    ssc.set_ylim(0.15000)
     ## Shade storm intervals
     showstormintervals(precip,LBJ_storm_threshold, LBJ_StormIntervals)
     showstormintervals(Q, LBJ_storm_threshold, LBJ_StormIntervals,shade_color='r')
@@ -2546,7 +2547,7 @@ def plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=True,Use_All_SS
     show_plot(show)
     savefig(save,filename)
     return
-plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=False,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='') ## Pre-mitigation
+#plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=False,Use_All_SSC=False,storm_samples_only=False,show=True,save=False,filename='') ## Pre-mitigation
 #plotYSI_compare_ratings(DAM_YSI,DAM_SRC,LBJ_YSI,show_DAM_SRC=True,Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='') ## Pre-mitigation, storm only
 
 ## PLOT T-SSC rating for OBSa (BS and SS Avg only)
@@ -3871,7 +3872,7 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     show_plot(show)
     savefig(save,filename)
     return
-plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=True,save=False,filename='') # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
+#plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=True,save=False,filename='') # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
 
 #### Event Sediment Flux
 AV_Q_measurement_RMSE = 8.5 # these come from Harmel 2009 lookup table in DUET-HWQ
@@ -4832,7 +4833,7 @@ def plotQmaxStotal(subset='pre',ms=10,norm=False,log=False,show=False,save=False
     show_plot(show,fig)
     savefig(save,filename)
     return
-plotQmaxStotal(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')  
+#plotQmaxStotal(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')  
 
 ### Qmax vs S    
 def plotQmaxSseparate(show=True,log=True,save=False,norm=True): 
