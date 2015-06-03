@@ -4959,29 +4959,33 @@ def DAM_Q_storm_with_new_DAMstormIntervals():
 DAM_Qstorms_DAM_intervals = DAM_Q_storm_with_new_DAMstormIntervals()
 
 ## Predict LBJ Qmax with new DAM storms
-P_2014 = "%.0f"%DAM_Qstorms_DAM_intervals[start2014:dt.datetime(2014,12,31)]['Psum'].sum()
+P_2014_storm = "%.0f"%DAM_Qstorms_DAM_intervals[start2014:dt.datetime(2014,12,31)]['Psum'].sum()
 P_2014_perc_ann = "%.0f"%(DAM_Qstorms_DAM_intervals[start2014:dt.datetime(2014,12,31)]['Psum'].sum()/4000*100)
 LBJ_Qmax_fill = DAM_Qstorms_DAM_intervals['Qmax'] * Qmax_fill.beta[0] + Qmax_fill.beta[1]
+
 SedFluxStorms_LBJ_filled = pd.DataFrame({'LBJ_Q':SedFluxStorms_LBJ['Qmax'],'LBJ_Q_filled':LBJ_Qmax_fill},index = LBJ_Qmax_fill.index)
+
 SedFluxStorms_LBJ_filled['LBJ_Q_combined'] =  SedFluxStorms_LBJ_filled['LBJ_Q'].where(SedFluxStorms_LBJ_filled['LBJ_Q']>0,SedFluxStorms_LBJ_filled['LBJ_Q_filled'])
+
 SSY_Total_filled_2014, sSSY_Total_filled_2014 =predict_SSY(QmaxS_total_power,SedFluxStorms_LBJ_filled['LBJ_Q_combined']/1000,start2014,dt.datetime(2014,12,31),1.78)
 
 
 
 def Annual_SSY_tables():
     Annual_SSY_table = pd.DataFrame({
-    'SSY Table 2':[P_measured_2+' ('+P_measured_2_perc_ann+'%)', annual_SSY_UPPER_2, annual_SSY_LOWER_2, '-', '-', annual_SSY_TOTAL_2],
-    'SSY Table 3':[P_measured_3+' ('+P_measured_3_perc_ann+'%)', annual_SSY_UPPER_3,annual_SSY_LOWER_3, annual_SSY_LOWER_QUARRY_3, annual_SSY_LOWER_VILLAGE_3, annual_SSY_TOTAL_3],
+    'SSY Table 2':[P_measured_2+' ('+"%.0f"%P_measured_2_perc_storm+'%)', annual_SSY_UPPER_2, annual_SSY_LOWER_2, '-', '-', annual_SSY_TOTAL_2],
+    'SSY Table 3':[P_measured_3+' ('+"%.0f"%P_measured_3_perc_storm+'%)', annual_SSY_UPPER_3, annual_SSY_LOWER_3, annual_SSY_LOWER_QUARRY_3, annual_SSY_LOWER_VILLAGE_3, annual_SSY_TOTAL_3],
     'SSY ALL':["%.0f"%P_FG1_all_storms+' ('+"%.0f"%P_FG1_percent_annual+'%)', "%.0f"%annual_SSY_UPPER_ALL,'-','-','-',"%.0f"%annual_SSY_TOTAL_ALL],
-    'SSY Qmax (2014)':[P_2014+' ('+P_2014_perc_ann+'%)',SSY_Upper_2014,'-','-','-',SSY_Total_filled_2014]}, index=['Precip(mm)','UPPER','LOWER','LOWER_QUARRY','LOWER_VILLAGE','TOTAL'])
+    'SSY Qmax (2014)':[P_2014_storm,SSY_Upper_2014,'-','-','-',SSY_Total_filled_2014]}, index=['Precip(mm)','UPPER','LOWER','LOWER_QUARRY','LOWER_VILLAGE','TOTAL'])
     Annual_SSY_table[''] = Annual_SSY_table.index
     Annual_SSY_table = Annual_SSY_table[['','SSY Qmax (2014)','SSY Table 2','SSY Table 3','SSY ALL']]
     
+    
     Annual_sSSY_table = pd.DataFrame({
-    'sSSY Table 2':[P_measured_2+' ('+P_measured_2_perc_ann+'%)', annual_sSSY_UPPER_2, annual_sSSY_LOWER_2, '-', '-', annual_sSSY_TOTAL_2],
-    'sSSY Table 3':[P_measured_3+' ('+P_measured_3_perc_ann+'%)', annual_sSSY_UPPER_3,annual_sSSY_LOWER_3, annual_sSSY_LOWER_QUARRY_3, annual_sSSY_LOWER_VILLAGE_3, annual_SSY_TOTAL_3],
+    'sSSY Table 2':[P_measured_2+' ('+"%.0f"%P_measured_2_perc_storm+'%)', annual_sSSY_UPPER_2, annual_sSSY_LOWER_2, '-', '-', annual_sSSY_TOTAL_2],
+    'sSSY Table 3':[P_measured_3+' ('+"%.0f"%P_measured_3_perc_storm+'%)', annual_sSSY_UPPER_3, annual_sSSY_LOWER_3, annual_sSSY_LOWER_QUARRY_3, annual_sSSY_LOWER_VILLAGE_3, annual_sSSY_TOTAL_3],
     'sSSY ALL':["%.0f"%P_FG1_all_storms+' ('+"%.0f"%P_FG1_percent_annual+'%)', "%.0f"%annual_sSSY_UPPER_ALL,'-','-','-',"%.0f"%annual_sSSY_TOTAL_ALL],
-    'sSSY Qmax (2014)':[P_2014+' ('+P_2014_perc_ann+'%)',sSSY_Upper_2014,'-','-','-',sSSY_Total_filled_2014]}, index=['Precip(mm)','UPPER','LOWER','LOWER_QUARRY','LOWER_VILLAGE','TOTAL'])
+    'sSSY Qmax (2014)':[P_2014_storm, sSSY_Upper_2014,'-','-','-',sSSY_Total_filled_2014]}, index=['Precip(mm)','UPPER','LOWER','LOWER_QUARRY','LOWER_VILLAGE','TOTAL'])
     Annual_sSSY_table[''] = Annual_sSSY_table.index
     Annual_sSSY_table = Annual_sSSY_table[['','sSSY Qmax (2014)','sSSY Table 2','sSSY Table 3','sSSY ALL']]
     

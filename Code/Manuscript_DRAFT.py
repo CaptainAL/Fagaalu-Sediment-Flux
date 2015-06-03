@@ -291,9 +291,9 @@ document.add_paragraph("In addition to the power function (Eq "+predict_SSYEV_eq
 
 ### Annual estimates of SSY and sSSY
 document.add_heading("Annual estimates of SSY and sSSY",level=3)
-document.add_paragraph("Annual estimates of SSY and sSSY are most commonly used to compare watersheds, however, a continuous annual time-series of SSY was not possible at the study site due to the discontinuous field sampling trips. Using continuous Q data for 2014 and the Qmax-SSYEV model, SSY was predicted for storms that were not directly measured. For storms with no Qmax data at FG3, Qmax was predicted from a linear regression between Qmax at FG1 and Qmax at FG3 for the study period.")
+document.add_paragraph("Annual estimates of SSY and sSSY are most commonly used to compare watersheds, however, a continuous annual time-series of SSY was not possible at the study site due to the discontinuous field sampling trips. Using continuous Q data for 2014 and the Qmax-SSYEV model, SSY was predicted for all storms in 2014. Sediment mitigation structures were installed at the quarry in October 2014, greatly reducing SSY from the LOWER_QUARRY subwatershed, so the Qmax-SSY relationship developed prior to the mitigation was used. For storms with no Qmax data at FG3, Qmax was predicted from a linear regression between Qmax at FG1 and Qmax at FG3 for the study period.")
 
-document.add_paragraph("Rough estimations of annual SSY and sSSY were also made by summing SSY for the measured storms, and determing the fraction of annual storm precipitation during the measured storms. For instance, if precipitation during the measured storm events was 50% of the expected annual storm precipitation, the measured SSY was multiplied by two to estimate annual SSY. Continuous discharge and precipitation data showed approximately 60% of annual precipitation falls during storms so annual storm precipitation would be 60% of measured annual precipitation for that year. This approach assumes that 40% of precipitation did not cause a rise in stream stage high enough to exceed the defined storm threshold and is not counted in annual SSY estimates. Considering most SSY is discharged during a few, relatively large events, it is assumed the small events does not significantly contribute to annual SSY estimates (Stock and Tribble, 2009).")
+document.add_paragraph("Rough estimations of annual SSY and sSSY were also made by summing SSY for the measured storms, and determing the fraction of annual storm precipitation during the measured storms. For instance, if precipitation during the measured storm events was 50% of the expected annual storm precipitation, the measured SSY was multiplied by two to estimate annual SSY. Continuous discharge and precipitation data showed approximately 60% of annual precipitation falls during storms so annual storm precipitation would be 60% of measured annual precipitation. This approach assumes that 40% of precipitation did not cause a rise in stream stage high enough to exceed the defined storm threshold and is not counted in annual SSY estimates. Considering most SSY is discharged during a few, relatively large events, it is assumed the small events does not significantly contribute to annual SSY estimates (Stock and Tribble, 2009). This approach also assumes that the sediment yield per mm of precipitation is constant over the year, and the size distribution of storms has no effect, though there is some evidence that SSY rises exponentially with storm size. ")
 
 
 ## Measurement Uncertainty
@@ -494,7 +494,6 @@ Area_UPPER, Area_LOWER = landcover_table.ix[0]['Area km2'], landcover_table.ix[3
 SSY_UPPER_2, sSSY_UPPER_2 = S_Diff_table['UPPER tons']['Total/Avg:'], S_Diff_table['UPPER tons']['Tons/km2'] 
 SSY_LOWER_2, sSSY_LOWER_2 = S_Diff_table['LOWER tons']['Total/Avg:'], S_Diff_table['LOWER tons']['Tons/km2']
 SSY_TOTAL_2, sSSY_TOTAL_2 = S_Diff_table['TOTAL tons']['Total/Avg:'], S_Diff_table['TOTAL tons']['Tons/km2']
-P_measured_2, P_measured_2_perc_ann = S_Diff_table['Precip (mm)']['Total/Avg:'], "%.0f"%(float(S_Diff_table['Precip (mm)']['Total/Avg:'])/4000 *100)
 disturbed_area_LOWER = Area_LOWER * float(S_Diff_table['LOWER tons']['fraction disturbed (%)'])/100
 
 
@@ -511,7 +510,7 @@ SSY_UPPER_3, sSSY_UPPER_3 = S_Diff_table_quarry['UPPER tons']['Total/Avg:'], S_D
 SSY_LOWER_QUARRY, sSSY_LOWER_QUARRY = S_Diff_table_quarry['LOWER_QUARRY tons']['Total/Avg:'], S_Diff_table_quarry['LOWER_QUARRY tons']['Tons/km2']
 SSY_LOWER_VILLAGE, sSSY_LOWER_VILLAGE = S_Diff_table_quarry['LOWER_VILLAGE tons']['Total/Avg:'], S_Diff_table_quarry['LOWER_VILLAGE tons']['Tons/km2']
 SSY_TOTAL_3, sSSY_TOTAL_3 = S_Diff_table_quarry['TOTAL tons']['Total/Avg:'], S_Diff_table_quarry['TOTAL tons']['Tons/km2']
-P_measured_3, P_measured_3_perc_ann = S_Diff_table_quarry['Precip (mm)']['Total/Avg:'], "%.0f"%(float(S_Diff_table_quarry['Precip (mm)']['Total/Avg:'])/4000 *100)
+
 
 Area_UPPER, Area_LOWER_QUARRY, Area_LOWER_VILLAGE = landcover_table.ix[0]['Area km2'], landcover_table.ix[1]['Area km2'], landcover_table.ix[2]['Area km2']
 disturbed_area_LOWER_QUARRY = Area_LOWER_QUARRY * float(S_Diff_table_quarry['LOWER_QUARRY tons']['fraction disturbed (%)'])/100
@@ -568,50 +567,95 @@ document.add_heading("Annual estimates of SSY and sSSY",level=3)
 def times(x,factor,round_to):
     return int(int(round(int(factor*float(x))/float(round_to)))* float(round_to))
 
-document.add_paragraph("To compare with SSY from other watersheds, annual SSY was estimated by two approaches: 1) using total SSY from measured storms and the fraction of annual storm precipitation, and 2) using Q data from 2014 and the developed Qmax-SSYEV relationship to predict SSY for storms that were not directly measured (2014 was the only year with continuous Q available). Continuous Q and P data showed that "+P_2014+" mm of precipitation fell during storms identified by the stage threshold method, representing "+P_2014_perc_ann+"% of annual precipitation measured in 2014 (="+"%.0f"%PrecipFilled[start2014:stop2014].sum()+"). 
+document.add_paragraph("To compare with SSY from other watersheds, annual SSY was estimated by two approaches: 1) using Q data from 2014 and the developed Qmax-SSYEV relationship to predict SSY (2014 was the only year with continuous Q available), and 2) using total SSY from measured storms and the fraction of annual storm precipitation. Continuous Q and P data showed that storm precipitation was "+"{:,g}".format(int(P_2014_storm))+" mm in 2014, representing "+P_2014_perc_ann+"% of annual total precipitation in 2014 (="+ "{:,g}".format(int(PrecipFilled[start2014:stop2014].sum()))+" mm). ")
 
-## Annual SSY and sSSY from Table 2 (UPPER and LOWER)
-# from Table 2
-annual_SSY_UPPER_2, annual_sSSY_UPPER_2 = "%.0f"%times(SSY_UPPER_2,2,10)+"-"+"%.0f"%times(SSY_UPPER_2,3,10), "%.0f"%times(sSSY_UPPER_2,2,10)+"-"+"%.0f"%times(sSSY_UPPER_2,3,10)
-annual_SSY_LOWER_2, annual_sSSY_LOWER_2 = "%.0f"%times(SSY_LOWER_2,3,10)+"-"+"%.0f"%times(SSY_LOWER_2,3,10), "%.0f"%times(sSSY_LOWER_2,2,10)+"-"+"%.0f"%times(sSSY_LOWER_2,3,10)
-annual_SSY_TOTAL_2, annual_sSSY_TOTAL_2 ="%.0f"%times(SSY_TOTAL_2,3,10)+"-"+"%.0f"%times(SSY_TOTAL_2,3,10), "%.0f"%times(sSSY_TOTAL_2,2,10)+"-"+"%.0f"%times(sSSY_TOTAL_2,3,10)
+document.add_heading("Annual estimates of SSY and sSSY using the Qmax-SSY relationship",level=4)
 
-document.add_paragraph("Storms with measured SSY at FG1 and FG3 (Table "+S_Diff_table.table_num+") included a total precipitation of "+P_measured_2+" mm. Annual storm precipitation is roughly 2-3 times the precipitation measured during those storms, so annual SSY and sSSY are estimated to be roughly 2-3 times the measured SSY and sSSY. Estimated annual SSY from the UPPER, LOWER, and TOTAL watersheds was "+annual_SSY_UPPER_2+", "+annual_SSY_LOWER_2+", and "+annual_SSY_TOTAL_2+" tons/year, respectively. Estimated annual sSSY from the UPPER, LOWER, and TOTAL watersheds was "+annual_sSSY_UPPER_2+", "+annual_sSSY_LOWER_2+", and "+annual_sSSY_TOTAL_2+" tons/km2/year, respectively.")
-#document.add_paragraph("SSY from the UPPER, LOWER, and TOTAL watersheds was "+SSY_UPPER_2+", "+SSY_LOWER_2+", and "+SSY_TOTAL_2+" tons, respectively. sSSY from the UPPER, LOWER, and TOTAL watersheds was "+sSSY_UPPER_2+", "+sSSY_LOWER_2+", and "+sSSY_TOTAL_2+" tons/km2, respectively.")
+no_storms_2014 = LBJ_StormIntervals[LBJ_StormIntervals['start']>dt.datetime(2014,1,1)]
+lbjstorms = SedFluxStorms_LBJ[['Ssum','Psum']].dropna()
+lbjstorms2014 = lbjstorms[lbjstorms.index>dt.datetime(2014,1,1)]
+damstorms = SedFluxStorms_DAM[['Ssum','Psum']].dropna()
+damstorms2014 = damstorms[damstorms.index>dt.datetime(2014,1,1)]
+SSY_Qmax_TOTAL = Annual_SSY_tables()[0].ix['TOTAL']['SSY Qmax (2014)']
+sSSY_Qmax_TOTAL = Annual_SSY_tables()[1].ix['TOTAL']['sSSY Qmax (2014)']
+SSY_Qmax_UPPER = Annual_SSY_tables()[0].ix['UPPER']['SSY Qmax (2014)']
+sSSY_Qmax_UPPER = Annual_SSY_tables()[1].ix['UPPER']['sSSY Qmax (2014)']
 
-
-## Annual SSY and sSSY from Table 3 (UPPER and LOWER_QUARRY, LOWER_VILLAGE)
-annual_SSY_UPPER_3, annual_sSSY_UPPER_3 = "%.0f"%times(SSY_UPPER_3,4,10)+"-"+"%.0f"%times(SSY_UPPER_3,5,10), "%.0f"%times(sSSY_UPPER_3,4,10)+"-"+"%.0f"%times(sSSY_UPPER_3,5,10)
-annual_SSY_LOWER_3, annual_sSSY_LOWER_3 = "%.0f"%times(float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE),4,10)+"-"+"%.0f"%times(float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE),5,10), "%.0f"%times((float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE))/0.88,4,10)+"-"+"%.0f"%times((float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE))/0.88,5,10)
-
-annual_SSY_LOWER_QUARRY_3, annual_sSSY_LOWER_QUARRY_3 = "%.0f"%times(SSY_LOWER_QUARRY,4,10)+"-"+"%.0f"%times(SSY_LOWER_QUARRY,5,10), "%.0f"%times(sSSY_LOWER_QUARRY,4,10)+"-"+"%.0f"%times(sSSY_LOWER_QUARRY,5,10)
-annual_SSY_LOWER_VILLAGE_3, annual_sSSY_LOWER_VILLAGE_3 = "%.0f"%times(SSY_LOWER_VILLAGE,4,10)+"-"+"%.0f"%times(SSY_LOWER_VILLAGE,5,10), "%.0f"%times(sSSY_LOWER_VILLAGE,4,10)+"-"+"%.0f"%times(sSSY_LOWER_VILLAGE,5,10)
-annual_SSY_TOTAL_3, annual_sSSY_TOTAL_3 ="%.0f"%times(SSY_TOTAL_3,4,10)+"-"+"%.0f"%times(SSY_TOTAL_3,5,10), "%.0f"%times(sSSY_TOTAL_3,4,10)+"-"+"%.0f"%times(sSSY_TOTAL_3,5,10)
-
-LOWER_QUARRY_disturbed_fraction = S_Diff_table_quarry['LOWER_QUARRY tons']['fraction disturbed (%)']
-sSSY_disturbed_LOWER_QUARRY_3 = S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)']
-annual_sSSY_disturbed_LOWER_QUARRY_3 = "%.0f"%times(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)'],4,100)+"-"+"%.0f"%times(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)'],5,100)
-
-#For the storms totaling "+P_measured_3+" mm of precipitation measured in , 
-
-document.add_paragraph("Storms with SSY from grab samples at FG2 (Table "+S_Diff_table_quarry.table_num+") included a total precipitation of "+P_measured_3+" mm. Annual storm precipitation is 3,800 mm, or roughly 4-5 times the precipitation measured for these storms, so annual SSY and sSSY are estimated to be roughly 4-5 times the measured SSY and sSSY, assuming that the sediment yield per mm of precipitation is constant over the year. Annual SSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds was estimated to be "+annual_SSY_UPPER_3+", "+annual_SSY_LOWER_QUARRY_3+", and "+annual_SSY_LOWER_VILLAGE_3+" tons/year, respectively. Annual sSSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds was estimated to be "+annual_sSSY_UPPER_3+", "+annual_sSSY_LOWER_QUARRY_3+", and "+annual_sSSY_LOWER_VILLAGE_3+" tons/km2/year, respectively. SSY and sSSY from the TOTAL watershed was "+SSY_TOTAL_3+" tons and "+sSSY_TOTAL_3+" tons/km2, respectively, so annual SSY and sSSY are estimated to be "+annual_SSY_TOTAL_3+" tons/year, and "+annual_sSSY_TOTAL_3+" tons/km2/year. sSSY from the disturbed fraction ("+LOWER_QUARRY_disturbed_fraction+"%) of the LOWER_QUARRY subwatershed ("+"%0.2f"%Area_LOWER_QUARRY+" km2) was "+sSSY_disturbed_LOWER_QUARRY_3+" tons/km2 for the "+P_measured_3+" mm of precipitation during the measured storms (roughly 12-15% of annual precipitation). Annual sSSY from the disturbed quarry was approximately "+annual_sSSY_disturbed_LOWER_QUARRY_3+" tons/km2/year. The quarry surfaces are comprised of haul roads, piles of overburden, and steep rock faces, which can be described as a mix of unpaved roads and cut-slopes. Ramos-Scharron and McDonald (2007) measured sSSY of 570-580,000 tons/km2/yr from unpaved roads with slopes from 2-21%, and sSSY of 2,000-17,000 tons/km2/yr from cutslopes. Other literature measured sSSY from cutslopes varying from 10-105,000 tons/km2/yr. The sSSY ranges measured in this study are well within the ranges found in the literature.")
-
-document.add_paragraph("SSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds was "+SSY_UPPER_3+", "+SSY_LOWER_QUARRY+", and "+SSY_LOWER_VILLAGE+" tons, respectively, and sSSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds was "+sSSY_UPPER_3+", "+sSSY_LOWER_QUARRY+", and "+sSSY_LOWER_VILLAGE+" tons/km2, respectively.")
-
-## Annual SSY and sSSY from full range of measured storms
-P_FG1_all_storms, P_FG1_percent_annual = SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Psum'].sum(), SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Psum'].sum()/4000 * 100
-annual_SSY_UPPER_ALL = SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG1_percent_annual/100) * SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum())
-annual_sSSY_UPPER_ALL = annual_SSY_UPPER_ALL/0.90
-
-P_FG3_all_storms, P_FG3_percent_annual = SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Psum'].sum(), SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Psum'].sum()/4000 * 100
-annual_SSY_TOTAL_ALL = SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG3_percent_annual/100) * SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum())
-annual_sSSY_TOTAL_ALL =annual_SSY_TOTAL_ALL/1.78
-
-document.add_paragraph("Tables 2 and 3 include only storms with SSY data at both FG1 and FG3 (Table 2), and at FG1, FG2 and FG3 (Table 3). Using all SSY data measured at FG1 (SSYUPPER), SSY for "+"%.0f"%P_FG1_percent_annual+"% of annual precipitation ("+"%0.f"%P_FG1_all_storms+" mm) of precipitation (~4,000 mm) were measured. Storm data for Table 2 and 3 Annual SSY from the UPPER subwatershed was estimated from Table 2 and Table 3 to be "+annual_SSY_UPPER_2+" tons/yr and "+annual_SSY_UPPER_3+" tons/yr, respectively. Using all SSY data measured at FG1 (SSYUPPER), SSY for "+"%.0f"%P_FG3_percent_annual+"% of annual precipitation ("+"%0.f"%P_FG3_all_storms+" mm) of precipitation (~4,000 mm) were measured. Annual SSY from the UPPER subwatershed was estimated from Table 2 and Table 3 to be "+annual_SSY_TOTAL_2+" and "+annual_SSY_TOTAL_3+", respectively")
+document.add_paragraph("The Qmax-SSY relationships developed above were used to predict SSY from Qmax of "+str(len(no_storms_2014))+" storms identified at FG3 in 2014 (Table "+Annual_SSY_tables.table_num+"). Predicted annual SSY in 2014 from the UPPER and TOTAL watersheds was "+SSY_Qmax_UPPER+" and "+SSY_Qmax_TOTAL+" tons/year, respectively. Predicted annual sSSY in 2014 from the UPPER and TOTAL watersheds, was "+sSSY_Qmax_UPPER+" and "+sSSY_Qmax_TOTAL+" tons/km2/year, respectively.")
 
 if 'Annual_SSY_tables' in locals():
     dataframe_to_table(df=Annual_SSY_tables()[0],table_num=Annual_SSY_tables.table_num,caption="Annual SSY estimates")
     dataframe_to_table(df=Annual_SSY_tables()[1],table_num='',caption="Annual sSSY estimates")
+    
+## Annual SSY and sSSY from full range of measured storms
+document.add_heading("Annual estimates of SSY and sSSY from all measured storms",level=4)
+
+P_FG1_all_storms = SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Psum'].sum()
+P_FG1_percent_storm = P_FG1_all_storms/float(P_2014_storm) * 100
+annual_SSY_UPPER_ALL = SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG1_percent_storm/100) * SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum())
+annual_sSSY_UPPER_ALL = annual_SSY_UPPER_ALL/0.90
+
+P_FG3_all_storms = SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Psum'].sum()
+P_FG3_percent_storm = P_FG3_all_storms/float(P_2014_storm) * 100
+annual_SSY_TOTAL_ALL = SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG3_percent_storm/100) * SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum())
+annual_sSSY_TOTAL_ALL = annual_SSY_TOTAL_ALL/1.78
+
+document.add_paragraph("All storms with measured SSY at FG1 from 2012-2014 included "+"{:,g}".format(int(P_FG1_all_storms))+" mm of precipitation, or "+"%.0f"%P_FG1_percent_storm+"% of expected annual storm precipitation. Annual storm precipitation is roughly 20% less than precipitation measured during those storms, so estimated annual SSY and sSSY from the UPPER subwatershed were "+"%.0f"%annual_SSY_UPPER_ALL+" tons and "+"%.0f"%annual_sSSY_UPPER_ALL+" tons/km2/yr, respectively. All storms with measured SSY at FG3 from 2012-2014 included "+"{:,g}".format(int(P_FG3_all_storms))+" mm of precipitation, or "+"%.0f"%P_FG3_percent_storm+"% of expected annual storm precipitation. Estimated annual SSY and sSSY from the TOTAL watershed were "+"%.0f"%annual_SSY_TOTAL_ALL+" tons and "+"%.0f"%annual_sSSY_TOTAL_ALL+" tons/km2/yr, respectively.")
+
+
+## Annual SSY and sSSY from Table 2 (UPPER and LOWER)
+# from Table 2
+document.add_heading("Annual estimates of SSY and sSSY from storms in Table "+S_Diff_table.table_num+"",level=4)
+
+P_measured_2 = S_Diff_table['Precip (mm)']['Total/Avg:']
+P_measured_2_perc_storm = (float(P_measured_2)/float(P_2014_storm))*100
+
+annual_SSY_UPPER_2 = "%.0f"%times(SSY_UPPER_2,2,10)#+"-"+"%.0f"%times(SSY_UPPER_2,3,10),
+annual_sSSY_UPPER_2 =  "%.0f"%times(sSSY_UPPER_2,2,10)#+"-"+"%.0f"%times(sSSY_UPPER_2,3,10)
+annual_SSY_LOWER_2 = "%.0f"%times(SSY_LOWER_2,3,10)#+"-"+"%.0f"%times(SSY_LOWER_2,3,10)
+annual_sSSY_LOWER_2 =  "%.0f"%times(sSSY_LOWER_2,2,10)#+"-"+"%.0f"%times(sSSY_LOWER_2,3,10)
+annual_SSY_TOTAL_2 = "%.0f"%times(SSY_TOTAL_2,3,10)#+"-"+"%.0f"%times(SSY_TOTAL_2,3,10)
+annual_sSSY_TOTAL_2 = "%.0f"%times(sSSY_TOTAL_2,2,10)#+"-"+"%.0f"%times(sSSY_TOTAL_2,3,10)
+
+document.add_paragraph("Storms with measured SSY at  both FG1 and FG3 (Table "+S_Diff_table.table_num+") included a total precipitation of "+"{:,g}".format(int(P_measured_2))+" mm, or "+"%.0f"%P_measured_2_perc_storm+"% of expected annual storm precipitation. Annual storm precipitation is roughly 2 times the precipitation measured during those storms, so annual SSY and sSSY are estimated to be roughly 2 times the measured SSY and sSSY. Estimated annual SSY from the UPPER, LOWER, and TOTAL watersheds was "+annual_SSY_UPPER_2+", "+annual_SSY_LOWER_2+", and "+annual_SSY_TOTAL_2+" tons/year, respectively. Estimated annual sSSY from the UPPER, LOWER, and TOTAL watersheds was "+annual_sSSY_UPPER_2+", "+annual_sSSY_LOWER_2+", and "+annual_sSSY_TOTAL_2+" tons/km2/year, respectively.")
+#document.add_paragraph("SSY from the UPPER, LOWER, and TOTAL watersheds was "+SSY_UPPER_2+", "+SSY_LOWER_2+", and "+SSY_TOTAL_2+" tons, respectively. sSSY from the UPPER, LOWER, and TOTAL watersheds was "+sSSY_UPPER_2+", "+sSSY_LOWER_2+", and "+sSSY_TOTAL_2+" tons/km2, respectively.")
+
+
+## Annual SSY and sSSY from Table 3 (UPPER and LOWER_QUARRY, LOWER_VILLAGE)
+document.add_heading("Annual estimates of SSY and sSSY from storms in Table "+S_Diff_table_quarry.table_num+"",level=4)
+
+P_measured_3 = S_Diff_table_quarry['Precip (mm)']['Total/Avg:']
+P_measured_3_perc_storm =  (float(P_measured_3)/float(P_2014_storm))*100
+
+
+annual_SSY_UPPER_3 = "%.0f"%times(SSY_UPPER_3,4,10)#+"-"+"%.0f"%times(SSY_UPPER_3,5,10),
+annual_sSSY_UPPER_3 = "%.0f"%times(sSSY_UPPER_3,4,10)#+"-"+"%.0f"%times(sSSY_UPPER_3,5,10)
+annual_SSY_LOWER_3 = "%.0f"%times(float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE),4,10)
+#+"-"+"%.0f"%times(float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE),5,10),
+annual_sSSY_LOWER_3 =  "%.0f"%times((float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE))/0.88,4,10)
+#+"-"+"%.0f"%times((float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE))/0.88,5,10)
+
+annual_SSY_LOWER_QUARRY_3 = "%.0f"%times(SSY_LOWER_QUARRY,4,10)#+"-"+"%.0f"%times(SSY_LOWER_QUARRY,5,10),
+annual_sSSY_LOWER_QUARRY_3 =  "%.0f"%times(sSSY_LOWER_QUARRY,4,10)#+"-"+"%.0f"%times(sSSY_LOWER_QUARRY,5,10)
+annual_SSY_LOWER_VILLAGE_3 = "%.0f"%times(SSY_LOWER_VILLAGE,4,10)#+"-"+"%.0f"%times(SSY_LOWER_VILLAGE,5,10),
+annual_sSSY_LOWER_VILLAGE_3 =  "%.0f"%times(sSSY_LOWER_VILLAGE,4,10)#+"-"+"%.0f"%times(sSSY_LOWER_VILLAGE,5,10)
+annual_SSY_TOTAL_3 = "%.0f"%times(SSY_TOTAL_3,4,10)#+"-"+"%.0f"%times(SSY_TOTAL_3,5,10),
+annual_sSSY_TOTAL_3 = "%.0f"%times(sSSY_TOTAL_3,4,10)#+"-"+"%.0f"%times(sSSY_TOTAL_3,5,10)
+
+LOWER_QUARRY_disturbed_fraction = S_Diff_table_quarry['LOWER_QUARRY tons']['fraction disturbed (%)']
+sSSY_disturbed_LOWER_QUARRY_3 = "{:,}".format(float(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)']))
+
+annual_sSSY_disturbed_LOWER_QUARRY_3 = "{:,g}".format(times(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)'],4,100))#+"-"+"{:,g}".format(times(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)'],5,100))
+
+
+#document.add_paragraph("For the storms totaling "+P_measured_3+" mm of precipitation measured in , SSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds was "+SSY_UPPER_3+", "+SSY_LOWER_QUARRY+", and "+SSY_LOWER_VILLAGE+" tons, respectively, and sSSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds was "+sSSY_UPPER_3+", "+sSSY_LOWER_QUARRY+", and "+sSSY_LOWER_VILLAGE+" tons/km2, respectively. SSY and sSSY from the TOTAL watershed was "+SSY_TOTAL_3+" tons and "+sSSY_TOTAL_3+" tons/km2, respectively.")
+
+document.add_paragraph("Storms with measured SSY at FG1, FG2, and FG3 (Table "+S_Diff_table_quarry.table_num+") included a total precipitation of "+P_measured_3+" mm, or "+"%.0f"%P_measured_3_perc_storm+"% of expected annual storm precipitation. Annual storm precipitation is roughly 4 times the precipitation measured for these storms, so annual SSY and sSSY are estimated to be roughly 4 times the measured SSY and sSSY. Annual SSY from the UPPER, LOWER_QUARRY, LOWER_VILLAGE, and TOTAL watersheds were estimated to be "+annual_SSY_UPPER_3+", "+annual_SSY_LOWER_QUARRY_3+", "+annual_SSY_LOWER_VILLAGE_3+", and "+annual_SSY_TOTAL_3+" tons/year, respectively. Annual sSSY from the UPPER, LOWER_QUARRY, LOWER_VILLAGE, and TOTAL watersheds were estimated to be "+annual_sSSY_UPPER_3+", "+annual_sSSY_LOWER_QUARRY_3+", "+annual_sSSY_LOWER_VILLAGE_3+", and "+annual_sSSY_TOTAL_3+" tons/km2/year, respectively.")
+
+#("+LOWER_QUARRY_disturbed_fraction+"%) 
+#("+"%0.2f"%Area_LOWER_QUARRY+" km2)
+
+
 
 ### DISCUSSION
 document.add_heading('Discussion',level=2)
@@ -664,7 +708,7 @@ document.add_paragraph("In Hanalei watershed on Kauai (54 km2) which has similar
 
 ## How does the yield from the quarry differ from other studies (e.g. Wolman 1967, but also look up others)?  
 
-document.add_paragraph("Ramos-Scharron and McDonald (2007) measured sSSY of 570-580,000 tons/km2/yr from unpaved roads with slopes from 2-21%, and sSSY of 2,000-17,000 tons/km2/yr from cutslopes. Other literature measured sSSY from cutslopes varying from 10-105,000 tons/km2/yr. The sSSY ranges measured in this study are well within the ranges found in the literature.")
+document.add_paragraph("sSSY from the disturbed fraction of the LOWER_QUARRY subwatershed was "+sSSY_disturbed_LOWER_QUARRY_3+" tons/km2 (Table "+S_Diff_table_quarry.table_num+"). Annual sSSY from the disturbed quarry was estimated to be roughly 4 times the measured storms, approximately "+annual_sSSY_disturbed_LOWER_QUARRY_3+" tons/km2/year. The quarry surfaces are comprised of haul roads, piles of overburden, and steep rock faces which can be described as a mix of unpaved roads and cut-slopes. Literature values show measured sSSY from cutslopes varying from 0.01 tons/km2/yr in Idaho (Reid, 1981) to 105,000 tons/km2/yr in Papua New Guinea (Blong and Humphreys 1982), so the sSSY ranges measured in this study are well within the ranges found in the literature.")
 
 
 ## compare with other kinds of disturbance
