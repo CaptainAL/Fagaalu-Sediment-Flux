@@ -331,7 +331,7 @@ def LandCover_table():
     # Format Table data                       
     for column in landcover_table.columns:
         try:
-            if column.startswith('%')==True:
+            if column.startswith('%')==True or column.startswith('Cumulative %')==True:
                 landcover_table[column] = landcover_table[column]*100.
                 landcover_table[column] = landcover_table[column].round(1)
             else:
@@ -4975,7 +4975,7 @@ def Annual_SSY_tables():
     Annual_SSY_table = pd.DataFrame({
     'SSY Table 2':[P_measured_2+' ('+"%.0f"%P_measured_2_perc_storm+'%)', annual_SSY_UPPER_2, annual_SSY_LOWER_2, '-', '-', annual_SSY_TOTAL_2],
     'SSY Table 3':[P_measured_3+' ('+"%.0f"%P_measured_3_perc_storm+'%)', annual_SSY_UPPER_3, annual_SSY_LOWER_3, annual_SSY_LOWER_QUARRY_3, annual_SSY_LOWER_VILLAGE_3, annual_SSY_TOTAL_3],
-    'SSY ALL':["%.0f"%P_FG1_all_storms+' ('+"%.0f"%P_FG1_percent_annual+'%)', "%.0f"%annual_SSY_UPPER_ALL,'-','-','-',"%.0f"%annual_SSY_TOTAL_ALL],
+    'SSY ALL':["%.0f"%P_FG1_all_storms+' ('+"%.0f"%P_FG1_percent_storm+'%)', "%.0f"%annual_SSY_UPPER_ALL,'-','-','-',"%.0f"%annual_SSY_TOTAL_ALL],
     'SSY Qmax (2014)':[P_2014_storm,SSY_Upper_2014,'-','-','-',SSY_Total_filled_2014]}, index=['Precip(mm)','UPPER','LOWER','LOWER_QUARRY','LOWER_VILLAGE','TOTAL'])
     Annual_SSY_table[''] = Annual_SSY_table.index
     Annual_SSY_table = Annual_SSY_table[['','SSY Qmax (2014)','SSY Table 2','SSY Table 3','SSY ALL']]
@@ -4984,7 +4984,7 @@ def Annual_SSY_tables():
     Annual_sSSY_table = pd.DataFrame({
     'sSSY Table 2':[P_measured_2+' ('+"%.0f"%P_measured_2_perc_storm+'%)', annual_sSSY_UPPER_2, annual_sSSY_LOWER_2, '-', '-', annual_sSSY_TOTAL_2],
     'sSSY Table 3':[P_measured_3+' ('+"%.0f"%P_measured_3_perc_storm+'%)', annual_sSSY_UPPER_3, annual_sSSY_LOWER_3, annual_sSSY_LOWER_QUARRY_3, annual_sSSY_LOWER_VILLAGE_3, annual_sSSY_TOTAL_3],
-    'sSSY ALL':["%.0f"%P_FG1_all_storms+' ('+"%.0f"%P_FG1_percent_annual+'%)', "%.0f"%annual_sSSY_UPPER_ALL,'-','-','-',"%.0f"%annual_sSSY_TOTAL_ALL],
+    'sSSY ALL':["%.0f"%P_FG1_all_storms+' ('+"%.0f"%P_FG1_percent_storm+'%)', "%.0f"%annual_sSSY_UPPER_ALL,'-','-','-',"%.0f"%annual_sSSY_TOTAL_ALL],
     'sSSY Qmax (2014)':[P_2014_storm, sSSY_Upper_2014,'-','-','-',sSSY_Total_filled_2014]}, index=['Precip(mm)','UPPER','LOWER','LOWER_QUARRY','LOWER_VILLAGE','TOTAL'])
     Annual_sSSY_table[''] = Annual_sSSY_table.index
     Annual_sSSY_table = Annual_sSSY_table[['','sSSY Qmax (2014)','sSSY Table 2','sSSY Table 3','sSSY ALL']]
