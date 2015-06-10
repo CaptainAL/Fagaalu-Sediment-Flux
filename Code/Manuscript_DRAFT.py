@@ -96,15 +96,18 @@ S_Diff_table.table_num = str(tab_count())
 S_Diff_table_quarry, QUARRY_percent_of_TOTAL_SSY, VILLAGE_percent_of_TOTAL_SSY, QUA_VIL_percent_of_TOTAL_SSY = S_storm_diff_table_quarry()
 S_Diff_table_quarry.table_num = str(tab_count())
 
+### Model statistics table
+SSYEV_models_stats = ALLRatings_table()
+SSYEV_models_stats.table_num = str(tab_count())
+
+### Annual SSY
 Annual_SSY_tables.table_num = str(tab_count())
 
 ### Storm Q and SSY summary table
 Q_S_Diff_summary_table = Q_S_storm_diff_summary_table()
 Q_S_Diff_summary_table.table_num = str(tab_count())
 
-### Model statistics table
-SSYEV_models_stats = ALLRatings_table()
-SSYEV_models_stats.table_num = str(tab_count())
+
 
 #### FIGURES ########################################################################################################################################################
 figure_count=0
