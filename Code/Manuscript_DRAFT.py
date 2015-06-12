@@ -90,11 +90,17 @@ landcover_table.table_num = str(tab_count())
 
 ### Storm Sediment Discharge Table
 ## Prepare table data
-S_Diff_table, LOWER_percent_of_TOTAL_SSY, TOTAL_percent_of_TOTAL_SSY = S_storm_diff_table() ## function to create table data
+S_Diff_table = S_storm_diff_table() ## function to create table data
 S_Diff_table.table_num = str(tab_count())
 
-S_Diff_table_quarry, QUARRY_percent_of_TOTAL_SSY, VILLAGE_percent_of_TOTAL_SSY, QUA_VIL_percent_of_TOTAL_SSY = S_storm_diff_table_quarry()
+SSY_disturbed_table, LOWER_percent_of_TOTAL_SSY, TOTAL_percent_of_TOTAL_SSY= SSY_dist_table()
+SSY_disturbed_table.table_num = str(tab_count())
+
+S_Diff_table_quarry = S_storm_diff_table_quarry()
 S_Diff_table_quarry.table_num = str(tab_count())
+
+SSY_disturbed_table_quarry, QUARRY_percent_of_TOTAL_SSY, VILLAGE_percent_of_TOTAL_SSY, QUA_VIL_percent_of_TOTAL_SSY = SSY_dist_table_quarry()
+SSY_disturbed_table_quarry.table_num = str(tab_count())
 
 ### Model statistics table
 SSYEV_models_stats = ALLRatings_table()
@@ -515,7 +521,7 @@ document.add_paragraph("The high SSC values observed downstream of the quarry (F
 
 #### Comparing SSY from disturbed and undisturbed subwatersheds
 document.add_heading('Comparing SSY from disturbed and undisturbed subwatersheds',level=3)
-document.add_paragraph("A main objective for this study was to determine the SSY contributions from the undisturbed, UPPER watershed, and the disturbed LOWER watershed (SSYLOWER), to determine how much total SSY to Faga'alu Bay (SSYTOTAL) has been increased by human-disturbance. SSYUPPER was measured at FG1, SSYTOTAL was measured at FG3, and SSYLOWER was calculated by subtracting SSYUPPER from SSYTOTAL (Table "+S_Diff_table.table_num+"), and the Disturbance Ratio (DR) was calculated by Equation DR_eq.eq_num ")
+document.add_paragraph("A main objective for this study was to determine the SSY contributions from the undisturbed, UPPER watershed, and the disturbed LOWER watershed (SSYLOWER), to determine how much total SSY to Faga'alu Bay (SSYTOTAL) has been increased by human-disturbance. SSYUPPER was measured at FG1, SSYTOTAL was measured at FG3, and SSYLOWER was calculated by subtracting SSYUPPER from SSYTOTAL (Table "+S_Diff_table.table_num+"), and the Disturbance Ratio (DR) was calculated by Equation "+DR_eq.eq_num+".")
 
 ## Storm Sediment Table
 if 'S_Diff_table' in locals():
@@ -532,12 +538,14 @@ Area_UPPER, Area_LOWER = landcover_table.ix[0]['Area km2'], landcover_table.ix[3
 SSY_UPPER_2, sSSY_UPPER_2 = S_Diff_table['UPPER tons']['Total/Avg:'], S_Diff_table['UPPER tons']['Tons/km2'] 
 SSY_LOWER_2, sSSY_LOWER_2 = S_Diff_table['LOWER tons']['Total/Avg:'], S_Diff_table['LOWER tons']['Tons/km2']
 SSY_TOTAL_2, sSSY_TOTAL_2 = S_Diff_table['TOTAL tons']['Total/Avg:'], S_Diff_table['TOTAL tons']['Tons/km2']
-disturbed_area_LOWER = Area_LOWER * float(S_Diff_table['LOWER tons']['fraction disturbed (%)'])/100
-
+disturbed_area_LOWER = Area_LOWER * float(SSY_disturbed_table['LOWER']['fraction disturbed (%)'])/100
 
 document.add_paragraph("SSY from the UPPER and LOWER subwatersheds for the measured storms was "+SSY_UPPER_2+" and "+SSY_LOWER_2+" tons, respectively, and corresponding sSSY was "+sSSY_UPPER_2+" and "+sSSY_LOWER_2+" tons/km2, respectively. The UPPER and LOWER subwatersheds are similar in size ("+"%0.2f"%Area_UPPER+" km2 and "+"%0.2f"%Area_LOWER+" km2) but SSYUPPER accounted for an average of just "+Percent_Upper_S_2+"% and SSYLOWER for "+Percent_Lower_S+"% of SSY at the watershed outlet (Table "+S_Diff_table.table_num+"). The DR estimated from sSSYUPPER and sSSYLOWER suggests sSSY has been increased by "+S_Diff_table['LOWER tons']['DR']+"x in the LOWER subwatershed, and "+S_Diff_table['TOTAL tons']['DR']+"x for the TOTAL watershed.")
 
-document.add_paragraph("Using the measured sSSY from similar forest areas in the UPPER watershed (sSSYUPPER="+sSSY_UPPER_2+" tons/km2), SSY from the undisturbed forest areas in the LOWER watershed was "+S_Diff_table['LOWER tons']['SSY from forested areas (tons)']+" tons. SSY from the disturbed areas was "+S_Diff_table['LOWER tons']['SSY from disturbed areas (tons)']+" tons. For the measured storms (Table "+S_Diff_table.table_num+"), roughly "+S_Diff_table['LOWER tons']['% SSY from disturbed areas']+"% of SSY from the LOWER subwatershed is from disturbed areas, despite the disturbed areas only accounting for "+S_Diff_table['LOWER tons']['fraction disturbed (%)']+"% of the subwatershed area ("+"%0.3f"%disturbed_area_LOWER+" km2). Similarly, despite only "+S_Diff_table['TOTAL tons']['fraction disturbed (%)']+"% of the TOTAL watershed being disturbed, SSY from disturbed areas accounts for "+S_Diff_table['TOTAL tons']['% SSY from disturbed areas']+"% of the SSY from the TOTAL watershed. Estimated sSSY from disturbed areas in the LOWER subwatershed is "+"{:,g}".format(float(S_Diff_table['LOWER tons']['sSSY from disturbed areas (tons/km2)']))+" tons/km2, suggesting human disturbance has increased sSSY by "+S_Diff_table['LOWER tons']['DR for sSSY from disturbed areas']+"x over undisturbed, forest conditions.")
+if 'SSY_disturbed_table' in locals():
+    dataframe_to_table(df=SSY_disturbed_table,table_num=SSY_disturbed_table.table_num,caption="Sediment yield from disturbed portions of subwatersheds in Faga'alu",fontsize=9)
+
+document.add_paragraph("Using the measured sSSY from similar forest areas in the UPPER watershed (sSSYUPPER="+sSSY_UPPER_2+" tons/km2), SSY from the undisturbed forest areas in the LOWER watershed was "+SSY_disturbed_table['LOWER']['SSY from forested areas (tons)']+" tons. SSY from the disturbed areas was "+SSY_disturbed_table['LOWER']['SSY from disturbed areas (tons)']+" tons. For the measured storms (Table "+SSY_disturbed_table.table_num+"), roughly "+SSY_disturbed_table['LOWER']['% SSY from disturbed areas']+"% of SSY from the LOWER subwatershed is from disturbed areas, despite the disturbed areas only accounting for "+SSY_disturbed_table['LOWER']['fraction disturbed (%)']+"% of the subwatershed area ("+"%0.3f"%disturbed_area_LOWER+" km2). Similarly, despite only "+SSY_disturbed_table['TOTAL']['fraction disturbed (%)']+"% of the TOTAL watershed being disturbed, SSY from disturbed areas accounts for "+SSY_disturbed_table['TOTAL']['% SSY from disturbed areas']+"% of the SSY from the TOTAL watershed. Estimated sSSY from disturbed areas in the LOWER subwatershed is "+"{:,g}".format(float(SSY_disturbed_table['LOWER']['sSSY from disturbed areas (tons/km2)']))+" tons/km2, suggesting human disturbance has increased sSSY by "+SSY_disturbed_table['LOWER']['DR for sSSY from disturbed areas']+"x over undisturbed, forest conditions.")
 
 ## Comparing QUARRY and VILLAGE separately
 Percent_UPPER_S_3 = S_Diff_table_quarry['% UPPER']['Total/Avg:']
@@ -551,8 +559,8 @@ SSY_TOTAL_3, sSSY_TOTAL_3 = S_Diff_table_quarry['TOTAL tons']['Total/Avg:'], S_D
 
 
 Area_UPPER, Area_LOWER_QUARRY, Area_LOWER_VILLAGE = landcover_table.ix[0]['Area km2'], landcover_table.ix[1]['Area km2'], landcover_table.ix[2]['Area km2']
-disturbed_area_LOWER_QUARRY = Area_LOWER_QUARRY * float(S_Diff_table_quarry['LOWER_QUARRY tons']['fraction disturbed (%)'])/100
-disturbed_area_LOWER_VILLAGE = Area_LOWER_VILLAGE * float(S_Diff_table_quarry['LOWER_VILLAGE tons']['fraction disturbed (%)'])/100
+disturbed_area_LOWER_QUARRY = Area_LOWER_QUARRY * float(SSY_disturbed_table_quarry['LOWER_QUARRY']['fraction disturbed (%)'])/100
+disturbed_area_LOWER_VILLAGE = Area_LOWER_VILLAGE * float(SSY_disturbed_table_quarry['LOWER_VILLAGE']['fraction disturbed (%)'])/100
 
 document.add_paragraph("SSYEV data measured at FG2 was available for "+No_of_Storm_Intervals_QUA_S+" of the storms, so SSYEV from the LOWER subwatershed including the quarry (SSYLOWER_QUARRY) and the village areas below the quarry (SSYLOWER_VILLAGE) could be calculated to determine the relative sediment contribution from these sources (Table "+S_Diff_table_quarry.table_num+").")
 
@@ -562,14 +570,13 @@ if 'S_Diff_table_quarry' in locals():
 
 document.add_paragraph("SSY at FG3 was "+SSY_TOTAL_3+" tons, averaging "+Percent_UPPER_S_3+"% from the UPPER subwatershed, "+Percent_QUARRY_S+"% from LOWER_QUARRY subwatershed, and "+Percent_VILLAGE_S+"% from the LOWER_VILLAGE subwatershed (Table "+S_Diff_table_quarry.table_num+"). sSSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds and TOTAL watershed was "+sSSY_UPPER_3+", "+sSSY_LOWER_QUARRY+", "+sSSY_LOWER_VILLAGE+", and "+sSSY_TOTAL_3+", respectively. sSSY from LOWER_QUARRY and LOWER_VILLAGE was "+S_Diff_table_quarry['LOWER_QUARRY tons']['DR']+" and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['DR']+" times higher, respectively, than sSSY from UPPER subwatershed, suggesting human disturbance has significantly increased SSY over natural levels, particularly at the quarry. sSSY from the TOTAL watershed was "+S_Diff_table_quarry['TOTAL tons']['DR']+" times higher than the UPPER subwatershed, similar to the larger range of storms in Table "+S_Diff_table.table_num+", where specific SSY was "+S_Diff_table['TOTAL tons']['DR']+" times higher.")
 
-document.add_paragraph("SSY from undisturbed areas in the LOWER_QUARRY and LOWER_VILLAGE subwatersheds was: "+S_Diff_table_quarry['LOWER_QUARRY tons']['SSY from forested areas (tons)']+" and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['SSY from forested areas (tons)']+" tons, respectively. SSY from the "+"%0.3f"%disturbed_area_LOWER_QUARRY+" km2 and "+"%0.3f"%disturbed_area_LOWER_VILLAGE+" km2 of disturbed areas in the LOWER_QUARRY and LOWER_VILLAGE subwatersheds was "+S_Diff_table_quarry['LOWER_QUARRY tons']['SSY from disturbed areas (tons)']+" and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['SSY from disturbed areas (tons)']+" tons, respectively. SSY from the disturbed areas accounted for "+S_Diff_table_quarry['LOWER_QUARRY tons']['% SSY from disturbed areas']+"% and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['% SSY from disturbed areas']+"% of total SSY from those watersheds, respectively. sSSY from disturbed areas in the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds was "+S_Diff_table_quarry['UPPER tons']['sSSY from disturbed areas (tons/km2)']+", "+"{:,g}".format(float(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)']))+", and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['sSSY from disturbed areas (tons/km2)']+", respectively, suggesting that disturbed areas increase sSSY over forested conditions by "+S_Diff_table_quarry['LOWER_QUARRY tons']['DR for sSSY from disturbed areas']+"x and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['DR for sSSY from disturbed areas']+"x in the LOWER_QUARRY and LOWER_VILLAGE subwatersheds, respectively. Bare land area in the LOWER_QUARRY subwatershed clearly increased sSSY significantly, and contributed the majority of SSY from disturbed areas in Faga'alu watershed. Human disturbance in the LOWER_VILLAGE subwatershed also increased SSY above natural levels but the magnitude of disturbance was much lower than the quarry.")
+if 'SSY_disturbed_table_quarry' in locals():
+    dataframe_to_table(df=SSY_disturbed_table_quarry,table_num=SSY_disturbed_table_quarry.table_num,caption="Sediment yield from disturbed portions of subwatersheds in Faga'alu",fontsize=9)
 
-document.add_paragraph("A very small fraction of the watershed accounted for the majority of the sediment load. Roughly "+S_Diff_table_quarry['LOWER_QUARRY tons']['% SSY from disturbed areas']+"% and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['% SSY from disturbed areas']+"% of SSY from the LOWER_QUARRY and LOWER_VILLAGE subwatersheds, respectively, was from disturbed areas, despite the disturbed areas only accounting for "+S_Diff_table_quarry['LOWER_QUARRY tons']['fraction disturbed (%)']+"% and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['fraction disturbed (%)']+"% of the subwatershed area, respectively. Similarly, despite only "+S_Diff_table_quarry['TOTAL tons']['fraction disturbed (%)']+"% of the TOTAL watershed being disturbed, SSY from disturbed areas accounts for "+S_Diff_table_quarry.ix['% SSY from disturbed areas']['TOTAL tons']+"% of the SSY from the TOTAL watershed.")
+document.add_paragraph("SSY from undisturbed areas in the LOWER_QUARRY and LOWER_VILLAGE subwatersheds was: "+SSY_disturbed_table_quarry['LOWER_QUARRY']['SSY from forested areas (tons)']+" and "+SSY_disturbed_table_quarry['LOWER_VILLAGE']['SSY from forested areas (tons)']+" tons, respectively (Table "+SSY_disturbed_table_quarry.table_num+"). SSY from the "+"%0.3f"%disturbed_area_LOWER_QUARRY+" km2 and "+"%0.3f"%disturbed_area_LOWER_VILLAGE+" km2 of disturbed areas in the LOWER_QUARRY and LOWER_VILLAGE subwatersheds was "+SSY_disturbed_table_quarry['LOWER_QUARRY']['SSY from disturbed areas (tons)']+" and "+SSY_disturbed_table_quarry['LOWER_VILLAGE']['SSY from disturbed areas (tons)']+" tons, respectively. SSY from the disturbed areas accounted for "+SSY_disturbed_table_quarry['LOWER_QUARRY']['% SSY from disturbed areas']+"% and "+SSY_disturbed_table_quarry['LOWER_VILLAGE']['% SSY from disturbed areas']+"% of total SSY from those watersheds, respectively. sSSY from disturbed areas in the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds was "+SSY_disturbed_table_quarry['UPPER']['sSSY from disturbed areas (tons/km2)']+", "+"{:,g}".format(float(SSY_disturbed_table_quarry['LOWER_QUARRY']['sSSY from disturbed areas (tons/km2)']))+", and "+SSY_disturbed_table_quarry['LOWER_VILLAGE']['sSSY from disturbed areas (tons/km2)']+", respectively, suggesting that disturbed areas increase sSSY over forested conditions by "+SSY_disturbed_table_quarry['LOWER_QUARRY']['DR for sSSY from disturbed areas']+"x and "+SSY_disturbed_table_quarry['LOWER_VILLAGE']['DR for sSSY from disturbed areas']+"x in the LOWER_QUARRY and LOWER_VILLAGE subwatersheds, respectively. Bare land area in the LOWER_QUARRY subwatershed clearly increased sSSY significantly, and contributed the majority of SSY from disturbed areas in Faga'alu watershed. Human disturbance in the LOWER_VILLAGE subwatershed also increased SSY above natural levels but the magnitude of disturbance was much lower than the quarry.")
 
-## Summary Q, S, and DR table
-#if 'Q_S_Diff_summary_table' in locals():
-#    dataframe_to_table(df=Q_S_Diff_summary_table,table_num=Q_S_Diff_summary_table.table_num,caption="Total Q and SSY",fontsize=11)
-#    
+document.add_paragraph("A very small fraction of the watershed accounted for the majority of the sediment load. Roughly "+SSY_disturbed_table_quarry['LOWER_QUARRY']['% SSY from disturbed areas']+"% and "+SSY_disturbed_table_quarry['LOWER_VILLAGE']['% SSY from disturbed areas']+"% of SSY from the LOWER_QUARRY and LOWER_VILLAGE subwatersheds, respectively, was from disturbed areas, despite the disturbed areas only accounting for "+SSY_disturbed_table_quarry['LOWER_QUARRY']['fraction disturbed (%)']+"% and "+SSY_disturbed_table_quarry['LOWER_VILLAGE']['fraction disturbed (%)']+"% of the subwatershed area, respectively. Similarly, despite only "+SSY_disturbed_table_quarry['TOTAL']['fraction disturbed (%)']+"% of the TOTAL watershed being disturbed, SSY from disturbed areas accounts for "+SSY_disturbed_table_quarry.ix['% SSY from disturbed areas']['TOTAL']+"% of the SSY from the TOTAL watershed.")
+
     
 #### Fitting SSY models
 document.add_heading('Predicting SSYEV from storm metrics',level=3)
@@ -636,9 +643,9 @@ annual_SSY_LOWER_VILLAGE_3 = "%.0f"%times(SSY_LOWER_VILLAGE,4,10)#+"-"+"%.0f"%ti
 annual_sSSY_LOWER_VILLAGE_3 =  "%.0f"%times(sSSY_LOWER_VILLAGE,4,10)#+"-"+"%.0f"%times(sSSY_LOWER_VILLAGE,5,10)
 annual_SSY_TOTAL_3 = "%.0f"%times(SSY_TOTAL_3,4,10)#+"-"+"%.0f"%times(SSY_TOTAL_3,5,10),
 annual_sSSY_TOTAL_3 = "%.0f"%times(sSSY_TOTAL_3,4,10)#+"-"+"%.0f"%times(sSSY_TOTAL_3,5,10)
-LOWER_QUARRY_disturbed_fraction = S_Diff_table_quarry['LOWER_QUARRY tons']['fraction disturbed (%)']
-sSSY_disturbed_LOWER_QUARRY_3 = "{:,}".format(float(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)']))
-annual_sSSY_disturbed_LOWER_QUARRY_3 = "{:,g}".format(times(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)'],4,100))#+"-"+"{:,g}".format(times(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)'],5,100))
+LOWER_QUARRY_disturbed_fraction = SSY_disturbed_table_quarry['LOWER_QUARRY']['fraction disturbed (%)']
+sSSY_disturbed_LOWER_QUARRY_3 = "{:,}".format(float(SSY_disturbed_table_quarry['LOWER_QUARRY']['sSSY from disturbed areas (tons/km2)']))
+annual_sSSY_disturbed_LOWER_QUARRY_3 = "{:,g}".format(times(SSY_disturbed_table_quarry['LOWER_QUARRY']['sSSY from disturbed areas (tons/km2)'],4,100))#+"-"+"{:,g}".format(times(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)'],5,100))
 
 ## For all storms
 P_FG1_all_storms = SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Psum'].sum()
