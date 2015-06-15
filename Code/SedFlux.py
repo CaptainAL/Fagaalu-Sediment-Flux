@@ -21,6 +21,7 @@ from misc_numpy import *
 from misc_matplotlib import * 
 
 ## Statistical Analysis
+from scipy import stats
 import pandas.stats.moments as m
 from scipy.stats import pearsonr as pearson_r
 from scipy.stats import spearmanr as spearman_r
@@ -1755,6 +1756,71 @@ QUARRY['GrabR2-SSC-mg/L'] = QUARRY_R2.drop_duplicates(cols='index')['SSC (mg/L)'
 QUARRY['Grab-SSC-mg/L'] = QUARRY_DT_and_R2.drop_duplicates(cols='index')['SSC (mg/L)']
 DAM['Grab-SSC-mg/L'] = DAMgrab.drop_duplicates(cols='index')['SSC (mg/L)']
 
+
+
+
+
+def SSCprobplots(subset='pre',withR2=False,show=False,save=False,filename=figdir+''):
+   
+    ## Subset SSC
+    ## Pre-mitigation baseflow
+    SSC = SSC_dict[subset[0]]
+    LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
+    QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
+    DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
+    if withR2==True:
+        ## Add samples from Autosampler at QUARRY
+        print 'Adding R2 samples to QUARRY Grab (DT)'
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])]
+    elif withR2==False:
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]  
+    ## Compile
+    GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],
+                                 LBJgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)']],ignore_index=True,axis=1)    
+    GrabSamples.columns = ['DAM','QUARRY','LBJ']
+    
+    ax1 = plt.subplot(231)
+    stats.probplot(GrabSamples['DAM'].dropna(), plot=plt)
+    
+    ax2 = plt.subplot(232)
+    stats.probplot(GrabSamples['QUARRY'].dropna(), plot=plt)
+    ax3 = plt.subplot(233)
+    stats.probplot(GrabSamples['LBJ'].dropna(), plot=plt)    
+    
+    ## Subset SSC
+    ## Pre-mitigation stormflow
+    SSC = SSC_dict[subset[1]]
+    LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
+    QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
+    DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
+    if withR2==True:
+        ## Add samples from Autosampler at QUARRY
+        print 'Adding R2 samples to QUARRY Grab (DT)'
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])]
+    elif withR2==False:
+        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]  
+    ## Compile
+    GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],
+                                 LBJgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)']],ignore_index=True,axis=1)    
+    GrabSamples.columns = ['DAM','QUARRY','LBJ']
+    
+    ax4 = plt.subplot(234)
+    stats.probplot(GrabSamples['DAM'].dropna(), plot=plt)
+    ax5 = plt.subplot(235)
+    stats.probplot(GrabSamples['QUARRY'].dropna(), plot=plt)
+    ax6 = plt.subplot(236)
+    stats.probplot(GrabSamples['LBJ'].dropna(), plot=plt)
+    
+    ax1.set_ylabel('Baseflow'), ax4.set_ylabel('Stormflow')
+    
+    ax1.set_title('DAM'), ax2.set_title('QUARRY'), ax3.set_title('LBJ')
+    ax4.set_title('DAM'), ax5.set_title('QUARRY'), ax6.set_title('LBJ')
+    plt.tight_layout(pad=0.1)
+    show_plot(show)
+    savefig(save,filename)
+    return
+#SSCprobplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,show=True,save=False,filename=figdir+'')
+
 def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,filename=figdir+''):
     #mpl.rc('lines',markersize=300)
     fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,3),sharey=True)
@@ -1778,14 +1844,21 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
                                  LBJgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)']],ignore_index=True,axis=1)    
     GrabSamples.columns = ['DAM','QUARRY','LBJ']
     
-    f,p =  stats.f_oneway(GrabSamples['DAM'].dropna(),GrabSamples['QUARRY'].dropna(),GrabSamples['LBJ'].dropna())   
-    print "ANOVA: f = %g  p = %g" % (f,p)
+    ## Parametric
+    f1,p1 =  stats.f_oneway(GrabSamples['DAM'].dropna(),GrabSamples['QUARRY'].dropna(),GrabSamples['LBJ'].dropna())   
+    print "ANOVA: f = %g  p = %g" % (f1,p1)
+    QUARRY_DAM_ttest1 = stats.ttest_ind(GrabSamples['QUARRY'].dropna(), GrabSamples['DAM'].dropna(), axis=0, equal_var=True)   
+    print "QUARRY v DAM ttest_ind: t = %g  p = %g" % QUARRY_DAM_ttest1
+    QUARRY_LBJ_ttest1 = stats.ttest_ind(GrabSamples['QUARRY'].dropna(), GrabSamples['LBJ'].dropna(), axis=0, equal_var=True)   
+    print "QUARRY v LBJ ttest_ind: t = %g  p = %g" % QUARRY_LBJ_ttest1 
+    ## Non-Parametric
+    H1, KWp1 = stats.mstats.kruskalwallis(GrabSamples['DAM'].dropna(),GrabSamples['QUARRY'].dropna(),GrabSamples['LBJ'].dropna())
+    print "Kruskall-Wallis: H = %g  p = %g" % (H1, KWp1) 
+    QUARRY_DAM_mannwhit1 = stats.mannwhitneyu(GrabSamples['QUARRY'].dropna(), GrabSamples['DAM'].dropna())   
+    print "QUARRY v DAM mannwhit: u = %g  p/2 = %g" % QUARRY_DAM_mannwhit1
+    QUARRY_LBJ_mannwhit1 = stats.mannwhitneyu(GrabSamples['QUARRY'].dropna(), GrabSamples['LBJ'].dropna())   
+    print "QUARRY v LBJ mannwhit: u = %g  p/2 = %g" % QUARRY_LBJ_mannwhit1 
     
-    QUARRY_DAM_ttest = stats.ttest_ind(GrabSamples['QUARRY'].dropna(), GrabSamples['DAM'].dropna(), axis=0, equal_var=True)   
-    print "QUARRY v DAM ttest_ind: t = %g  p = %g" % QUARRY_DAM_ttest 
-    
-    QUARRY_LBJ_ttest = stats.ttest_ind(GrabSamples['QUARRY'].dropna(), GrabSamples['LBJ'].dropna(), axis=0, equal_var=True)   
-    print "QUARRY v LBJ ttest_ind: t = %g  p = %g" % QUARRY_LBJ_ttest 
 
     GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
     GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
@@ -1810,15 +1883,20 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],
                                  LBJgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)']],ignore_index=True,axis=1)    
     GrabSamples.columns = ['DAM','QUARRY','LBJ']
-    
-    f,p =  stats.f_oneway(GrabSamples['DAM'].dropna(),GrabSamples['QUARRY'].dropna(),GrabSamples['LBJ'].dropna())   
-    print "ANOVA: f = %g  p = %g" % (f,p)
-    
-    QUARRY_DAM_ttest = stats.ttest_ind(GrabSamples['QUARRY'].dropna(), GrabSamples['DAM'].dropna(), axis=0, equal_var=True)   
-    print "QUARRY v DAM ttest_ind: t = %g  p = %g" % QUARRY_DAM_ttest 
-    
-    QUARRY_LBJ_ttest = stats.ttest_ind(GrabSamples['QUARRY'].dropna(), GrabSamples['LBJ'].dropna(), axis=0, equal_var=True)   
-    print "QUARRY v LBJ ttest_ind: t = %g  p = %g" % QUARRY_LBJ_ttest     
+    ## Parametric
+    f2,p2 =  stats.f_oneway(GrabSamples['DAM'].dropna(),GrabSamples['QUARRY'].dropna(),GrabSamples['LBJ'].dropna())   
+    print "ANOVA: f = %g  p = %g" % (f2,p2)
+    QUARRY_DAM_ttest2 = stats.ttest_ind(GrabSamples['QUARRY'].dropna(), GrabSamples['DAM'].dropna(), axis=0, equal_var=True)   
+    print "QUARRY v DAM ttest_ind: t = %g  p = %g" % QUARRY_DAM_ttest2 
+    QUARRY_LBJ_ttest2 = stats.ttest_ind(GrabSamples['QUARRY'].dropna(), GrabSamples['LBJ'].dropna(), axis=0, equal_var=True)   
+    print "QUARRY v LBJ ttest_ind: t = %g  p = %g" % QUARRY_LBJ_ttest2     
+    ## Non-Parametric
+    H2, KWp2 = stats.mstats.kruskalwallis(GrabSamples['DAM'].dropna(),GrabSamples['QUARRY'].dropna(),GrabSamples['LBJ'].dropna())
+    print "Kruskall-Wallis: H = %g  p = %g" % (H2, KWp2) 
+    QUARRY_DAM_mannwhit2 = stats.mannwhitneyu(GrabSamples['QUARRY'].dropna(), GrabSamples['DAM'].dropna())   
+    print "QUARRY v DAM mannwhit: u = %g  p/2 = %g" % QUARRY_DAM_mannwhit2
+    QUARRY_LBJ_mannwhit2 = stats.mannwhitneyu(GrabSamples['QUARRY'].dropna(), GrabSamples['LBJ'].dropna())   
+    print "QUARRY v LBJ mannwhit: u = %g  p/2 = %g" % QUARRY_LBJ_mannwhit2  
     
     GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
     GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
@@ -1846,7 +1924,7 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     plt.tight_layout(pad=0.1)
     show_plot(show)
     savefig(save,filename)
-    return
+    return f1,p1,QUARRY_DAM_ttest1,QUARRY_LBJ_ttest1,H1,KWp1,QUARRY_DAM_mannwhit1,QUARRY_LBJ_mannwhit1, f2,p2,QUARRY_DAM_ttest2,QUARRY_LBJ_ttest2,H2, KWp2,QUARRY_DAM_mannwhit2,QUARRY_LBJ_mannwhit2
 ## Premitigation
 plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
 #plotSSCboxplots(subset='Pre-storm',withR2=False,show=True,save=False,filename='')
