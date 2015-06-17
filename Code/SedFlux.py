@@ -4793,6 +4793,70 @@ def plotCoeffTable(show=False,norm=False):
         plt.show()
     return
 #plotCoeffTable(show=True,norm=False)
+    
+
+
+### ANCOVA
+
+### duplicate TOTAL but name it upper: TEST for SAME data, should be pvalue=1
+#ALLStorms_upper = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal']].dropna().apply(np.log10) 
+#ALLStorms_upper['subwatershed'] = 'upper'
+#ALLStorms_upper = ALLStorms_upper.rename(columns = {'Qsumtotal':'Qsum','Qmaxtotal':'Qmax','Stotal':'S'})
+
+#R1= [[0,1,0,0],[0,0,1,0]]
+#m1 = model_lm1.f_test(R1)
+#print m1
+#R2 = [[1,0,0],[0,1,0]]
+#m2 = model_lm2.f_test(R2)
+
+def ANCOVA(ALLStorms, ind_var, pvalue=0.05):
+    ## Upper subwatershed
+    ALLStorms_upper = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','EI','Qsumupper','Qmaxupper','Supper']].dropna().apply(np.log10) 
+    ALLStorms_upper['subwatershed'] = 'upper'
+    ALLStorms_upper = ALLStorms_upper.rename(columns = {'Pstorms':'Psum','Qsumupper':'Qsum','Qmaxupper':'Qmax','Supper':'SSY'})
+    ## Total watershed
+    ALLStorms_total = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal']].dropna().apply(np.log10) 
+    ALLStorms_total['subwatershed'] = 'total'
+    ALLStorms_total = ALLStorms_total.rename(columns = {'Pstorms':'Psum','Qsumtotal':'Qsum','Qmaxtotal':'Qmax','Stotal':'SSY'})
+    
+    s_data = pd.concat([ALLStorms_upper,ALLStorms_total])
+        
+    s_data = s_data[['subwatershed','SSY',ind_var]]
+    formula1 = 'SSY ~ '+ind_var+' * subwatershed'
+    #print formula1
+    model_lm1 = smf.ols(formula1,data=s_data).fit()  
+    model_table1 = sm.stats.anova_lm(model_lm1) 
+    #print model_table1
+    
+    m1_pvalue = model_table1.ix[ind_var+':subwatershed']['PR(>F)']
+    if m1_pvalue <= pvalue:
+        #print 'For independent variable: '+ind_var+', slopes significantly different at pvalue='+str(pvalue)+' pval='+str(m1_pvalue)
+        slopes_significant = '*'
+        slopes_sig = ''
+    elif m1_pvalue > pvalue:
+        #print 'For independent variable: '+ind_var+', slopes NOT significantly different at pvalue='+str(pvalue)+' pval='+str(m1_pvalue)
+        slopes_significant = ''
+        slopes_sig = ' NOT'
+    formula2 = 'SSY ~ '+ind_var+' + subwatershed'
+    #print formula2  
+    model_lm2 = smf.ols(formula2,data=s_data).fit() 
+    model_table2 = sm.stats.anova_lm(model_lm2)
+    #print model_table2        
+    m2_pvalue = model_table1.ix['subwatershed']['PR(>F)']
+    if m2_pvalue <= pvalue:
+        #print 'For independent variable: '+ind_var+', intercepts significantly different at pvalue='+str(pvalue)+' pval='+str(m2_pvalue)
+        intercepts_significant = '*'
+        intercepts_sig = ''
+    if m2_pvalue > pvalue:
+        #print 'For independent variable: '+ind_var+', intercepts NOT significantly different at pvalue='+str(pvalue)+' pval='+str(m2_pvalue)
+        intercepts_significant = ''
+        intercepts_sig = ' NOT'
+    m = sm.stats.anova_lm(model_lm2,model_lm1)    
+    #print m
+    #print 'ANOVA of models, p-value = '+str(m.ix[1]['Pr(>F)'])
+    print 'Predictor: '+ind_var+', slopes were'+slopes_sig+' significant (p='+"%.3f"%m1_pvalue+'), intercepts were'+intercepts_sig+' significant (p='+"%.3f"%m2_pvalue+').'
+    return slopes_significant+intercepts_significant
+
 
 
 #### Sediment Rating Curves: on area-normalized SSY, Q and Qmax
@@ -4809,6 +4873,13 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
         ALLStorms=compileALLStorms(subset)
         ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = 'SSY (Mg)','Precip (mm)','Erosivity Index',r'$(m^3)$',r'$(m^3/sec)$'
     xy=None ## let the Fit functions plot their own lines
+    
+    ## ANCOVA's
+    PS_ANCOVA = ANCOVA(ALLStorms,'Psum')
+    EI_ANCOVA = ANCOVA(ALLStorms,'EI')
+    QsumS_ANCOVA  = ANCOVA(ALLStorms,'Qsum')  
+    QmaxS_ANCOVA = ANCOVA(ALLStorms,'Qmax')     
+    
     ## P vs S at Upper, Total
     ALLStorms_upper = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','Supper']].dropna()
     ALLStorms_total = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','Stotal']].dropna() 
@@ -4819,7 +4890,8 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     PowerFit(ALLStorms_upper['Pstorms'],ALLStorms_upper['Supper'],xy,ps,linestyle='-',color='grey', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
     ## Total Watershed (=LBJ)
     PS_total_power = powerfunction(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],xy,ps,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2) 
+    PowerFit(ALLStorms_total['Pstorms'],ALLStorms_total['Stotal'],xy,ps,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2+' '+PS_ANCOVA) 
+    
     ps.set_xlabel('Total Event Precip (mm)'),ps.set_ylabel(ylabel)
     ps.set_xlim(10**0,10**3),ps.set_ylim(10**-3.1,10**2.2)
     ps.legend(loc='lower right',fancybox=True) 
@@ -4833,7 +4905,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     PowerFit(ALLStorms_upper['EI'],ALLStorms_upper['Supper'],xy,ei,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
     ## Total Watershed (=LBJ)       
     EI_total_power = powerfunction(ALLStorms_total['EI'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'],xy,ei,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2) 
+    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'],xy,ei,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2+' '+EI_ANCOVA) 
     ei.set_xlabel('Event Erosivity Index (MJmm ha-1 h-1)')#ei.set_ylabel(ylabel)
     ei.set_xlim(10**1,10**3)#,ps.set_ylim(10**-3,10**2.2)
     ei.legend(loc='lower left',fancybox=True) 
@@ -4847,7 +4919,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     PowerFit(ALLStorms_upper['Qsumupper'],ALLStorms_upper['Supper'],xy,qsums,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
     ## Total Watershed (=LBJ)
     QsumS_total_power = powerfunction(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],xy,qsums,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2) 
+    PowerFit(ALLStorms_total['Qsumtotal'],ALLStorms_total['Stotal'],xy,qsums,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2+' '+QsumS_ANCOVA) 
     qsums.set_xlabel('Total Event Discharge '+xlabelQsum)
     qsums.set_ylabel(ylabel)#qsums.set_xlabel(xlabelQsum)
     qsums.set_xlim(10**2.5,10**6)#, qsums.set_ylim(10**-3.1,10**2.2)
@@ -4862,7 +4934,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     PowerFit(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],xy,qmaxs,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
     ## Total Watershed (=LBJ)
     QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2)
+    PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2+' '+QmaxS_ANCOVA)
     qmaxs.set_xlabel('Event Peak Discharge '+xlabelQmax)
     #qmaxs.set_ylabel(ylabel)#qmaxs.set_xlabel(xlabelQmax)
     qmaxs.set_xlim(10**-1.2,10**1)#, qmaxs.set_ylim(10**-3,10**2.2)
@@ -4878,8 +4950,11 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     plt.tight_layout(pad=0.1)
     show_plot(show,fig)
     savefig(save,filename)
-    return PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power 
-#plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
+       
+    
+    return (PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power), (PS_ANCOVA, EI_ANCOVA, QsumS_ANCOVA, QmaxS_ANCOVA)
+    
+plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
@@ -4887,7 +4962,9 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
 #plotALLStorms_ALLRatings(subset='post',ms=4,norm=True,log=True,show=True,save=False,filename='')
 
 def ALLRatings_table(subset='pre'):
-    ALLStorms_ALLRatings =plotALLStorms_ALLRatings(subset,show=False)
+    models = plotALLStorms_ALLRatings(subset,show=False)
+    ALLStorms_ALLRatings = models[0]
+    ANCOVAs = models[1]
     
     pearsons = ["%.2f"%rating.pearson[0] for rating in ALLStorms_ALLRatings]
     spearmans = ["%.2f"%rating.spearman[0] for rating in ALLStorms_ALLRatings]
@@ -5102,7 +5179,7 @@ def plotQmaxSseparate(show=True,log=True,save=False,norm=True):
 
 #### Predict Annual SSY
 ## Models
-PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power = plotALLStorms_ALLRatings(subset='pre',show=False)
+PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power = plotALLStorms_ALLRatings(subset='pre',show=False)[0]
 
 def predict_SSY(model,data,start,stop,watershed_area):
     a,b = model.iloc[0][['a','b']]

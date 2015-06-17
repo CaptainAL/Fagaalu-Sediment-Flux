@@ -218,7 +218,7 @@ title_title.paragraph_format.space_before = 0
 title = document.add_heading('Contributions of human activities to suspended sediment yield during storm events from a steep, small, tropical watershed',level=1)
 title.paragraph_format.space_before = 0
 ## subscript/superscript words
-document.add_paragraph("SSYEV, m3, km2, SSYUPPER, SSYLOWER, SSYTOTAL, sSSYUPPER, sSSYLOWER, SSYPRE, alpha, Beta, plus-minus, a, b")
+document.add_paragraph("SSYEV, m3, km2, SSYUPPER, sSSYUPPER, SSYLOWER, sSSYLOWER, SSYTOTAL, sSSYUPPER, alpha, Beta, plus-minus, r2")
 
 ## AUTHORS
 document.add_heading('Authors:',level=3)
@@ -594,9 +594,9 @@ document.add_paragraph("In all models, SSYEV from the TOTAL watershed was higher
 
 if 'SSY_models_ALL' in locals():
     document.add_picture(SSY_models_ALL['filename']+'.png',width=Inches(6))
-    add_figure_caption(SSY_models_ALL['fig_num'],"SSY rating curves for predictors. Each point represents a different storm event.")
+    add_figure_caption(SSY_models_ALL['fig_num'],"SSY rating curves for predictors. Each point represents a different storm event. **=slopes and intercepts were statistically different, *=intercepts were statistically different.")
 ## Power law models from ALLStorms_ALLRatings 
-PS_upper,PS_total,EI_upper,EI_total, QsumS_upper,QsumS_total,QmaxS_upper,QmaxS_total=ALLStorms_ALLRatings
+PS_upper,PS_total,EI_upper,EI_total, QsumS_upper,QsumS_total,QmaxS_upper,QmaxS_total=ALLStorms_ALLRatings[0]
 
 document.add_paragraph("Pearson and Spearman correlation coefficients were fairly similar, meaning the relationships were mostly linear in log-log space. The exception was Qmax for the UPPER subwatershed (Pearson's: "+"%.2f"%QmaxS_upper.pearson+" vs. Spearman's: "+"%.2f"%QmaxS_upper.spearman+"). Only EI30 had a higher Pearson's correlation coefficient than Spearman's, but both were low (Pearson's: "+"%.2f"%EI_total.pearson+" vs. Spearman's: "+"%.2f"%EI_total.spearman+").")
 
