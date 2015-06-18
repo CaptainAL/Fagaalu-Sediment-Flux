@@ -26,6 +26,9 @@ import pandas.stats.moments as m
 from scipy.stats import pearsonr as pearson_r
 from scipy.stats import spearmanr as spearman_r
 
+import statsmodels.formula.api as smf
+import statsmodels.stats.api
+
 #timer
 import datetime as dt
 start_time = dt.datetime.now()
@@ -4825,7 +4828,7 @@ def ANCOVA(ALLStorms, ind_var, pvalue=0.05):
     formula1 = 'SSY ~ '+ind_var+' * subwatershed'
     #print formula1
     model_lm1 = smf.ols(formula1,data=s_data).fit()  
-    model_table1 = sm.stats.anova_lm(model_lm1) 
+    model_table1 = statsmodels.stats.api.anova_lm(model_lm1) 
     #print model_table1
     
     m1_pvalue = model_table1.ix[ind_var+':subwatershed']['PR(>F)']
@@ -4840,7 +4843,7 @@ def ANCOVA(ALLStorms, ind_var, pvalue=0.05):
     formula2 = 'SSY ~ '+ind_var+' + subwatershed'
     #print formula2  
     model_lm2 = smf.ols(formula2,data=s_data).fit() 
-    model_table2 = sm.stats.anova_lm(model_lm2)
+    model_table2 = statsmodels.stats.api.anova_lm(model_lm2)
     #print model_table2        
     m2_pvalue = model_table1.ix['subwatershed']['PR(>F)']
     if m2_pvalue <= pvalue:
@@ -4851,7 +4854,7 @@ def ANCOVA(ALLStorms, ind_var, pvalue=0.05):
         #print 'For independent variable: '+ind_var+', intercepts NOT significantly different at pvalue='+str(pvalue)+' pval='+str(m2_pvalue)
         intercepts_significant = ''
         intercepts_sig = ' NOT'
-    m = sm.stats.anova_lm(model_lm2,model_lm1)    
+    m = statsmodels.stats.api.anova_lm(model_lm2,model_lm1)    
     #print m
     #print 'ANOVA of models, p-value = '+str(m.ix[1]['Pr(>F)'])
     print 'Predictor: '+ind_var+', slopes were'+slopes_sig+' significant (p='+"%.3f"%m1_pvalue+'), intercepts were'+intercepts_sig+' significant (p='+"%.3f"%m2_pvalue+').'
