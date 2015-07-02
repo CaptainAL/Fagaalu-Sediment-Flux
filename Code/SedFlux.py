@@ -319,7 +319,7 @@ def showstormintervals(ax,storm_threshold,StormsList,shade_color='grey',show=Tru
 ## Year Interval Times
 start2012, stop2012 = dt.datetime(2012,1,1,0,0), dt.datetime(2012,12,31,11,59)    
 start2013, stop2013 = dt.datetime(2013,1,1,0,0), dt.datetime(2013,12,31,11,59)
-start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2015,1,15,11,59)   
+start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2015,6,19,11,59)   
 ## Field Seasons
 fieldstart2012, fieldstop2012 =  dt.datetime(2012,1,5,0,0), dt.datetime(2012,3,29,11,59)    
 fieldstart2013, fieldstop2013 =  dt.datetime(2013,2,4,0,0), dt.datetime(2013,7,17,11,59)    
@@ -369,6 +369,7 @@ if 'Precip' not in locals():
     ## Timu-Fagaalu 1 (by the Quarry)
     Precip = raingauge(XL,'Timu-Fagaalu1-2013',180) ## (path,sheet,shift) no header needed
     Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2014',0)) ## (path,sheet,shift) no header needed
+    Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2015',0)) ## (path,sheet,shift) no header needed
     Precip.columns=['Timu1']
     Precip['Timu1-15']=Precip['Timu1'].resample('15Min',how='sum')
     Precip['Timu1-30']=Precip['Timu1'].resample('30Min',how='sum')
@@ -671,10 +672,10 @@ def barologger(XL,sheet=''):
     Baro=Baro.resample('15Min',how='mean')
     return Baro
     
-BaroLogger = barologger(XL,'PT-Fagaalu1-Barologger-01_10_15')
+BaroLogger = barologger(XL,'Fagaalu1-Barologger')
  
 ## Build data frame of barometric data: Make column 'baropress' with best available data
-allbaro = pd.DataFrame(NDBCbaro/10)
+allbaro = pd.DataFrame(NDBCbaro/10).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 allbaro['FPbaro']=FP['Bar']/10
 allbaro['NDBCbaro']=NDBCbaro/10
 allbaro['BaroLogger']=BaroLogger
@@ -1929,7 +1930,7 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     savefig(save,filename)
     return f1,p1,QUARRY_DAM_ttest1,QUARRY_LBJ_ttest1,H1,KWp1,QUARRY_DAM_mannwhit1,QUARRY_LBJ_mannwhit1, f2,p2,QUARRY_DAM_ttest2,QUARRY_LBJ_ttest2,H2, KWp2,QUARRY_DAM_mannwhit2,QUARRY_LBJ_mannwhit2
 ## Premitigation
-plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
+#plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
 #plotSSCboxplots(subset='Pre-storm',withR2=False,show=True,save=False,filename='')
 #plotSSCboxplots(subset='pre',withR2=True,show=True) # R2 samples not comparable with others
 
@@ -4957,7 +4958,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     
     return (PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power), (PS_ANCOVA, EI_ANCOVA, QsumS_ANCOVA, QmaxS_ANCOVA)
     
-plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
+#plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
