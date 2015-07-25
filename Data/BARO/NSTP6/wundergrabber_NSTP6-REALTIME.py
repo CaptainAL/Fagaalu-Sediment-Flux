@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Created on Fri Mar 21 12:45:57 2014
 
@@ -47,7 +47,7 @@ if datagrab == True:
         frame = frame.convert_objects(convert_numeric=True)
         frame = frame.sort()
     
-        datafile =  frame.to_csv(path_or_buf='C:/Users/Alex/Documents/GitHub/Fagaalu-Sediment-Flux/Data/BARO/NSTP6/NSTP6-RealTime_01_27_15.csv',
+        datafile =  frame.to_csv(path_or_buf='C:/Users/Alex/Documents/GitHub/Fagaalu-Sediment-Flux/Data/BARO/NSTP6/NSTP6-RealTime_07_17_15.csv',
                                  sep=' ',index=False)
         
     except:

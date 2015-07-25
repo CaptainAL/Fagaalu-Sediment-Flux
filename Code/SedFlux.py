@@ -1630,10 +1630,10 @@ def QYears(log=False,show=False,save=False,filename=''):
     letter_subplots(fig,0.1,0.95,'top','right','k',font_size=10,font_weight='bold')
     
     for ax in fig.axes:
-        ax.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='k',label='Q FG3 (Mannings)')
-        ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='k')
-        ax.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='grey',label='Q FG1(HEC-RAS)')
-        ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='grey')
+        ax.plot_date(LBJ['Q'].index,LBJ['Q'],ls='-',marker='None',c='k',label='Q FG3')
+        #ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='k')
+        ax.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='grey',label='Q FG1')
+        #ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='grey')
         ax.set_ylim(0,LBJ['Q'].max()+500)    
     Q2012.set_xlim(start2012,stop2012),Q2013.set_xlim(start2013,stop2013),Q2014.set_xlim(start2014,stop2014)
     Q2012.legend(loc='best')
@@ -1919,7 +1919,7 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     ax1.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')
     ax2.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')    
     
-    ax1.legend(), ax2.legend()    
+    #ax1.legend(), ax2.legend()    
     if log==True:
         ax1.set_yscale('log'), ax2.set_yscale('log')   
     ax1.set_ylabel('SSC (mg/L)'),ax1.set_xlabel('Location'),ax2.set_xlabel('Location')
