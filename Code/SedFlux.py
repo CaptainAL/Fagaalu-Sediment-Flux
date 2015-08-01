@@ -319,7 +319,7 @@ def showstormintervals(ax,storm_threshold,StormsList,shade_color='grey',show=Tru
 ## Year Interval Times
 start2012, stop2012 = dt.datetime(2012,1,1,0,0), dt.datetime(2012,12,31,11,59)    
 start2013, stop2013 = dt.datetime(2013,1,1,0,0), dt.datetime(2013,12,31,11,59)
-start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2015,6,19,11,59)   
+start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2015,1,9,11,59)   
 ## Field Seasons
 fieldstart2012, fieldstop2012 =  dt.datetime(2012,1,5,0,0), dt.datetime(2012,3,29,11,59)    
 fieldstart2013, fieldstop2013 =  dt.datetime(2013,2,4,0,0), dt.datetime(2013,7,17,11,59)    
@@ -369,7 +369,7 @@ if 'Precip' not in locals():
     ## Timu-Fagaalu 1 (by the Quarry)
     Precip = raingauge(XL,'Timu-Fagaalu1-2013',180) ## (path,sheet,shift) no header needed
     Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2014',0)) ## (path,sheet,shift) no header needed
-    Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2015',0)) ## (path,sheet,shift) no header needed
+    #Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2015',0)) ## (path,sheet,shift) no header needed
     Precip.columns=['Timu1']
     Precip['Timu1-15']=Precip['Timu1'].resample('15Min',how='sum')
     Precip['Timu1-30']=Precip['Timu1'].resample('30Min',how='sum')
