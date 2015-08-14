@@ -360,7 +360,7 @@ def raingauge(XL,sheet='',shift=0):
     #my_parser= lambda x: dt.datetime.strptime(x,"%m/%d/%Y %H:%M")
     gauge = XL.parse(sheet,header=1,index_col=0,parse_cols='B,C',parse_dates=True)#,date_parser=my_parser)
     gauge= gauge.shift(shift)
-    gauge = gauge*.254 ##hundredths to mm
+    gauge = gauge*0.254 ##hundredths to mm
     gauge.columns=['Events']
     return gauge    
 
