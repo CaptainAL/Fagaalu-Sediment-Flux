@@ -105,6 +105,7 @@ def letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k'
 mpl.rc_file(maindir+'johrc.rc')
 mpl.rcParams['savefig.directory']=maindir+'rawfig/'
 mpl.rcParams
+mpl.rc('legend',scatterpoints=1)  
 ## Ticks
 my_locator = matplotlib.ticker.MaxNLocator(4)
 
@@ -1649,7 +1650,7 @@ def QYears(log=False,show=False,save=False,filename=''):
     show_plot(show,fig)
     savefig(save,filename)
     return
-#QYears(log=False,show=True,save=False,filename='')
+QYears(log=False,show=True,save=False,filename='')
     
 ### ..
 ## Import SSC Data
@@ -1827,6 +1828,7 @@ def SSCprobplots(subset='pre',withR2=False,show=False,save=False,filename=figdir
 
 def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,filename=figdir+''):
     #mpl.rc('lines',markersize=300)
+    mpl.rc('legend',scatterpoints=1)  
     fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,3),sharey=True)
     ax1.text(0.01,0.95,'(a) Baseflow',verticalalignment='top', horizontalalignment='left',transform=ax1.transAxes,color='k',fontsize=10,fontweight='bold')
     ax2.text(0.01,0.95,'(b) Stormflow',verticalalignment='top', horizontalalignment='left',transform=ax2.transAxes,color='k',fontsize=10,fontweight='bold')        
@@ -1930,7 +1932,7 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     savefig(save,filename)
     return f1,p1,QUARRY_DAM_ttest1,QUARRY_LBJ_ttest1,H1,KWp1,QUARRY_DAM_mannwhit1,QUARRY_LBJ_mannwhit1, f2,p2,QUARRY_DAM_ttest2,QUARRY_LBJ_ttest2,H2, KWp2,QUARRY_DAM_mannwhit2,QUARRY_LBJ_mannwhit2
 ## Premitigation
-#plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
+plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
 #plotSSCboxplots(subset='Pre-storm',withR2=False,show=True,save=False,filename='')
 #plotSSCboxplots(subset='pre',withR2=True,show=True) # R2 samples not comparable with others
 
