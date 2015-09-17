@@ -1688,6 +1688,16 @@ SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
 SSC= loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
 SSC = SSC[SSC['SSC (mg/L)']>0]
 
+precip_24hr = pd.DataFrame()
+
+for ssc in SSC.iterrows():
+    ssc_precip = PrecipFilled['Precip'][ssc[0]-dt.timedelta(hours=24):pd.to_datetime(ssc[0])].sum()
+    print ssc[0], ssc_precip
+    precip_24hr= precip_24hr.append(pd.DataFrame({'24hr_precip':ssc_precip},index=[ssc[0]]))
+    
+    
+SSC['24hr_precip']=precip_24hr['24hr_precip']
+
 ## ALL SSC stormflow samples
 SSC_all_storm_samples = pd.DataFrame()
 for storm_index,storm in LBJ_StormIntervals.iterrows():
@@ -2045,19 +2055,23 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     elif subset=='post' and  storm_samples_only==False:
         SSC = SSC_dict['Post-ALL']    
     ## Append Discharge (Q) data
-    dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM']['SSC (mg/L)'])
+    dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM'][['SSC (mg/L)','24hr_precip']])
     dam_ssc['Q']=DAM['Q']
     dam_ssc = dam_ssc.dropna()
-    quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])]['SSC (mg/L)'])
+    quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])][['SSC (mg/L)','24hr_precip']])
     quarry_ssc['Q']=QUARRY['Q']
     quarry_ssc =quarry_ssc.dropna()
-    lbj_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ']['SSC (mg/L)'])
+    quarry_ssc_noP = quarry_ssc[(quarry_ssc['24hr_precip']<=0) & (quarry_ssc['SSC (mg/L)']>=500)]
+    lbj_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ'][['SSC (mg/L)','24hr_precip']])
     lbj_ssc['Q']=LBJ['Q']
     lbj_ssc=lbj_ssc.dropna()
+    lbj_ssc_noP = lbj_ssc[lbj_ssc['24hr_precip']<=2]
     ## Subset by year
     dam_ssc2012,dam_ssc2013,dam_ssc2014 = dam_ssc[start2012:stop2012],dam_ssc[start2013:stop2013],dam_ssc[start2014:stop2014]
     quarry2012,quarry2013,quarry2014 = quarry_ssc[start2012:stop2012],quarry_ssc[start2013:stop2013],quarry_ssc[start2014:stop2014]
     lbj_ssc2012,lbj_ssc2013,lbj_ssc2014 = lbj_ssc[start2012:stop2012],lbj_ssc[start2013:stop2013],lbj_ssc[start2014:stop2014]
+    
+    Pquarry2012,Pquarry2013,Pquarry2014 = quarry_ssc_noP[start2012:stop2012],quarry_ssc_noP[start2013:stop2013],quarry_ssc_noP[start2014:stop2014]
     ## Regression
     damQC = pd.ols(y=dam_ssc['SSC (mg/L)'],x=dam_ssc['Q'])
     quarQC =  pd.ols(y=quarry_ssc['SSC (mg/L)'],x=quarry_ssc['Q'])
@@ -2073,11 +2087,18 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     down.loglog(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
     down.loglog(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='2013')
     down.loglog(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='2014')
+    #down.loglog(lbj_ssc_noP['Q'],lbj_ssc_noP['SSC (mg/L)'],'s',fillstyle='none',c='r',label='<12mm P')
     ## loglog quarry samples
     quar.set_title('FG2',fontsize=10)
     quar.loglog(quarry2012['Q'],quarry2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
     quar.loglog(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='2013')
     quar.loglog(quarry2014['Q'],quarry2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='2014')
+    ## with no P
+    quar.loglog(Pquarry2012['Q'],Pquarry2012['SSC (mg/L)'],'o',c='k',label='2012-no P')
+    quar.loglog(Pquarry2013['Q'],Pquarry2013['SSC (mg/L)'],'^',c='k',label='2013-no P')
+    quar.loglog(Pquarry2014['Q'],Pquarry2014['SSC (mg/L)'],'s',c='k',label='2014-no P')
+    
+    
     ## loglog DAM samples
     up.set_title('FG1',fontsize=10)
     up.loglog(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
@@ -2100,7 +2121,7 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     return
 ## Pre-mitigation
 #plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=True,log=True,save=False,filename=figdir+'')
-#plotQvsC(subset='pre',storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
+plotQvsC(subset='pre',storm_samples_only=False,ms=5,show=True,log=False,save=False,filename=figdir+'')
 ## Post-mitgation
 #plotQvsC(subset='post',storm_samples_only=False,ms=6,show=True,log=False,save=False,filename=figdir+'')
 #plotQvsC(subset='post',storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
@@ -2138,7 +2159,7 @@ LBJGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, LBJgrab,60)
 LBJ['GrabInt-SSC-mg/L'] = LBJGrabSampleSSC['GrabInterpolated']
 LBJ['GrabInt-SSC-mg/L-RMSE'] = 0
 LBJ['GrabInt-SedFlux-mg/sec']=LBJ['Q'] * LBJ['GrabInt-SSC-mg/L']# Q(L/sec) * C (mg/L)
-LBJ['GrabInt-SedFlux-tons/sec']=LBJ['GrabInt-SedFlux-mg/sec']*(10**-9) ## mg x 10**-6 = tons
+LBJ['GrabInt-SedFlux-tons/sec']=LBJ['GrabInt-SedFlux-mg/sec']*(10**-9) ## mg x 10**-9 = tons
 LBJ['GrabInt-SedFlux-tons/15min']=LBJ['GrabInt-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min
  
 ## QUARRY
@@ -2822,7 +2843,7 @@ def plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=False,show=True,save=Fal
             SSC = SSC_dict['Pre-storm']
         elif storm_samples_only==False:
             SSC = SSC_dict['Pre-ALL']  
-    fig, (ysi,obsa,obsb) = plt.subplots(1,3,figsize=(8,3))#,sharex=True,sharey=True)
+    fig, (ysi,obs) = plt.subplots(1,2,figsize=(6.5,3.25))#,sharex=True,sharey=True)
             
     max_y, max_x = 1100, 1100
     xy = np.linspace(0,max_y)
@@ -2831,30 +2852,30 @@ def plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=False,show=True,save=Fal
     ## LBJ
     lbj=NTU_SSCrating(SSC,LBJ_YSI['NTU'],location='LBJ',T_interval='15Min',Intercept=False,log=False)
     ysi.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',markersize=4,c='grey',label='FG3')
-    ysi.plot(xy,xy*lbj[0].beta[0],ls='-',c='grey',label='FG3 '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    ysi.plot(xy,xy*lbj[0].beta[0],ls='-',c='grey',label='YSI_FG3 '+r'$r^2$'+"%.2f"%lbj[0].r2)
     ## DAM
     dam=NTU_SSCrating(SSC,DAM_YSI['NTU'],location='DAM',T_interval='15Min',Intercept=False,log=False)
-    ysi.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='s',markersize=4,c='k',label='FG1')
-    ysi.plot(xy,xy*dam[0].beta[0],ls='-',c='k',label='FG1 '+r'$r^2$'+"%.2f"%dam[0].r2)
+    ysi.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='o',markersize=4,c='k',label='FG1')
+    ysi.plot(xy,xy*dam[0].beta[0],ls='-',c='k',label='YSI_FG1 '+r'$r^2$'+"%.2f"%dam[0].r2)
     ysi.set_xlabel('NTU')
     ysi.set_ylabel('SSC (mg/L)')
     ysi.legend(ncol=2,fontsize=8,columnspacing=0.1)
     ## LBJ OBSa
     ## SS Avg
     ss_average=NTU_SSCrating(SSC,LBJ_OBSa['Turb_SS_Avg'],location='LBJ',T_interval='5Min',Intercept=False,log=False)
-    obsa.scatter(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'],c='k')
-    obsa.plot(xy,xy*ss_average[0].beta[0],ls='-',c='k',label='SS_Avg '+r'$r^2$'+"%.2f"%ss_average[0].r2)   
-    obsa.set_xlabel('SS Avg')
-    obsa.yaxis.set_visible(False)
-    obsa.legend(fontsize=8)
+    obs.plot(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'],c='k',label='FG3 OBSa',ls='none',marker='o',markersize=4)
+    obs.plot(xy,xy*ss_average[0].beta[0],ls='-',c='k',label='OBSa '+r'$r^2$'+"%.2f"%ss_average[0].r2)   
+    
     ## LBJ OBSb
     ## SS Mean
     ss_mean=NTU_SSCrating(SSC,LBJ_OBSb['Turb_SS_Mean'],location='LBJ',T_interval='15Min',Intercept=False,log=False)
-    obsb.scatter(ss_mean[1]['T-NTU'],ss_mean[1]['SSC (mg/L)'],c='k')
-    obsb.plot(xy,xy*ss_mean[0].beta[0],ls='-',c='k',label='SS_Mean '+r'$r^2$'+"%.2f"%ss_mean[0].r2) 
-    obsb.set_xlabel('SS Mean')
-    obsb.yaxis.set_visible(False)
-    obsb.legend(fontsize=8)
+    obs.plot(ss_mean[1]['T-NTU'],ss_mean[1]['SSC (mg/L)'],c='k',marker='o',ls='none',fillstyle='none',markersize=4,label='FG3 OBSb')
+    obs.plot(xy,xy*ss_mean[0].beta[0],ls='-',c='grey',label='OBSb '+r'$r^2$'+"%.2f"%ss_mean[0].r2) 
+    
+    obs.set_xlabel('SS')
+    obs.yaxis.set_visible(False)
+    obs.legend(ncol=2,fontsize=8,columnspacing=0.1)
+    
     for ax in fig.axes:
         ax.locator_params(nbins=4,axis='y'), ax.locator_params(nbins=3,axis='x')
         ax.set_xlim(0,max_x), ax.set_ylim(0,max_y)
@@ -2864,7 +2885,7 @@ def plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=False,show=True,save=Fal
     show_plot(show)
     savefig(save,filename)
     return
-#plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='',sub_plot_count=0)
+plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='',sub_plot_count=0)
 
 ### Choose OBS parameters
 LBJ_OBSa['NTU']=LBJ_OBSa['Turb_SS_Avg']
