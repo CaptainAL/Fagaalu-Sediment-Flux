@@ -4962,7 +4962,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     ## Total Watershed (=LBJ)
     QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'])
     PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2+' '+QmaxS_ANCOVA)
-    qmaxs.set_xlabel('Event Peak Discharge '+xlabelQmax)
+    qmaxs.set_xlabel('Maximum Event Discharge '+xlabelQmax)
     #qmaxs.set_ylabel(ylabel)#qmaxs.set_xlabel(xlabelQmax)
     qmaxs.set_xlim(10**-1.2,10**1)#, qmaxs.set_ylim(10**-3,10**2.2)
     qmaxs.legend(loc='lower right',fancybox=True) 
@@ -5067,7 +5067,7 @@ def plotQmaxS(show=True,log=True,save=False,norm=True):
         PowerFit(xy,DuvertCOMX,xy,qs,linestyle='-.',color='b',label=r'Duvert(2012)$Mexico$')        
         qs.legend(loc='best',ncol=3,fancybox=True)  
     qs.legend(loc='best',ncol=2,fancybox=True)  
-    title="Event Peak Discharge vs Event Sediment Yield from Fagaalu Stream"
+    title="Maximum Event Discharge vs Event Sediment Yield from Fagaalu Stream"
     qs.set_title(title)
     qs.set_ylabel(ylabel)
     qs.set_xlabel(xlabel)#+r'$; DotSize= Qsum (m^3)$')
@@ -5109,7 +5109,7 @@ def plotQmaxStotal(subset='pre',ms=10,norm=False,log=False,show=False,save=False
     ## Total Watershed (=LBJ)
     QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'])
     PowerFit(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],xy,qmaxs,linestyle='-',color='k',label='F3 Village '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2)
-    qmaxs.set_xlabel('Event Peak Discharge '+xlabelQmax)
+    qmaxs.set_xlabel('Maximum Event Discharge '+xlabelQmax)
     qmaxs.set_ylabel(ylabel)
     #qmaxs.set_ylabel(ylabel)#qmaxs.set_xlabel(xlabelQmax)
     qmaxs.set_xlim(10**-1.2,10**1)#, qmaxs.set_ylim(10**-3,10**2.2)
@@ -5186,7 +5186,7 @@ def plotQmaxSseparate(show=True,log=True,save=False,norm=True):
         PowerFit(xy,DuvertCOMX,xy,qs_total,linestyle='-.',color='b',label=r'Duvert(2012)$CO_{MX}$')        
         qs_total.legend(loc='best',ncol=3,fancybox=True)  
     
-    title="Event Peak Discharge vs Event Sediment Yield from Fagaalu Stream"
+    title="Maximum Event Discharge vs Event Sediment Yield from Fagaalu Stream"
     plt.suptitle(title)
     qs_upper.set_ylabel(ylabel)
     qs_upper.set_xlabel(xlabel)#+r'$; DotSize= Qsum (m^3)$')
