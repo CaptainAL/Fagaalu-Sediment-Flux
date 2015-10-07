@@ -321,6 +321,7 @@ def showstormintervals(ax,storm_threshold,StormsList,shade_color='grey',show=Tru
 start2012, stop2012 = dt.datetime(2012,1,1,0,0), dt.datetime(2012,12,31,11,59)    
 start2013, stop2013 = dt.datetime(2013,1,1,0,0), dt.datetime(2013,12,31,11,59)
 start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2015,1,9,11,59)   
+#start2015, stop2015 = dt.datetime(2015,1,10,0,0), dt.datetime(2015,4,10,11,59)   
 ## Field Seasons
 fieldstart2012, fieldstop2012 =  dt.datetime(2012,1,5,0,0), dt.datetime(2012,3,29,11,59)    
 fieldstart2013, fieldstop2013 =  dt.datetime(2013,2,4,0,0), dt.datetime(2013,7,17,11,59)    
@@ -846,7 +847,7 @@ Fagaalu_stage_data = Fagaalu_stage_data.reindex(pd.date_range(start2012,stop2014
 #### Define Storm Periods #####
 ## Define Storm Intervals at LBJ
 DefineStormIntervalsBy = {'User':'User','Separately':'BOTH','DAM':'DAM','LBJ':'LBJ'}
-StormIntervalDef = DefineStormIntervalsBy['LBJ']
+StormIntervalDef = DefineStormIntervalsBy['User']
 
 #from HydrographTools import SeparateHydrograph
 def SeparateHydrograph(hydrodata='stage',minimum_length=8):
@@ -1028,11 +1029,17 @@ if StormIntervalDef=='BOTH':
 ## Use User-defined storm intervals
 if StormIntervalDef=='User':
     print 'Storm intervals defined by user'
-    LBJstormintervalsXL = pd.ExcelFile(datadir+'LBJ_StormIntervals_filtered.xlsx')
-    LBJ_StormIntervals = LBJstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
+    #LBJstormintervalsXL = pd.ExcelFile(datadir+'LBJ_StormIntervals_filtered.xlsx')
+    #LBJ_StormIntervals = LBJstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
+    
+    LBJstormintervalsXL = pd.ExcelFile(datadir+'StormIntervals_defined.xlsx')
+    LBJ_StormIntervals = LBJstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)    
+    
     ## 
     DAMstormintervalsXL = pd.ExcelFile(datadir+'DAM_StormIntervals_filtered.xlsx')
     DAM_StormIntervals = DAMstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
+    
+    DAM_StormIntervals = LBJ_StormIntervals
     QUARRY_StormIntervals, DAM_StormIntervals = DAM_StormIntervals, DAM_StormIntervals
 
 ### SAVE Storm Intervals for LATER
@@ -1650,7 +1657,7 @@ def QYears(log=False,show=False,save=False,filename=''):
     show_plot(show,fig)
     savefig(save,filename)
     return
-QYears(log=False,show=True,save=False,filename='')
+#QYears(log=False,show=True,save=False,filename='')
     
 ### ..
 ## Import SSC Data
@@ -1942,7 +1949,7 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     savefig(save,filename)
     return f1,p1,QUARRY_DAM_ttest1,QUARRY_LBJ_ttest1,H1,KWp1,QUARRY_DAM_mannwhit1,QUARRY_LBJ_mannwhit1, f2,p2,QUARRY_DAM_ttest2,QUARRY_LBJ_ttest2,H2, KWp2,QUARRY_DAM_mannwhit2,QUARRY_LBJ_mannwhit2
 ## Premitigation
-plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
+#plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
 #plotSSCboxplots(subset='Pre-storm',withR2=False,show=True,save=False,filename='')
 #plotSSCboxplots(subset='pre',withR2=True,show=True) # R2 samples not comparable with others
 
@@ -2121,7 +2128,7 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     return
 ## Pre-mitigation
 #plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=True,log=True,save=False,filename=figdir+'')
-plotQvsC(subset='pre',storm_samples_only=False,ms=5,show=True,log=False,save=False,filename=figdir+'')
+#plotQvsC(subset='pre',storm_samples_only=False,ms=5,show=True,log=False,save=False,filename=figdir+'')
 ## Post-mitgation
 #plotQvsC(subset='post',storm_samples_only=False,ms=6,show=True,log=False,save=False,filename=figdir+'')
 #plotQvsC(subset='post',storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
@@ -2885,7 +2892,7 @@ def plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=False,show=True,save=Fal
     show_plot(show)
     savefig(save,filename)
     return
-plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='',sub_plot_count=0)
+#plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=True,show=True,save=False,filename='',sub_plot_count=0)
 
 ### Choose OBS parameters
 LBJ_OBSa['NTU']=LBJ_OBSa['Turb_SS_Avg']
@@ -4086,17 +4093,17 @@ def S_storm_diff_table(subset='pre'):
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
     #S_diff['UPPER SSY data source'] = S_diff['SSY_data_source_upper']
-    S_diff['UPPER PE %'] = S_diff['Supper_PE'].apply(int)
+    S_diff['UPPER PE %'] = S_diff['Supper_PE'].dropna().apply(int)
     S_diff['LOWER tons']=S_diff['Slower'].round(2)
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
     #S_diff['TOTAL SSY data source'] = S_diff['SSY_data_source_total']
     S_diff['SSY data source'] = S_diff['SSY_data_source_total']
-    S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
+    S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].dropna().apply(int)
     S_diff['% UPPER'] = S_diff['Supper']/S_diff['Stotal']*100
     S_diff['% UPPER'] = S_diff['% UPPER'].dropna().apply(int)
     S_diff['% LOWER'] = S_diff['Slower']/S_diff['Stotal']*100
     S_diff['% LOWER'] = S_diff['% LOWER'].dropna().apply(int)
-    S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
+    S_diff['Precip (mm)'] = S_diff['Pstorms'].dropna().apply(int)
     S_diff = S_diff[S_diff['Precip (mm)']>0]
     ## Filter negative values for S at LBJ    
     S_diff = S_diff[S_diff['Slower']>0]
@@ -4131,17 +4138,17 @@ def SSY_dist_table(subset='pre'):
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
     #S_diff['UPPER SSY data source'] = S_diff['SSY_data_source_upper']
-    S_diff['UPPER PE %'] = S_diff['Supper_PE'].apply(int)
+    S_diff['UPPER PE %'] = S_diff['Supper_PE'].dropna().apply(int)
     S_diff['LOWER tons']=S_diff['Slower'].round(2)
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
     #S_diff['TOTAL SSY data source'] = S_diff['SSY_data_source_total']
     S_diff['SSY data source'] = S_diff['SSY_data_source_total']
-    S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
+    S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].dropna().apply(int)
     S_diff['% UPPER'] = S_diff['Supper']/S_diff['Stotal']*100
     S_diff['% UPPER'] = S_diff['% UPPER'].dropna().apply(int)
     S_diff['% LOWER'] = S_diff['Slower']/S_diff['Stotal']*100
     S_diff['% LOWER'] = S_diff['% LOWER'].dropna().apply(int)
-    S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
+    S_diff['Precip (mm)'] = S_diff['Pstorms'].dropna().apply(int)
     S_diff = S_diff[S_diff['Precip (mm)']>0]
     ## Filter negative values for S at LBJ    
     S_diff = S_diff[S_diff['Slower']>0]
@@ -4269,7 +4276,7 @@ def SSY_dist_table_quarry(subset='pre',manual_edit=True):
     S_diff['% LOWER_QUARRY'] = S_diff['% LOWER_QUARRY'].dropna().apply(int)    
     S_diff['% LOWER_VILLAGE'] = S_diff['LOWER_VILLAGE tons']/S_diff['TOTAL tons']*100
     S_diff['% LOWER_VILLAGE'] = S_diff['% LOWER_VILLAGE'].dropna().apply(int)
-    S_diff['Precip (mm)'] = S_diff['Pstorms'].apply(int)
+    S_diff['Precip (mm)'] = S_diff['Pstorms'].dropna().apply(int)
     S_diff = S_diff[S_diff['Precip (mm)']>0]
     ## Filter negative values for S at LBJ    
     S_diff = S_diff[S_diff['LOWER_VILLAGE tons']>0]
@@ -4385,7 +4392,7 @@ def Q_S_storm_diff_summary_table(subset='pre'):
     ## Calculate percent contributions from upper and lower watersheds
     
     # Precip
-    diff['Psum'] = diff['Pstorms'].apply(int)
+    diff['Psum'] = diff['Pstorms'].dropna().apply(int)
     diff = diff[diff['Psum']>0]
     ## Q discharge
     diff['QupperMCM'] = diff['Qsumupper']/10.**6.
@@ -4956,6 +4963,10 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     ALLStorms_total = ALLStorms[['Qmaxtotal','Stotal']].dropna() 
     qmaxs.plot(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
     qmaxs.plot(ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],color='k',linestyle='none',marker='o')#,label='Total')
+    
+    labelindex(ALLStorms_total.index,ALLStorms_total['Qmaxtotal'],ALLStorms_total['Stotal'],qmaxs)   
+    labelindex(ALLStorms_upper.index,ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],qmaxs)   
+    
     ## Upper Watershed (=DAM)       
     QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'])
     PowerFit(ALLStorms_upper['Qmaxupper'],ALLStorms_upper['Supper'],xy,qmaxs,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
@@ -4981,7 +4992,7 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     
     return (PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power), (PS_ANCOVA, EI_ANCOVA, QsumS_ANCOVA, QmaxS_ANCOVA)
     
-#plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
+plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
 #plotALLStorms_ALLRatings(show=True,log=False,save=True)
 #plotALLStorms_ALLRatings(ms=20,show=True,log=True,save=True,norm=False)
@@ -5209,11 +5220,37 @@ def plotQmaxSseparate(show=True,log=True,save=False,norm=True):
 PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power = plotALLStorms_ALLRatings(subset='pre',show=False)[0]
 
 def predict_SSY(model,data,start,stop,watershed_area):
+    ## Model parameters
     a,b = model.iloc[0][['a','b']]
-    SSY_predicted = a * ((data[start:stop]) **b)
-    SSY = SSY_predicted.sum()
+    ## run model **AREA-NORMALIZED
+    SSY_EV_predicted = a * ((data[start:stop]/watershed_area) **b) ## model: ssy/km2 = a Qmax/km2 ^b
+    ## Plot input data and SSYEV predicted (AREA NORMALIZED)
+    fig, ax1 = plt.subplots(1,figsize=(5,4))
+    ax1.plot(data[start:stop]/watershed_area,SSY_EV_predicted,ls='none',marker='o',markersize=5,fillstyle='none',c='k')
+    PowerFit(data[start:stop]/watershed_area,SSY_EV_predicted,None,ax1,linestyle='-',color='k',label='Qmax_TOTAL') 
+    ax1.set_xscale('log'), ax1.set_yscale('log')
+    ax1.set_xlabel('Maximum Event Discharge m3/s/km2')
+    ax1.set_ylabel('SSYEV tons/km2')
+    ax1.set_xlim(10**-1.2,10**1), ax1.set_ylim(10**-3,10**2.2)
+    ax1.legend(loc='lower right',fancybox=True) 
+    ## Plot input data and SSYEV predicted (NOT AREA NORMALIZED)
+    ax1.plot(data[start:stop],SSY_EV_predicted*watershed_area,ls='none',marker='o',markersize=5,fillstyle='none',c='r')
+    PowerFit(data[start:stop],SSY_EV_predicted*watershed_area,None,ax1,linestyle='-',color='r',label='Not area normalized') 
+    ax1.set_xscale('log'), ax1.set_yscale('log')
+    ax1.set_xlabel('Maximum Event Discharge m3/s (/km2)')
+    ax1.set_ylabel('SSYEV tons (/km2)')
+    ax1.set_xlim(10**-1.2,10**1), ax1.set_ylim(10**-3,10**2.2)
+    ax1.legend(loc='lower right',fancybox=True) 
+    plt.tight_layout(pad=0.1)
+    plt.show()
+    ## output numbers
+    SSY_EV_predicted = SSY_EV_predicted * watershed_area
+    SSY = SSY_EV_predicted.sum()
     spec_SSY  = SSY/watershed_area
     return "%.0f"%SSY, "%.0f"%spec_SSY
+predict_SSY(QmaxS_total_power,SedFluxStorms_LBJ['Qmax']/1000,start2014,dt.datetime(2014,12,31),1.78)
+
+
     
 ## Total
 SSY_Total_2012, sSSY_Total_2012 = predict_SSY(QmaxS_total_power,SedFluxStorms_LBJ['Qmax']/1000,start2012,stop2012,1.78)
@@ -5225,8 +5262,15 @@ SSY_Upper_2014, sSSY_Upper_2014 = predict_SSY(QmaxS_upper_power,SedFluxStorms_DA
 
 ## Use LBJ_Qmax to DAM_Qmax relationship to fill gaps in LBJ Q
 Storms_Qmax = pd.DataFrame({'LBJ_Qmax':SedFluxStorms_LBJ['Qmax'],'DAM_Qmax':SedFluxStorms_DAM['Qmax']})
-#plt.plot(Storms_Qmax['DAM_Qmax'],Storms_Qmax['LBJ_Qmax'],ls='none',marker='.')
+plt.plot(Storms_Qmax['DAM_Qmax'],Storms_Qmax['LBJ_Qmax'],ls='none',marker='o',fillstyle='none',c='k',label='Qmax data from LBJ and DAM 2012-2014')
 Qmax_fill = pd.ols(x=Storms_Qmax['DAM_Qmax'],y=Storms_Qmax['LBJ_Qmax'])
+qmax_dam = range(0,int(Storms_Qmax['DAM_Qmax'].max()),1000)
+qmax_predicted_lbj =   qmax_dam * Qmax_fill.beta[0] + Qmax_fill.beta[1]
+plt.plot(qmax_dam,qmax_predicted_lbj,c='k',label='Linear regression')
+plt.xlabel('Qmax at DAM'), plt.ylabel('Qmax at LBJ')
+plt.text(1000,8000,'Qmax_DAM * '+'%.2f'% Qmax_fill.beta[0]+' + '+'%.2f'% Qmax_fill.beta[1])
+plt.legend()
+
 ## Need to get storm intervals for DAM Q timeseries
 ## Define Storm Intervals at DAM
 def DAM_Q_storm_with_new_DAMstormIntervals():
@@ -5258,9 +5302,15 @@ LBJ_Qmax_fill = DAM_Qstorms_DAM_intervals['Qmax'] * Qmax_fill.beta[0] + Qmax_fil
 
 SedFluxStorms_LBJ_filled = pd.DataFrame({'LBJ_Q':SedFluxStorms_LBJ['Qmax'],'LBJ_Q_filled':LBJ_Qmax_fill},index = LBJ_Qmax_fill.index)
 
+plt.plot(SedFluxStorms_LBJ_filled['LBJ_Q'], SedFluxStorms_LBJ_filled['LBJ_Q_filled'],ls='none',marker=0,color='k')
+plt.xlabel('LBJ Qmax measured'), plt.ylabel('LBJ Qmax predicted')
+plt.plot([0,7000],[0,7000],ls='--',color='k',label='1:1')
+plt.legend()
+
 SedFluxStorms_LBJ_filled['LBJ_Q_combined'] =  SedFluxStorms_LBJ_filled['LBJ_Q'].where(SedFluxStorms_LBJ_filled['LBJ_Q']>0,SedFluxStorms_LBJ_filled['LBJ_Q_filled'])
 
-SSY_Total_filled_2014, sSSY_Total_filled_2014 =predict_SSY(QmaxS_total_power,SedFluxStorms_LBJ_filled['LBJ_Q_combined']/1000,start2014,dt.datetime(2014,12,31),1.78)
+
+SSY_Total_filled_2014, sSSY_Total_filled_2014 = predict_SSY(QmaxS_total_power,SedFluxStorms_LBJ_filled['LBJ_Q_combined']/1000,start2014,dt.datetime(2014,12,31),1.78)
 
 
 
@@ -5289,5 +5339,23 @@ def Annual_SSY_tables():
 plt.show()
 elapsed = dt.datetime.now() - start_time 
 print 'run time: '+str(elapsed)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

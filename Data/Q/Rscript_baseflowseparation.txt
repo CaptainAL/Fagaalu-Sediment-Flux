@@ -1,0 +1,15 @@
+
+## read in data
+flowdata = read.csv("C:/Users/Alex/Documents/GitHub/Fagaalu-Sediment-Flux/Data/Q/LBJ_Q_from_rating_curve.csv")
+
+## replace blanks with NA
+flowdata[flowdata==""]<-NA
+
+## Drop NA rows from Data Frame
+flow = flowdata[complete.cases(flowdata),]
+
+## run Baseflow Separation
+base = BaseflowSeparation(flow['Flow'][,])
+
+## write results
+write.csv(base,"C:/Users/Alex/Documents/GitHub/Fagaalu-Sediment-Flux/Data/Q/Baseflow_separation.csv")
