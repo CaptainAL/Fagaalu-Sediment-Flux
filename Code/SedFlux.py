@@ -338,10 +338,10 @@ def LandCover_table():
     for column in landcover_table.columns:
         try:
             if column.startswith('%')==True or column.startswith('Cumulative %')==True:
-                landcover_table[column] = landcover_table[column]*100.
-                landcover_table[column] = landcover_table[column].round(1)
+                landcover_table.loc[:,column] = landcover_table.loc[:,column]*100.
+                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(1)
             else:
-                landcover_table[column] = landcover_table[column].round(2)
+                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(2)
         except:
             pass
     landcover_table = landcover_table[landcover_table['Subwatershed (pourpoint)'].isin(['UPPER (FG1)','LOWER_QUARRY (FG2)','LOWER_VILLAGE (FG3)','LOWER (FG3)','TOTAL (FG3)','Fagaalu Stream'])==True].reset_index()
@@ -1613,6 +1613,10 @@ print 'LBJ Q from Mannings and Surveyed Cross Section'
 DAM['Q']= DAM['Q-HEC'].round(0)
 DAM['Q-RMSE'] = DAM_HEC_rmse
 print 'DAM Q from HEC-RAS and Surveyed Cross Section'
+
+
+
+
 
 #### Calculate Q for QUARRY TODO
 QUARRY = pd.DataFrame((DAM['Q']/.9)*1.17) ## Q* from DAM x Area Quarry
