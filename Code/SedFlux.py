@@ -315,180 +315,11 @@ def showstormintervals(ax,storm_threshold,StormsList,shade_color='grey',show=Tru
         for storm in StormsList.iterrows(): ## shade over storm intervals
             ax.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
     return
-
-
-## Year Interval Times
-start2012, stop2012 = dt.datetime(2012,1,1,0,0), dt.datetime(2012,12,31,11,59)    
-start2013, stop2013 = dt.datetime(2013,1,1,0,0), dt.datetime(2013,12,31,11,59)
-start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2015,1,9,11,59)   
-#start2015, stop2015 = dt.datetime(2015,1,10,0,0), dt.datetime(2015,4,10,11,59)   
-## Field Seasons
-fieldstart2012, fieldstop2012 =  dt.datetime(2012,1,5,0,0), dt.datetime(2012,3,29,11,59)    
-fieldstart2013, fieldstop2013 =  dt.datetime(2013,2,4,0,0), dt.datetime(2013,7,17,11,59)    
-fieldstart2014a, fieldstop2014a =  dt.datetime(2014,1,10,0,0), dt.datetime(2014,3,7,11,59)
-fieldstart2014b, fieldstop2014b =  dt.datetime(2014,9,29,0,0), dt.datetime(2015,1,12,11,59)     
-## Mitigation
-Mitigation = dt.datetime(2014,10,1,0,0)
-
-def LandCover_table():
-    landcoverXL = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx')
-    landcover_table = landcoverXL.parse('Fagaalu_Revised')
-    landcover_table = landcover_table[['Subwatershed (pourpoint)','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
-    # Format Table data                       
-    for column in landcover_table.columns:
-        try:
-            if column.startswith('%')==True or column.startswith('Cumulative %')==True:
-                landcover_table.loc[:,column] = landcover_table.loc[:,column]*100.
-                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(1)
-            else:
-                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(2)
-        except:
-            pass
-    landcover_table = landcover_table[landcover_table['Subwatershed (pourpoint)'].isin(['UPPER (FG1)','LOWER_QUARRY (FG2)','LOWER_VILLAGE (FG3)','LOWER (FG3)','TOTAL (FG3)','Fagaalu Stream'])==True].reset_index()
-    landcover_table = landcover_table[['Subwatershed (pourpoint)','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
-    return landcover_table
-LandCover_table()
-
-if 'XL' not in locals():
-    print 'opening MASTER_DATA excel file...'+dt.datetime.now().strftime('%H:%M:%S')
-    XL = pd.ExcelFile(datadir+'MASTER_DATA_FAGAALU.xlsx')
-if 'XL' in locals():
-    print 'MASTER_DATA opened: '+dt.datetime.now().strftime('%H:%M:%S')    
     
-#### Import PRECIP Data
-#from precip_data import raingauge#, AddTimu1, AddTimu1Hourly, AddTimu1Daily, AddTimu1Monthly
-def raingauge(XL,sheet='',shift=0):
-    print 'loading precip: '+sheet+'...'
-    #my_parser= lambda x: dt.datetime.strptime(x,"%m/%d/%Y %H:%M")
-    gauge = XL.parse(sheet,header=1,index_col=0,parse_cols='B,C',parse_dates=True)#,date_parser=my_parser)
-    gauge= gauge.shift(shift)
-    gauge = gauge*0.254 ##hundredths to mm
-    gauge.columns=['Events']
-    return gauge    
-
-
-if 'Precip' not in locals():
-    ## Timu-Fagaalu 1 (by the Quarry)
-    Precip = raingauge(XL,'Timu-Fagaalu1-2013',180) ## (path,sheet,shift) no header needed
-    Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2014',0)) ## (path,sheet,shift) no header needed
-    #Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2015',0)) ## (path,sheet,shift) no header needed
-    Precip.columns=['Timu1']
-    Precip['Timu1-15']=Precip['Timu1'].resample('15Min',how='sum')
-    Precip['Timu1-30']=Precip['Timu1'].resample('30Min',how='sum')
-    
-    Precip['Timu1hourly']= Precip['Timu1'].resample('H',how='sum')
-    Precip['Timu1hourly'].dropna().to_csv(datadir+'OUTPUT/Timu1hourly.csv',header=['Timu1hourly'])
-    
-    Precip['Timu1daily'] = Precip['Timu1'].resample('D',how='sum')
-    Precip['Timu1daily'].dropna().to_csv(datadir+'OUTPUT/Timu1daily.csv',header=['Timu1daily'])
-    
-    Precip['Timu1monthly'] = Precip['Timu1'].resample('MS',how='sum') ## Monthly Precip
-    Precip['Timu1monthly'].dropna().to_csv(datadir+'OUTPUT/Timu1monthly.csv',header=['Timu1monthly'])
-    
-    ## Timu-Fagaalu2 (up on Blunt's Point Ridge; only deployed for 2 months in 2012)
-    Precip['Timu2-30']=raingauge(XL,'Timu-Fagaalu2',180).resample('30Min',how='sum')
-    
-    Precip['Timu2hourly']= Precip['Timu2-30'].resample('H',how='sum')
-    Precip['Timu2hourly'].dropna().to_csv(datadir+'OUTPUT/Timu2hourly.csv',header=['Timu2hourly'])
-    
-    Precip['Timu2daily'] = Precip['Timu2-30'].resample('D',how='sum')
-    Precip['Timu2daily'].dropna().to_csv(datadir+'OUTPUT/Timu2daily.csv',header=['Timu2daily'])
-    
-    Precip['Timu2monthly'] = Precip['Timu2-30'].resample('MS',how='sum') ## Monthly Precip
-    Precip['Timu2monthly'].dropna().to_csv(datadir+'OUTPUT/Timu2monthly.csv',header=['Timu2monthly'])
-
-
-#### Import WX STATION Data
-#from load_from_MASTER_XL import WeatherStation
-def WeatherStation(XL,sheet=''):
-    print 'loading Wx: '+sheet+'...'
-    ## Fagaalu Weather Station
-    #my_parser= lambda x,y: dt.datetime.strptime(x+y,"%m/%d/%Y%I:%M %p")
-    Wx= XL.parse(sheet,skiprows=1,header=0,parse_cols='A:AD',parse_dates=[['Date','Time']],index_col=['Date_Time'],na_values=['---'])
-    Wx.columns=['TempOut', 'HiTemp', 'LowTemp', 'OutHum', 'DewPt', 'WindSpeed', 'WindDir', 'WindRun', 'HiSpeed', 'HiDir', 'WindChill', 'HeatIndex', 'THWIndex', 'Bar', 'Rain', 'RainRate', 'HeatD-D', 'CoolD-D', 'InTemp', 'InHum', 'InDew', 'InHeat', 'InEMC', 'InAirDensity', 'WindSamp', 'WindTx', 'ISSRecept', 'Arc.Int.']
-    return Wx
-if 'FP' not in locals():
-    print 'Opening Weather Station data...'
-    FPa = WeatherStation(XL,'FP-30min')
-    Bar15Min=FPa['Bar'].resample('15Min',fill_method='pad',limit=2) ## fill the 30min Barometric intervals to 15minute, but not Precip!
-    FPa = FPa.resample('15Min')
-    FPa['Bar']=Bar15Min
-    FPb = WeatherStation(XL,'FP-15min')
-    FP = FPa.append(FPb)
-
-Precip['FPrain']=FP['Rain'] ## mm?
-Precip['FPrain-30']=Precip['FPrain'].resample('30Min',how=sum)
-Precip['FPhourly'] = Precip['FPrain'].resample('H',how='sum') ## label=left?? 
-Precip['FPdaily'] = Precip['FPrain'].resample('D',how='sum')
-Precip['FPmonthly'] = Precip['FPrain'].resample('MS',how='sum')
-
-Precip['FPhourly'].dropna().to_csv(datadir+'OUTPUT/FPhourly.csv',header=['FPhourly'])
-Precip['FPdaily'].dropna().to_csv(datadir+'OUTPUT/FPdaily.csv',header=['FPdaily'])
-Precip['FPmonthly'].dropna().to_csv(datadir+'OUTPUT/FPmonthly.csv',header=['FPmonthly'])
-
-## Filled Precipitation record, priority = Timu1, fill with FPrain
-PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,7):dt.datetime(2013,2,8)],Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12)],Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24)],Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,12,31)]]),columns=['Precip']).dropna()
-
-### Long term rainfall records
-
-TutPrecipXL =  pd.ExcelFile(datadir+'PRECIP/Tutuila-precipitation.xlsx')
-def plot_prob_occurrence(sheet_name):
-    P_Station= TutPrecipXL.parse(sheet_name,header=14,skiprows=[15],parse_cols='C:D',parse_dates=['datetime'],index_col=['datetime'])
-    P_Station.columns=['PrecipDailyIn']
-    P_Station['PrecipDailymm'] = P_Station['PrecipDailyIn']   *25.4
-    
-    P_Station = P_Station.dropna().sort(columns=['PrecipDailymm'],ascending=False)##ascending=False means highest values at top
-    P_Station['rank'] = range(1,len(P_Station)+1)
-    P_Station_n = len(P_Station)
-    ## Calculate Prob of Occurrence and Return Interval(Tr)
-    P_Station['ProbOcc']=P_Station['rank']/(P_Station_n + 1.)
-    P_Station['Tr']=(P_Station_n +1.)/P_Station['rank']
-    
-    fig, ax=plt.subplots(1)
-    plt.scatter(P_Station['PrecipDailymm'],P_Station['ProbOcc'])
-    plt.ylabel('Prob. of Occurrence: % of time the precip value will be exceeded')
-    plt.xlabel('Precipitation (mm)')
-    ax.set_xlim(-5,500), ax.set_ylim(-.05,1.1)
-    
-    data_days= str(len(P_Station))
-    data_years= str(len(P_Station)//365)
-    plt.title(sheet_name+' '+data_days+' days of data('+data_years+' years)')
-    fig.tight_layout()
-    return P_Station
-    
-#VaipitoRes =plot_prob_occurrence('VaipitoRes')
-#Afono= plot_prob_occurrence('Pioa-Afono')
-#Aunuu = plot_prob_occurrence('Aunuu')
-#Malaeimi = plot_prob_occurrence('Malaeimi-Mapusaga')
-
-def prob_occurrence():
-    P_Station= pd.DataFrame(Precip['Timu1daily'].dropna())
-    P_Station.columns=['PrecipDailymm']
-    
-    P_Station = P_Station.dropna().sort(columns=['PrecipDailymm'],ascending=False)##ascending=False means highest values at top
-    P_Station['rank'] = range(1,len(P_Station)+1)
-    P_Station_n = len(P_Station)
-    ## Calculate Prob of Occurrence and Return Interval(Tr)
-    P_Station['ProbOcc']=P_Station['rank']/(P_Station_n + 1.)
-    P_Station['Tr']=(P_Station_n +1.)/P_Station['rank']
-    
-    fig, ax=plt.subplots(1)
-    plt.scatter(P_Station['PrecipDailymm'],P_Station['ProbOcc'])
-    plt.ylabel('Prob. of Occurrence: % of time the precip value will be exceeded')
-    plt.xlabel('Precipitation (mm)')
-    ax.set_xlim(-5,500), ax.set_ylim(-.05,1.1)
-    
-    data_days= str(len(P_Station))
-    data_years= str(len(P_Station)//365)
-    plt.title(data_days+' days of data('+data_years+' years)')
-    fig.tight_layout()
-    return P_Station
-#prob_occurrence()
-
-def StormSums(Stormslist,Data,offset=0):
+def Sum_Storms(Storm_list,Data,offset=0):
     eventlist = []
     print 'Summing storms...'
-    for storm_index,storm in Stormslist.iterrows():
+    for storm_index,storm in Storm_list.iterrows():
         start = storm['start']-dt.timedelta(minutes=offset) ##if Storms are defined by stream response you have to grab the preceding precip data
         end= storm['end']
         data = True ## Innocent until proven guilty
@@ -521,123 +352,106 @@ def StormSums(Stormslist,Data,offset=0):
     Events=DataFrame.from_items(eventlist,orient='index',columns=['start','end','count','sum','max'])
     return Events
 
-#### Import FIELD NOTEBOOK Data
-#from notebook import FieldNotes
-def FieldNotes(sheet,headerrow,Book):
-    print 'Opening field notes...'
-    def my_parser(x,y):
-        y = str(int(y))
-        hour=y[:-2]
-        minute=y[-2:]
-        time=dt.time(int(hour),int(minute))
-        parsed=dt.datetime.combine(x,time)
-        #print parsed
-        return parsed
-    notebook_file = pd.ExcelFile(Book)
-    notebook = notebook_file.parse(sheet,header=headerrow,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
-    return notebook
+
+## Year Interval Times
+start2012, stop2012 = dt.datetime(2012,1,1,0,0), dt.datetime(2012,12,31,11,59)    
+start2013, stop2013 = dt.datetime(2013,1,1,0,0), dt.datetime(2013,12,31,11,59)
+start2014, stop2014 = dt.datetime(2014,1,1,0,0), dt.datetime(2015,1,9,11,59)   
+#start2015, stop2015 = dt.datetime(2015,1,10,0,0), dt.datetime(2015,4,10,11,59)   
+## Field Seasons
+fieldstart2012, fieldstop2012 =  dt.datetime(2012,1,5,0,0), dt.datetime(2012,3,29,11,59)    
+fieldstart2013, fieldstop2013 =  dt.datetime(2013,2,4,0,0), dt.datetime(2013,7,17,11,59)    
+fieldstart2014a, fieldstop2014a =  dt.datetime(2014,1,10,0,0), dt.datetime(2014,3,7,11,59)
+fieldstart2014b, fieldstop2014b =  dt.datetime(2014,9,29,0,0), dt.datetime(2015,1,12,11,59)     
+## Mitigation
+Mitigation = dt.datetime(2014,10,1,0,0)
 
 
-### Check tipping bucket at RG1 (Timu1) against non-recording (World's Best)
-fieldbookdata = datadir+'FieldNotebook-dataonly.xlsx'
-Timu1fieldnotes = FieldNotes('Timu-F1notes',3,fieldbookdata)
+### LOAD FIELD DATA
+if 'XL' not in locals():
+    print 'opening MASTER_DATA excel file...'+dt.datetime.now().strftime('%H:%M:%S')
+    XL = pd.ExcelFile(datadir+'MASTER_DATA_FAGAALU.xlsx')
+if 'XL' in locals():
+    print 'MASTER_DATA opened: '+dt.datetime.now().strftime('%H:%M:%S')    
+    
+#### Import PRECIP Data
+#from precip_data import raingauge#, AddTimu1, AddTimu1Hourly, AddTimu1Daily, AddTimu1Monthly
+def raingauge(XL,sheet='',shift=0):
+    print 'loading precip: '+sheet+'...'
+    #my_parser= lambda x: dt.datetime.strptime(x,"%m/%d/%Y %H:%M")
+    gauge = XL.parse(sheet,header=1,index_col=0,parse_cols='B,C',parse_dates=True)#,date_parser=my_parser)
+    gauge= gauge.shift(shift)
+    gauge = gauge*0.254 ##hundredths to mm
+    gauge.columns=['Events']
+    return gauge    
 
-Timu1mmcheck = Timu1fieldnotes.ix[:,'mm':'to 0.1'] ##take the records from the manual gage and if it was emptied to zero
-Timu1mmcheck['mm true'] = Timu1mmcheck['mm']-Timu1mmcheck['to 0.1'].shift(1)
+if 'Precip' not in locals():
+    ## Timu-Fagaalu 1 (by the Quarry)
+    ## 2012-2013 Data
+    Precip = raingauge(XL,'Timu-Fagaalu1-2013',180) ## (path,sheet,shift) no header needed
+    ## 2014 Data
+    Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2014',0)) ## (path,sheet,shift) no header needed
+    ## 2015 Data
+    #Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2015',0)) ## (path,sheet,shift) no header needed
+    Precip.columns=['Timu1']
+    Precip['Timu1-15']=Precip['Timu1'].resample('15Min',how='sum')
+    Precip['Timu1-30']=Precip['Timu1'].resample('30Min',how='sum')
+    # Hourly
+    Precip['Timu1hourly']= Precip['Timu1'].resample('H',how='sum')
+    Precip['Timu1hourly'].dropna().to_csv(datadir+'OUTPUT/Timu1hourly.csv',header=['Timu1hourly'])
+    # Daily
+    Precip['Timu1daily'] = Precip['Timu1'].resample('D',how='sum')
+    Precip['Timu1daily'].dropna().to_csv(datadir+'OUTPUT/Timu1daily.csv',header=['Timu1daily'])
+    # Monthly
+    Precip['Timu1monthly'] = Precip['Timu1'].resample('MS',how='sum') ## Monthly Precip
+    Precip['Timu1monthly'].dropna().to_csv(datadir+'OUTPUT/Timu1monthly.csv',header=['Timu1monthly'])
+    ## Timu-Fagaalu2 (up on Blunt's Point Ridge; only deployed for 2 months in 2012)
+    Precip['Timu2-30']=raingauge(XL,'Timu-Fagaalu2',180).resample('30Min',how='sum')
+    # Hourly
+    Precip['Timu2hourly']= Precip['Timu2-30'].resample('H',how='sum')
+    Precip['Timu2hourly'].dropna().to_csv(datadir+'OUTPUT/Timu2hourly.csv',header=['Timu2hourly'])
+    # Daily
+    Precip['Timu2daily'] = Precip['Timu2-30'].resample('D',how='sum')
+    Precip['Timu2daily'].dropna().to_csv(datadir+'OUTPUT/Timu2daily.csv',header=['Timu2daily'])
+    # Monthly
+    Precip['Timu2monthly'] = Precip['Timu2-30'].resample('MS',how='sum') ## Monthly Precip
+    Precip['Timu2monthly'].dropna().to_csv(datadir+'OUTPUT/Timu2monthly.csv',header=['Timu2monthly'])
 
-Timu1mmcheck['end']=Timu1mmcheck.index## add a column for time
-Timu1mmcheck['start']=Timu1mmcheck['end'].shift(1) ## take the time and shift it down so you have a start and stop time: When the gauge was emptied to zero, it was the start of the next interval
-Timu1mmcheck=Timu1mmcheck.truncate(before = Timu1mmcheck.index[5])
 
-Timu1mmcheck['Timu1 mm sum']=StormSums(Timu1mmcheck,Precip['Timu1'])['sum'] ## from 1/20/12 onward. Timu1 QC data begins 1/21/12
-Timu1mmcheck['WorldsBest - Timu1'] = Timu1mmcheck['Timu1 mm sum']-Timu1mmcheck['mm']
+#### Import WX STATION Data
+#from load_from_MASTER_XL import WeatherStation
+def WeatherStation(XL,sheet=''):
+    print 'loading Wx: '+sheet+'...'
+    ## Fagaalu Weather Station
+    #my_parser= lambda x,y: dt.datetime.strptime(x+y,"%m/%d/%Y%I:%M %p")
+    Wx= XL.parse(sheet,skiprows=1,header=0,parse_cols='A:AD',parse_dates=[['Date','Time']],index_col=['Date_Time'],na_values=['---'])
+    Wx.columns=['TempOut', 'HiTemp', 'LowTemp', 'OutHum', 'DewPt', 'WindSpeed', 'WindDir', 'WindRun', 'HiSpeed', 'HiDir', 'WindChill', 'HeatIndex', 'THWIndex', 'Bar', 'Rain', 'RainRate', 'HeatD-D', 'CoolD-D', 'InTemp', 'InHum', 'InDew', 'InHeat', 'InEMC', 'InAirDensity', 'WindSamp', 'WindTx', 'ISSRecept', 'Arc.Int.']
+    return Wx
+    
+if 'FP' not in locals():
+    print 'Opening Weather Station data...'
+    FPa = WeatherStation(XL,'FP-30min')
+    Bar15Min=FPa['Bar'].resample('15Min',fill_method='pad',limit=2) ## fill the 30min Barometric intervals to 15minute, but not Precip!
+    FPa = FPa.resample('15Min')
+    FPa['Bar']=Bar15Min
+    FPb = WeatherStation(XL,'FP-15min')
+    FP = FPa.append(FPb)
 
-#### Import BAROMETRIC Data: NDBC,TULA,TAFUNA
-def Tula(datapath=datadir+'BARO/TulaStation/TulaMetData/'):
-    #### Barometric Pressure from NOAA Weather Station Tula
-    print 'loading TULAbaro....'
-    ylist = ['2012']
-    TulaPressureList = []
-    #print 'month'+'\t'+'day'+'\t'+'year'+'\t'+'mm precip'
-    for y in ylist:
-        path = datapath+y
-        files = os.listdir(path)
-        for f in files: ## each f is a new DAY
-            data = open(path+'/'+f,'r')
-            daysplit = f.replace('.','-').split('-')
-            #dayfile = open(daysplit[1]+'-'+daysplit[2]+'-'+daysplit[0]+'.csv','w')
-            year, month, day = daysplit[0],daysplit[1],daysplit[2]
-            #print 'year: '+year+' month '+month+' day: '+day
-            dailyprecip, precipprev, precip15, pressure = 0.0,0.0,0.0,0.0
-            presscount = 0
-            try:
-                for d in data: ## each d is a new MINUTE
-                    split = d.split(',')
-                    try:
-                        num =float(split[1]) #will be True if split[1] is a number and the line is data
-                    except:
-                        num = False
-                        pass
-                    if num != False: ## Make sure the line is data #
-                        #print split[1]+','+split[2]+','+split[3]+','+split[4]+','+split[5]+','+split[13]+','+split[18]
-                        hour,minute = split[4], split[5]
-                        press = split[13] #the pressure value for the Minute, need to be agg'ed to 15min.
-                        precip = split[18] ## subtract the previous Minute's precip value
-                        presscount+=1
-                        try: ## Running total for 15 min. aggregate
-                            if float(press) == False:
-                                pressure = 'NaN'
-                            if float(press) != 9999:
-                                pressure = pressure + float(press) ## running total of pressure?
-                            if float(press) == 9999:
-                                pressure = pressure + 1000
-                        except:
-                                pressure = 'NaN'
-                                pass
-                                
-                        try: ## Subtract previous minute's precip from current minute to get correct value
-                            if float(precip) == False:
-                                precip = 'NaN'
-                            if precip != 9999:
-                                #print str(precip)+' - '+str(precipprev)
-                                precip = float(precip)-precipprev ## subtract previous minute's precip (precipprev) from current precip (precip)
-                                #print precip ## this should be the correct precip value
-                                precip15=precip15+float(precip) ## Running total for 15 minute aggregated rainfall
-                                precipprev = split[18]
-                        except:
-                                precip = 'NaN'
-                                pass
-                        if minute == '':
-                            minute = 'NaN'
-                            pass
-                        ## at 15 minute intervals average pressure and tally up precip
-                        if float(minute) == 0 or float(minute)==15 or float(minute)==30 or float(minute)==45: ## Adjust time offset???
-                                pressure15 = float(pressure)/presscount ## Get 15 minute average pressure 
-                                dailyprecip = dailyprecip+float(precip) ## Aggregate daily rainfall
-                                #print month+'/'+day+'/'+year+'\t'+hour+':'+str(minute)+'\t'+str(pressure15)+'\t'+str(precip15) 
-                                #print month+'/'+day+'/'+year+'\t'+hour+':'+str(minute)+'\t'+str(pressure15) ## tab-separated output
-                                Time = dt.datetime(int(year),int(month),int(day),int(hour),int(minute)) ## -10 so it lines up with other times
-                                #print Time
-                                timedelta =-dt.timedelta(hours=11)
-                                Time = Time + timedelta ## time offset to get it to match Faga'alu
-                                #print Time
-                                TulaPressureList.append((Time,float(pressure15))) ## make list of 15 minute averaged atmospheric pressure
-                                precipprev = split[18] ## reassign precip to precipprev for next loop
-                                precip15,pressure,presscount = 0.0,0.0,0 ## reset variables for next loop
-            except:
-                    raise
-            #print month+'\t'+day+'\t'+year+'\t'+str(dailyprecip)
-    datadict = dict(TulaPressureList) ## Make dictionary of (Time,Pressure) tuples, RAW data
-    baro = pd.Series(datadict,name='TULAbaro')
-    baro_offset = (baro/10.0)+.92
-    return baro_offset
-##load data from NOAA Climate Observatory at Tula, East Tutuila
-#TULAbaro= pd.DataFrame(Tula(datadir+'BARO/TulaStation/TulaMetData/'),columns=['TULAbaro']) ## add TULA barometer data
+Precip['FPrain']=FP['Rain'] ## mm?
+Precip['FPrain-30']=Precip['FPrain'].resample('30Min',how=sum)
+Precip['FPhourly'] = Precip['FPrain'].resample('H',how='sum') ## label=left?? 
+Precip['FPdaily'] = Precip['FPrain'].resample('D',how='sum')
+Precip['FPmonthly'] = Precip['FPrain'].resample('MS',how='sum')
 
-##load data from Tafuna Intl ## To get more data from the Airport run wundergrabber_NSTU.py in the 'Maindir+Data/NSTU/' folder
-airport = pd.DataFrame.from_csv(datadir+'BARO/NSTU/NSTU-current.csv') ## download new data using wundergrabber
-airport['Wind Speed m/s']=airport['Wind SpeedMPH'] * 0.44704
-#TAFUNAbaro= pd.DataFrame({'TAFUNAbaro':airport['Sea Level PressureIn'] * 3.3863881579}).resample('15Min',fill_method='ffill',limit=2)## inches to kPa
+Precip['FPhourly'].dropna().to_csv(datadir+'OUTPUT/FPhourly.csv',header=['FPhourly'])
+Precip['FPdaily'].dropna().to_csv(datadir+'OUTPUT/FPdaily.csv',header=['FPdaily'])
+Precip['FPmonthly'].dropna().to_csv(datadir+'OUTPUT/FPmonthly.csv',header=['FPmonthly'])
+
+## Filled Precipitation record, priority = Timu1, fill with FPrain
+PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,7):dt.datetime(2013,2,8)],Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12)],Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24)],Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,12,31)]]),columns=['Precip']).dropna()
+
+
+#### Import BAROMETRIC Data: NDBC
 
 ##load data from NDBC NSTP6 station at DMWR, Pago Harbor
 ## To get more NSTP6 data either go to their website and copy and paste the historical data
@@ -677,17 +491,17 @@ def barologger(XL,sheet=''):
 BaroLogger = barologger(XL,'Fagaalu1-Barologger')
  
 ## Build data frame of barometric data: Make column 'baropress' with best available data
+ ## Fill priority = FP,NDBC,TAFUNA,TULA (TAFUNA and TULA have been deprecated, reside in other scripts)
 allbaro = pd.DataFrame(NDBCbaro/10).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 allbaro['FPbaro']=FP['Bar']/10
 allbaro['NDBCbaro']=NDBCbaro/10
 allbaro['BaroLogger']=BaroLogger
-#allbaro['TULAbaro']=TULAbaro['TULAbaro']
 
-## Fill priority = FP,NDBC,TAFUNA,TULA
-allbaro['Baropress']=allbaro['FPbaro'].where(allbaro['FPbaro']>0,allbaro['BaroLogger']) ## create a new column and fill with FP or Barologger
-allbaro['Baropress']=allbaro['Baropress'].where(allbaro['Baropress']>0,allbaro['NDBCbaro']) ## create a new column and fill with FP or NDBC
-#allbaro['Baropress']=allbaro['Baropress'].where(allbaro['Baropress']>0,allbaro['TAFUNAbaro'])
-#allbaro['Baropress']=allbaro['Baropress'].where(allbaro['Baropress']>0,allbaro['TULAbaro']) 
+## create a new column and fill with FP or Barologger
+allbaro['Baropress']=allbaro['FPbaro'].where(allbaro['FPbaro']>0,allbaro['BaroLogger']) 
+## create a new column and fill with FP or NDBC
+allbaro['Baropress']=allbaro['Baropress'].where(allbaro['Baropress']>0,allbaro['NDBCbaro']) 
+
 
 #### Import PT Data
 # ex. PT_Levelogger(allbaro,PTname,datapath,tshift=0,zshift=0): 
@@ -699,11 +513,11 @@ def PT_Hobo(allbaro,PTname,XL,sheet='',tshift=0,zshift=0): # tshift in 15Min(or 
     PT=PT.resample('15Min',how='mean')
     PT=PT.shift(tshift) ## shift by 3 hours (12 x 15minutes)
     PT['barodata']=allbaro['Baropress']
-    PT['stage']=(PT['Pressure']-PT['barodata'])*.102*100.0 ## hPa  to cm
+    PT['stage(cm)']=(PT['Pressure']-PT['barodata'])*.102*100.0 ## hPa  to cm
     #PT['stage']=PT['stage'].where(PT['stage']>0,PT['barodata']) ## filter negative values
-    PT['stage']=PT['stage'].round(1)  
-    PT['stage']=PT['stage']+zshift
-    PT['Uncorrected_stage']=PT['stage'].round(0)
+    PT['stage(cm)']=PT['stage(cm)'].round(1)  
+    PT['stage(cm)']=PT['stage(cm)']+zshift
+    PT['Uncorrected_stage']=PT['stage(cm)'].round(0)
     return PT
 
 def PT_Levelogger(allbaro,PTname,XL,sheet,tshift=0,zshift=0): # tshift in hours, zshift in cm
@@ -713,12 +527,13 @@ def PT_Levelogger(allbaro,PTname,XL,sheet,tshift=0,zshift=0): # tshift in hours,
     PT=PT.resample('15Min',how='mean')
     PT['barodata']=allbaro['Baropress']
     PT=PT.shift(tshift) ## shift by 3 hours (12 x 15minutes)
-    PT['stage']=(PT['LEVEL']-PT['barodata'])*.102*100.0
+    PT['stage(cm)']=(PT['LEVEL']-PT['barodata'])*.102*100.0
     #PT['stage']=PT['stage'].where(PT['stage']>0,0) ## filter negative values
-    PT['stage']=PT['stage'].round(1)  
-    PT['stage']=PT['stage']+zshift
-    PT['Uncorrected_stage']=PT['stage'].round(0)
+    PT['stage(cm)']=PT['stage(cm)'].round(1)  
+    PT['stage(cm)']=PT['stage(cm)']+zshift
+    PT['Uncorrected_stage']=PT['stage(cm)'].round(0)
     return PT
+    
 ## PT1 LBJ
 # tshift in 15Min(or whatever the timestep is), zshift in cm
 PT1aa = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1aa',tshift=12) #12 x 15min = 3hours (It says it was at GMT-8 instead of GMT-11 but the logger time was set to local anyway)
@@ -758,15 +573,17 @@ PT1 = PT1.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 PT2 = PT2.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 PT3 = PT3.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 
-def plot_stage_data(show=False):
-    fig, (baro,pt1,pt3,t) = plt.subplots(4,sharex=True,sharey=False)
-    allbaro['Baropress'].plot(ax=baro,c='k')
-    allbaro['Baropress'].plot(ax=t,c='k')
+def plot_uncorrected_stage_data(show=False):
+    fig, (baro,pt1,pt3,t) = plt.subplots(4,sharex=True,sharey=False,figsize=(12,8))
+    for ax in [baro,pt1,pt3]:
+        ax.xaxis.set_visible(False)
+    allbaro['Baropress'].plot(ax=baro,c='k',label='Barometric Pressure (kPa)')
+    allbaro['Baropress'].plot(ax=t,c='k',label='Barometric Pressure (kPa)')
     baro.legend()
     ## PT1 at LBJ
-    PT1list = [PT1a,PT1ba,PT1bb,PT1c]
+    PT1list = [PT1aa,PT1ab,PT1ba,PT1bb,PT1bc,PT1c]
     count = 0
-    count_dict = {1:'a',2:'bs',3:'bb',4:'c'}
+    count_dict = {1:'aa',2:'ab',3:'ba',4:'bb',5:'bc',6:'c'}
     for PT in PT1list:
         count+=1
         try:
@@ -776,10 +593,11 @@ def plot_stage_data(show=False):
             PT['LEVEL'].plot(ax=pt1,c=np.random.rand(3,1),label='PT1'+count_dict[count])
             PT['LEVEL'].plot(ax=t,c=np.random.rand(3,1),label='PT1'+count_dict[count])
     pt1.legend()
+    
     ## PT3 at DAM
-    PT3list = [PT3a,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g]
+    PT3list = [PT3aa,PT3ab,PT3b,PT3c,PT3d,PT3e,PT3f,PT3g]
     count = 0
-    count_dict = {1:'a',2:'b',3:'c',4:'d',5:'e',6:'f',7:'g',8:'h'}
+    count_dict = {1:'aa',2:'ab',3:'b',4:'c',5:'d',6:'e',7:'f',8:'g'}
     for PT in PT3list:
         count+=1
         try:
@@ -789,22 +607,39 @@ def plot_stage_data(show=False):
             PT['LEVEL'].plot(ax=pt3,c=np.random.rand(3,1),label='PT3'+count_dict[count])
             PT['LEVEL'].plot(ax=t,c=np.random.rand(3,1),label='PT3'+count_dict[count])
     pt3.legend()
-    t.legend()
+    t.legend(ncol=2)
     
     if show==True:
-        plt.draw()
+        plt.tight_layout(pad=0.1)
         plt.show()
     return
-#plot_stage_data(show=True)
+#plot_uncorrected_stage_data(show=True)
     
-  
-## Plot Stage Correction
-#PT1['stage'].plot=('y')
-#LBJfieldnotesStage['RefGageHeight(cm)'].plot(ls='None',marker='o',markersize=6,c='g')
-#PT1['stage corrected'].plot(color='k')
+    
+    
+## BAROMETRIC PRESSURE DATA FROM DIFFERENT SOURCES
+## WITH PRESSURE FROM PT (MAKE SURE THEY'RE IN SYNC)
+## Not sure what the difference plot is for....
+def plot_barometric_pressure():   
+    fig, (baro, pt, diff) = plt.subplots(3,1,sharex=True)
+    ## Barometric Data
+    allbaro['Baropress'].plot(ax=baro,c='k', label='Barometric Pressure (kPa)')
+    allbaro['NDBCbaro'].plot(ax=baro,c='r', label='NDBC NSTP6')
+    allbaro['FPbaro'].plot(ax=baro,c='g', label='Weather Station')
+    ## PT Data
+    PT1['Pressure'].plot(ax=baro,c='b', label='LBJ PT Pressure')
+    PT1['stage(cm)'].plot(ax=pt,c='b', label='LBJ PT Stage(cm)')
+    ## Difference between PT pressure and Barometric pressure at low stages
+    press_diff_baseflow = PT1['Pressure'][PT1['stage(cm)']<10]-PT1['barodata']
+    m.rolling_mean(press_diff_baseflow,window=96).plot(ax=diff, label='Daily Mean difference kPa (PT-Baro)') ## 96 * 15min = 24 hours
+    
+    baro.legend(), pt.legend(), diff.legend()
+    return
+#plot_barometric_pressure()
 
+    
 
-def correct_Stage(StageCorrXL,location,PTdata):
+def correct_Stage_data(Stage_Correction_XL,location,PTdata):
     print 'Correcting stage for '+location
     def my_parser(x,y):
         try:
@@ -817,9 +652,9 @@ def correct_Stage(StageCorrXL,location,PTdata):
         parsed=dt.datetime.combine(x,time)
         #print parsed
         return parsed
-    StageCorr = StageCorrXL.parse(location,parse_dates=False)
+    Stage_Correction = Stage_Correction_XL.parse(location,parse_dates=False)
     Correction=pd.DataFrame()
-    for correction in StageCorr.iterrows():
+    for correction in Stage_Correction.iterrows():
         t1_date = correction[1]['T1_date']
         t1_time = correction[1]['T1_time']
         t1 = my_parser(t1_date,t1_time)
@@ -832,225 +667,32 @@ def correct_Stage(StageCorrXL,location,PTdata):
     Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     PTdata['Manual_Correction'] = Correction['z']
     PTdata['stage_corrected_Manual'] = PTdata['Uncorrected_stage']+PTdata['Manual_Correction']
-    PTdata['stage']=PTdata['stage_corrected_Manual'].where(PTdata['stage_corrected_Manual']>0,PTdata['stage'])#.round(0)
+    PTdata['stage(cm)']=PTdata['stage_corrected_Manual'].where(PTdata['stage_corrected_Manual']>0,PTdata['stage(cm)'])#.round(0)
     return PTdata
-StageCorrXL = pd.ExcelFile(datadir+'Q/StageCorrection.xlsx')    
-PT1 = correct_Stage(StageCorrXL,'LBJ',PT1)
-PT3 = correct_Stage(StageCorrXL,'DAM',PT3)
+Stage_Correction_XL = pd.ExcelFile(datadir+'Q/StageCorrection.xlsx')    
+PT1 = correct_Stage_data(Stage_Correction_XL,'LBJ',PT1)
+PT3 = correct_Stage_data(Stage_Correction_XL,'DAM',PT3)
 
 
 ## STAGE DATA FOR PT's
 #### FINAL STAGE DATA with CORRECTIONS
-Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage'],'DT':PT2['stage'],'Dam':PT3['stage']})
+Fagaalu_stage_data = pd.DataFrame({'LBJ':PT1['stage(cm)'],'DT':PT2['stage(cm)'],'Dam':PT3['stage(cm)']})
 Fagaalu_stage_data = Fagaalu_stage_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
 
-#### Define Storm Periods #####
-## Define Storm Intervals at LBJ
-DefineStormIntervalsBy = {'User':'User','Separately':'BOTH','DAM':'DAM','LBJ':'LBJ'}
-StormIntervalDef = DefineStormIntervalsBy['User']
 
-#from HydrographTools import SeparateHydrograph
-def SeparateHydrograph(hydrodata='stage',minimum_length=8):
-    params = hydrodata.describe()
-    mean = params[1]
-    std = params[2]
-    minimum = params[3]
-    maximum = params[7]
-    quartiles= params[4:8]
-    stormthresh = mean+std
-    print 'Storm threshold= '+'%.1f'%stormthresh
-    StormFlow = hydrodata.where(hydrodata>stormthresh) 
-    ##returns list of data points that meet the condition, the rest are NaN (same shape as original array)
-    ## or
-    #PT1storm = PT1[PT1>stormthresh] ## NaN values are filtered out
-
-    #### Get start and end times of events that meet >=stormthresh
-    startstops=[]
-    dprev = nan ## set first datapoint as NaN
-    for d in StormFlow.iteritems():
-        if isnan(d[1])==False and isnan(dprev)==True: ### Start of storm
-            starttime = d[0]
-            endtime = d[0]
-            dprev = d[1]
-        elif isnan(d[1])==False and isnan(dprev)==False:## Next value in storm
-            endtime = d[0]
-            dprev = d[1]
-        elif isnan(d[1])==True and isnan(dprev)==False: ## Start of non-storm 
-            startstops.append((starttime,endtime))
-            dprev = d[1]
-            pass
-        elif isnan(d[1])==True and isnan(dprev)==True: ## Next value in non-storm
-            dprev = d[1]
-            pass
-    #### Slice hydrograph by start:stop times and give count and summary
-    eventlist = []
-    for t in startstops:
-        start = t[0]-dt.timedelta(minutes=30)
-        end= t[1]
-        event = hydrodata.ix[start:end]
-        eventduration = end-start
-        seconds = eventduration.total_seconds()
-        hours = seconds / 3600
-        eventduration = round(hours,2)
-        if event.count() >= minimum_length:
-            eventlist.append([start,end,eventduration])
-
-    Events=pd.DataFrame(eventlist,columns=['start','end','duration (hrs)'])
-    #drop_rows = Events[Events['duration (min)'] <= timedelta(minutes=120)] ## Filters events that are too short
-    #Events = Events.drop(drop_rows.index) ## Filtered DataFrame of storm start,stop,count,sum
-    return Events
-## Define by Threshold = Mean Stage+ 1 Std Stage
-LBJ_storm_threshold = PT1['stage'].describe()[1]+PT1['stage'].describe()[2] 
-DAM_storm_threshold = PT3['stage'].describe()[1]+PT3['stage'].describe()[2]
-
-### Check PT against reference staff gage at LBJ
-LBJfieldnotes = FieldNotes('LBJstage',1,fieldbookdata)
-LBJfieldnotesStage = pd.DataFrame(LBJfieldnotes['RefGageHeight(cm)'].resample('5Min',how='first').dropna(),columns=['RefGageHeight(cm)'])
-LBJfieldnotesStage =LBJfieldnotesStage.shift(0)
-LBJfieldnotesStage['Uncorrected_stage']=PT1['Uncorrected_stage']
-LBJfieldnotesStage['GH-Uncorrected_stage']=LBJfieldnotesStage['RefGageHeight(cm)']-LBJfieldnotesStage['Uncorrected_stage']
-LBJfieldnotesStage['Corrected_stage']=PT1['stage']
-LBJfieldnotesStage['GH-Corrected_stage']=LBJfieldnotesStage['RefGageHeight(cm)']-LBJfieldnotesStage['Corrected_stage']
-
-PT1['GH Correction']=LBJfieldnotesStage['GH-Uncorrected_stage']
-PT1['GH Correction Int']= PT1['GH Correction'].interpolate()
-PT1['stage_corrected_RefGage'] = PT1['Uncorrected_stage']+PT1['GH Correction Int']
-
-def compare_PT_Ref():
-    fig, (uncorr, corr) = plt.subplots(2,1,sharex=True,sharey=True)
-    LBJfieldnotesStage['GH-Uncorrected_stage'].plot(ax=uncorr,ls='None',marker='.',c='r',label='All Gage Height Readings (uncorrected)')
-    LBJfieldnotesStage['GH-Uncorrected_stage'][LBJfieldnotesStage['Uncorrected_stage']<LBJ_storm_threshold].plot(ax=uncorr,ls='None',marker='.',c='b',label='Baseflow Gage Height Readings (uncorrected)')
-    uncorr.legend(loc='best'), uncorr.set_title('Uncorrected PT stage')
-    LBJfieldnotesStage['GH-Corrected_stage'].plot(ax=corr, ls='None',marker='.',c='r',label='All Gage Height Readings (corrected)')
-    LBJfieldnotesStage['GH-Corrected_stage'][LBJfieldnotesStage['Corrected_stage']<LBJ_storm_threshold].plot(ax=corr,ls='None',marker='.',c='b',label='Baseflow Gage Height Readings (corrected)')
-    corr.legend(loc='best'), corr.set_title('Corrected PT stage')
-    return
-
-def press_diff():   
-    fig, (baro, pt, diff) = plt.subplots(3,1,sharex=True)
-    allbaro['Baropress'].plot(ax=baro,c='k')
-    allbaro['NDBCbaro'].plot(ax=baro,c='r')
-    allbaro['FPbaro'].plot(ax=baro,c='g')
-    
-    PT1['Pressure'].plot(ax=baro,c='b')
-    PT1['stage'].plot(ax=pt,c='b')
-    press_diff_baseflow = PT1['Pressure'][PT1['stage']<10]-PT1['barodata']
-    m.rolling_mean(press_diff_baseflow,window=96).plot(ax=diff)
-    diff.axhline(0.63,ls='--',linewidth=1,c='b',label='Baseflow')
-    plt.legend()
-    return
-
-## Take just one definition of Storm Intervals....
-if StormIntervalDef=='LBJ':
-    print 'Storm intervals defined at LBJ'
-    ## Define Storm Intervals at LBJ
-    LBJ_StormIntervals=SeparateHydrograph(hydrodata=PT1['stage'])
-    ## Combine Storm Events where the storm end is the storm start for the next storm
-    LBJ_StormIntervals['next storm start']=LBJ_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
-    LBJ_StormIntervals['next storm end']=LBJ_StormIntervals['end'].shift(-1)  
-    need_to_combine =LBJ_StormIntervals[LBJ_StormIntervals['end']==LBJ_StormIntervals['next storm start']] #storms need to be combined if their end is the same time as the next storm's start
-    print need_to_combine
-    need_to_combine['end']=need_to_combine['next storm end'] # change the end of the storm to the end of the next storm to combine them
-    
-    LBJ_StormIntervals=LBJ_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
-    LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
-    LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) #drop the second storm that was combined
-    
-    ## Second pass
-    LBJ_StormIntervals['next storm start']=LBJ_StormIntervals['next storm start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
-    LBJ_StormIntervals['next storm end']=LBJ_StormIntervals['next storm end'].shift(-1)  
-    need_to_combine =LBJ_StormIntervals[LBJ_StormIntervals['end']==LBJ_StormIntervals['next storm start']] #storms need to be combined if their end is the same time as the next storm's start
-    print need_to_combine
-    need_to_combine['end']=need_to_combine['next storm end'] # change the end of the storm to the end of the next storm to combine them
-    LBJ_StormIntervals=LBJ_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
-    LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
-    LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) 
-    
-    ## Third pass
-    LBJ_StormIntervals['next storm start']=LBJ_StormIntervals['next storm start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
-    LBJ_StormIntervals['next storm end']=LBJ_StormIntervals['next storm end'].shift(-1)  
-    need_to_combine =LBJ_StormIntervals[LBJ_StormIntervals['end']==LBJ_StormIntervals['next storm start']] #storms need to be combined if their end is the same time as the next storm's start
-    print need_to_combine
-    need_to_combine['end']=need_to_combine['next storm end'] # change the end of the storm to the end of the next storm to combine them
-    LBJ_StormIntervals=LBJ_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
-    LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
-    LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end'])  
-    ## Reset Duration
-    LBJ_StormIntervals['duration'] = (LBJ_StormIntervals['end']- LBJ_StormIntervals['start'])
-    LBJ_StormIntervals['duration (hrs)'] = LBJ_StormIntervals['duration'].apply(lambda x: x/np.timedelta64(1, 's')/3600)
-    LBJ_StormIntervals = LBJ_StormIntervals[LBJ_StormIntervals['start']!=dt.datetime(2012,1,25,3,45)]
-    
-    ## Set Storm Intervals for DAM, same as LBJ   
-    QUARRY_StormIntervals=LBJ_StormIntervals
-    DAM_StormIntervals=LBJ_StormIntervals
-    
-if StormIntervalDef == 'DAM':
-    print 'Storm intervals defined at DAM'
-    ## Define Storm Intervals at DAM
-    DAM_StormIntervals=SeparateHydrograph(hydrodata=PT3['stage'])
-    ## Combine Storm Events where the storm end is the storm start for the next storm
-    DAM_StormIntervals['next storm start']=DAM_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
-    DAM_StormIntervals['next storm end']=DAM_StormIntervals['end'].shift(-1)
-    need_to_combine =DAM_StormIntervals[DAM_StormIntervals['end']==DAM_StormIntervals['next storm start']] #storms need to be combined if their end is the same time as the next storm's start
-    need_to_combine['end']=need_to_combine['next storm end'] # change the end of the storm to the end of the next storm to combine them
-    DAM_StormIntervals=DAM_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
-    DAM_StormIntervals=DAM_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
-    DAM_StormIntervals=DAM_StormIntervals.drop_duplicates(cols=['end']) 
-    ## Set Storm Intervals for LBJ, same as DAM       
-    LBJ_StormIntervals=DAM_StormIntervals
-    QUARRY_StormIntervals=DAM_StormIntervals
-
-if StormIntervalDef=='BOTH':
-    print 'Storm intervals defined separately at LBJ and DAM'
-    ## Define Storm Intervals at LBJ
-    LBJ_StormIntervals=SeparateHydrograph(hydrodata=PT1['stage'])
-    ## Combine Storm Events where the storm end is the storm start for the next storm
-    LBJ_StormIntervals['next storm start']=LBJ_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
-    LBJ_StormIntervals['next storm end']=LBJ_StormIntervals['end'].shift(-1)
-    need_to_combine =LBJ_StormIntervals[LBJ_StormIntervals['end']==LBJ_StormIntervals['next storm start']] #storms need to be combined if their end is the same time as the next storm's start
-    need_to_combine['end']=need_to_combine['next storm end'] # change the end of the storm to the end of the next storm to combine them
-    LBJ_StormIntervals=LBJ_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
-    LBJ_StormIntervals=LBJ_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
-    LBJ_StormIntervals=LBJ_StormIntervals.drop_duplicates(cols=['end']) #drop the second storm that was combined
-
-    ## Define Storm Intervals at DAM
-    DAM_StormIntervals=SeparateHydrograph(hydrodata=PT3['stage'])
-    ## Combine Storm Events where the storm end is the storm start for the next storm
-    DAM_StormIntervals['next storm start']=DAM_StormIntervals['start'].shift(-1) ## add the next storm's start and end time to the storm in the row above (the previous storm)
-    DAM_StormIntervals['next storm end']=DAM_StormIntervals['end'].shift(-1)
-    need_to_combine =DAM_StormIntervals[DAM_StormIntervals['end']==DAM_StormIntervals['next storm start']] #storms need to be combined if their end is the same time as the next storm's start
-    need_to_combine['end']=need_to_combine['next storm end'] # change the end of the storm to the end of the next storm to combine them
-    DAM_StormIntervals=DAM_StormIntervals.drop(need_to_combine.index) #drop the storms that need to be combined
-    DAM_StormIntervals=DAM_StormIntervals.append(need_to_combine).sort(ascending=True) #append back in the combined storms
-    DAM_StormIntervals=DAM_StormIntervals.drop_duplicates(cols=['end']) 
-    ## QUARRY same as DAM
-    QUARRY_StormIntervals=DAM_StormIntervals
-    
-## Use User-defined storm intervals
-if StormIntervalDef=='User':
-    print 'Storm intervals defined by user'
-    #LBJstormintervalsXL = pd.ExcelFile(datadir+'LBJ_StormIntervals_filtered.xlsx')
-    #LBJ_StormIntervals = LBJstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
-    
-    LBJstormintervalsXL = pd.ExcelFile(datadir+'StormIntervals_defined.xlsx')
-    LBJ_StormIntervals = LBJstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)    
-    
-    ## 
-    DAMstormintervalsXL = pd.ExcelFile(datadir+'DAM_StormIntervals_filtered.xlsx')
-    DAM_StormIntervals = DAMstormintervalsXL.parse('StormIntervals',header=0,parse_cols='A:C',index_col=0)
-    
-    DAM_StormIntervals = LBJ_StormIntervals
-    QUARRY_StormIntervals, DAM_StormIntervals = DAM_StormIntervals, DAM_StormIntervals
-
-### SAVE Storm Intervals for LATER
-LBJ_StormIntervals.to_excel(datadir+'Q/StormIntervals/LBJ_StormIntervals.xlsx')
-QUARRY_StormIntervals.to_excel(datadir+'Q/StormIntervals/QUARRY_StormIntervals.xlsx')
-DAM_StormIntervals.to_excel(datadir+'Q/StormIntervals/DAM_StormIntervals.xlsx')
-
-#### ..
 #### STAGE TO DISCHARGE ####
 #from stage2discharge_ratingcurve import AV_RatingCurve#, calcQ, Mannings_rect, Weir_rect, Weir_vnotch, Flume
-def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True,printResults=False):
+
+
+### Calculate Q from a single AV measurement
+#fileQ = calcQ(datadir+'Q/LBJ_4-18-13.txt','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True)
+## and save to CSV
+#pd.concat(fileQ).to_csv(datadir+'Q/LBJ_4-18-13.csv')
+
+### Area Velocity and Mannings from in situ measurments
+## Returns DataFrame of Stage (cm) and Discharge (L/sec) calc. from AV measurements with time index
+
+def Stage_Q_AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True,printResults=False):
     Filelist = os.listdir(path)
     ## iterate over files in directory to get Flow.txt file
     for f in Filelist:
@@ -1144,23 +786,16 @@ def AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=
                         print str(DateTime)+': stage='+'%.2f'%stage+' Q= '+'%.0f'%AV_Q+' ManningQ= '+'%.2f'%ManningQ
                         print df              
     return Qdf  
+#Stage_Q_AV_RatingCurve(path,location,stage_data,slope=.01,Mannings_n=.033,trapezoid=True,printResults=False)
 
-### Area Velocity and Mannings from in situ measurments
-## stage2discharge_ratingcurve.AV_rating_curve(datadir,location,Fagaalu_stage_data,trapezoid=False,Slope=0.01,Mannings_n=0.03,width=4.9276)
-## Returns DataFrame of Stage (cm) and Discharge (L/sec) calc. from AV measurements with time index
-
-### Calculate Q from a single AV measurement
-#fileQ = calcQ(datadir+'Q/LBJ_4-18-13.txt','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=n,trapezoid=True)
-## and save to CSV
-#pd.concat(fileQ).to_csv(datadir+'Q/LBJ_4-18-13.csv')
 
 ### Discharge using Mannings and Surveyed Cros-section
 #from ManningsRatingCurve import Mannings, Mannings_Series
-def Mannings(XSfile,sheetname,Slope,Manning_n,k=1,stage_start=.01,stage_end=None,show=False,save=False,filename=''):    
+def Mannings_Q_from_CrossSection(Cross_section_file,sheetname,Slope,Manning_n,k=1,stage_start=.01,stage_end=None,show=False,save=False,filename=''):    
     ## Open and parse file; drop NA  
-    print XSfile+' '+sheetname
+    print Cross_section_file+' '+sheetname
     print 'Slope: '+str(Slope)+' Mannings n: '+str(Manning_n)
-    XL = pd.ExcelFile(XSfile) 
+    XL = pd.ExcelFile(Cross_section_file) 
     df = XL.parse(sheetname,header=4,parse_cols='F:H')
     df = df.dropna()
     ## Mannings Parameters S:slope, n:Mannings n
@@ -1239,16 +874,15 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,k=1,stage_start=.01,stage_end=None
         plt.close('all')
         plt.ion()
     
-    DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r, 'Man_n':Man_n,'vel':v,'Q':q})
-       
+    DF = pd.DataFrame({'stage(m)':stages,'area(m2)':areas,'wp(m)':wp,'r':r,'Man_n':Man_n,'vel(m/s)':v,'Q(m3/s)':q}) 
     return DF,df
-
+  
     
-def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):    
+def Mannings_Q_from_stage_data(Cross_section_file,sheetname,stage_data,Slope,Manning_n,k=1):    
     ## Open and parse file; drop NA  
-    print XSfile+' '+sheetname
+    print Cross_section_file+' '+sheetname
     print 'Slope: '+str(Slope)+' Mannings n: '+str(Manning_n)
-    XL = pd.ExcelFile(XSfile) 
+    XL = pd.ExcelFile(Cross_section_file) 
     df = XL.parse(sheetname,header=4,parse_cols='F:H')
     df = df.dropna()
     ## Mannings Parameters S:slope, n:Mannings n
@@ -1257,9 +891,8 @@ def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):
     ## empty lists
     areas, wp, r, Man_n, v, q, = [],[],[],[],[],[]
     ## Stage data
-    stage_series = stage_series/100 ## cm to m
-    stages = stage_series.values
-    for stage in stages:
+    stage_data = stage_data/100 ## cm to m
+    for stage in stage_data.values:
         #print 'stage: '+str(stage)
         df['y1'] = df['depth']+df['Rod Reading'].max()
         df['y2'] = stage
@@ -1292,7 +925,7 @@ def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):
         Man_n.append(n)
         v.append(ManningV)
         q.append(ManningQ)        
-    DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r,'Man_n':Man_n,'vel':v,'Q':q},index=stage_series.index)
+    DF = pd.DataFrame({'stage(m)':stage_data.values,'area(m2)':areas,'wp(m)':wp,'r':r,'Man_n':Man_n,'vel(m/s)':v,'Q(m3/s)':q},index=stage_data.index)
     return DF
     
 ## Read LBJ_Man Discharge from .csv, or calculate new if needed
@@ -1306,12 +939,13 @@ if 'LBJ_Man' not in locals():
         LBJ_S, LBJ_n, LBJ_k = 0.016, 'Jarrett', .06/.08
         LBJ_S, LBJ_n, LBJ_k = 0.016, .067, 1
         LBJ_stage_reduced = Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
-        LBJ_Man_reduced = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_series=LBJ_stage_reduced)
+        LBJ_Man_reduced = Mannings_Q_from_stage_data(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_data=LBJ_stage_reduced)
         LBJ_Man_reduced.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
         LBJ_stage= Fagaalu_stage_data['LBJ']+5
-        LBJ_Man= Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_series=LBJ_stage)
+        LBJ_Man= Mannings_Q_from_stage_data(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_data=LBJ_stage)
         LBJ_Man.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
         pass
+    
 ## Read DAM_Man Discharge from .csv, or calculate new if needed
 if 'DAM_Man' not in locals():
     try:
@@ -1322,22 +956,24 @@ if 'DAM_Man' not in locals():
         print 'Calculate Mannings Q for DAM and saving to CSV'
         DAM_S, DAM_n,  DAM_k = 0.03, 'Jarrett', .025/.06
         DAM_stage_reduced = Fagaalu_stage_data['Dam'].dropna().round(0).drop_duplicates().order()
-        DAM_Man_reduced = Mannings_Series(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=DAM_S,Manning_n=DAM_n,k=DAM_k,stage_series=DAM_stage_reduced)
+        DAM_Man_reduced = Mannings_Q_from_stage_data(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=DAM_S,Manning_n=DAM_n,k=DAM_k,stage_data=DAM_stage_reduced)
         DAM_Man_reduced.to_csv(datadir+'Q/Manning_Q_files/DAM_Man_reduced.csv')
         DAM_stage = Fagaalu_stage_data['Dam']
-        DAM_Man= Mannings_Series(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',k=.025/.06,stage_series=DAM_stage)
+        DAM_Man= Mannings_Q_from_stage_data(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=0.03,Manning_n='Jarrett',k=.025/.06,stage_data=DAM_stage)
         DAM_Man.to_csv(datadir+'Q/Manning_Q_files/DAM_Man.csv')
         pass 
 
 #### LBJ Stage-Discharge
-# (3 rating curves: AV measurements, A measurment * Mannings V, Surveyed Cross-Section and Manning's equation)
+# (3 rating curves: AV measurements, A measurement * Mannings V, Surveyed Cross-Section and Manning's equation)
 
 ## LBJ AV measurements
 ## Mannings parameters for A-ManningV
 Slope = 0.0161 # m/m
 LBJ_n=0.067 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
-LBJstageDischarge = AV_RatingCurve(datadir+'Q/Flow_Files/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=LBJ_n,trapezoid=True).dropna() #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel A
-LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flow meter very well
+
+#DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel
+LBJstageDischarge = Stage_Q_AV_RatingCurve(datadir+'Q/Flow_Files/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=LBJ_n,trapezoid=True).dropna() 
+LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flowmeter 
 LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
 
 ## LBJ: Discharge Ratings
@@ -1351,12 +987,14 @@ LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDisch
 LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
 
 #### DAM Stage-Discharge
+
+## DAM AV Measurements
 Slope= 0.3
 DAM_n = 'Jarrett'
 DAM_k = 1
-## DAM AV Measurements
-DAMstageDischarge = AV_RatingCurve(datadir+'Q/Flow_Files/','Dam',Fagaalu_stage_data,slope=Slope,Mannings_n=DAM_n).dropna() ### Returns DataFrame of Stage and Discharge calc. from AV measurements with time index
-#DAMstageDischarge = DAMstageDischarge[10:]# throw out measurements when I didn't know how to use the flow meter very well
+## DataFrame of Stage and Discharge calc. from AV measurements with time index
+DAMstageDischarge = Stage_Q_AV_RatingCurve(datadir+'Q/Flow_Files/','Dam',Fagaalu_stage_data,slope=Slope,Mannings_n=DAM_n).dropna() 
+#DAMstageDischarge = DAMstageDischarge[10:]# throw out measurements when I didn't know how to use the flowmeter
 DAMstageDischargeLog=DAMstageDischarge.apply(np.log10) #log-transformed version
 
 ## DAM: Discharge Ratings
@@ -1369,7 +1007,7 @@ DAM_AVLog = pd.ols(y=DAMstageDischargeLog['Q-AV(L/sec)'],x=DAMstageDischargeLog[
 def HEC_piecewise(PTdata):
     if type(PTdata)!=pd.Series:
         PTdata = pd.Series(data=PTdata)
-    HEC_a1, HEC_b1 = 9.9132, -5.7184## from excel DAM_HEC.xlsx
+    HEC_a1, HEC_b1 = 9.9132, -5.7184 ## from excel DAM_HEC.xlsx
     HEC_a2, HEC_b2 = 25.823, -171.15 
     HEC_a3, HEC_b3 = 98.546, -3469.4
     
@@ -1388,9 +1026,9 @@ DAM_HEC = pd.ols(y=DAMstageDischarge['Q_HEC(L/sec)'],x=DAMstageDischarge['stage(
 
 ## This function calculates the coeff of determination (r2) for 
 ## a function (=Manning's rating curve) and some independent points (=AV Q measurements
-def Manning_AV_r2(Man_Series,AV_Series):
+def Manning_AV_r2(ManningsQ_Series,AV_Series):
     # LBJ Mannings = y predicted
-    ManQ, Manstage = Man_Series['Q']*1000, Man_Series['stage']*100
+    ManQ, Manstage = ManningsQ_Series['Q(m3/s)']*1000, ManningsQ_Series['stage(m)']*100
     y_predicted = pd.DataFrame({'Q_Man':ManQ.values},index=Manstage).sort()
     ## LBJ AV  = y
     AV_Q, AVstage = AV_Series['Q-AV(L/sec)'], AV_Series['stage(cm)'].apply(np.int)
@@ -1410,7 +1048,7 @@ DAM_Man_r2 = Manning_AV_r2(DAM_Man_reduced,DAMstageDischarge)
 
 def Manning_AV_rmse(Man_Series,AV_Series):
     # LBJ Mannings = y predicted
-    ManQ, Manstage = Man_Series['Q']*1000, Man_Series['stage']*100
+    ManQ, Manstage = Man_Series['Q(m3/s)']*1000, Man_Series['stage(m)']*100
     y_predicted = pd.DataFrame({'Q_Man':ManQ.values},index=Manstage).sort()
     ## LBJ AV  = y
     AV_Q, AVstage = AV_Series['Q-AV(L/sec)'], AV_Series['stage(cm)'].apply(np.int)
@@ -1465,7 +1103,7 @@ def HEC_AV_rmse(HEC_Series,AV_Series):
 DAM_HEC_rmse = HEC_AV_rmse(DAM_HECstageDischarge,DAMstageDischarge)[2]   
 
 
-### Compare Discharg Ratings
+### Compare Discharge Ratings from different methods
 def plotQratingLBJ(ms=6,show=False,log=False,save=False,filename=figdir+''): ## Rating Curves
     mpl.rc('lines',markersize=ms)
     title="Water Discharge Ratings for FG3(LBJ)"
@@ -1490,19 +1128,16 @@ def plotQratingLBJ(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj,c='grey',ls='-',label='AV power law '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])    
     PowerFit(LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'],xy,site_lbj_zoom,c='grey',ls='-',label='AV power law '+r'$r^2$'+"%.2f"%LBJ_AVpower['r2'])        
     ## LBJ Mannings from stream survey
-    LBJ_ManQ, LBJ_Manstage = LBJ_Man_reduced['Q']*1000, LBJ_Man_reduced['stage']*100
+    LBJ_ManQ, LBJ_Manstage = LBJ_Man_reduced['Q(m3/s)']*1000, LBJ_Man_reduced['stage(m)']*100
     site_lbj.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='k',label='Mannings: n='+str(LBJ_n)+r'$ r^2$'+"%.2f"%LBJ_Man_r2)
     site_lbj_zoom.plot(LBJ_ManQ,LBJ_Manstage,'-',markersize=2,c='k',label='Mannings')
-    ## Storm Thresholds
-    site_lbj.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='k',label='Storm threshold')
-    site_lbj_zoom.axhline(LBJ_storm_threshold,ls='--',linewidth=0.6,c='k',label='Storm threshold')
     ## Label point -click
     labelindex_subplot(site_lbj, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
     labelindex_subplot(site_lbj_zoom, LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],LBJstageDischarge['stage(cm)'])
     ## Label subplots    
     site_lbj.set_ylabel('Stage(cm)'),site_lbj.set_xlabel('Q(L/sec)'),site_lbj_zoom.set_xlabel('Q(L/sec)')
     ## Format subplots
-    site_lbj.set_ylim(0,PT1['stage'].max()+10)#,site_lbj.set_xlim(0,LBJ_AVnonLinear(PT1['stage'].max()+10))
+    site_lbj.set_ylim(0,PT1['stage(cm)'].max()+10)#,site_lbj.set_xlim(0,LBJ_AVnonLinear(PT1['stage'].max()+10))
     site_lbj_zoom.set_ylim(0,45), site_lbj_zoom.set_xlim(0,1600)
     ## Legends
     site_lbj.legend(loc='lower right',fancybox=True)  
@@ -1516,12 +1151,10 @@ def plotQratingLBJ(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     show_plot(show,fig)
     savefig(save,filename)
     return
-#plotQratingLBJ(show=True,log=False,save=False,filename=figdir+'')
-#plotQratingLBJ(show=True,log=False,save=True)
-#plotQratingLBJ(show=True,log=True,save=True)
-#plotQratingLBJ(show=True,log=True,save=False)
+#plotQratingLBJ(ms=6,show=True,log=False,save=False,filename=figdir+'')
+#plotQratingLBJ(ms=6,show=True,log=True,save=False,filename=figdir+'')
 
-### Compare Discharg Ratings
+### Compare Discharg Ratings from different methods
 def plotQratingDAM(ms=6,show=False,log=False,save=False,filename=figdir+''): ## Rating Curves
     mpl.rc('lines',markersize=ms)
     fig, (site_dam, site_dam_zoom) = plt.subplots(1,2,figsize=(8,4))
@@ -1551,7 +1184,7 @@ def plotQratingDAM(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     ## DAM  FLUME
     
     ## DAM Mannings from stream survey
-    DAM_ManQ, DAM_Manstage = DAM_Man_reduced['Q']*1000,DAM_Man_reduced['stage']*100
+    DAM_ManQ, DAM_Manstage = DAM_Man_reduced['Q(m3/s)']*1000,DAM_Man_reduced['stage(m)']*100
     #site_dam.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM '+r'$r^2$'+"%.2f"%DAM_Man_r2)   
     #site_dam_zoom.plot(DAM_ManQ, DAM_Manstage,'-',markersize=2,color='r',label='Mannings DAM')   
     ## Label point-click
@@ -1559,12 +1192,10 @@ def plotQratingDAM(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     labelindex_subplot(site_dam_zoom, DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],DAMstageDischarge['stage(cm)'])
     ## Storm Thresholds
     site_dam.axhline(46,ls='-.',linewidth=0.6,c='grey',label='Channel top')
-    site_dam.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='grey',label='Storm threshold')
-    site_dam_zoom.axhline(DAM_storm_threshold,ls='--',linewidth=0.6,c='grey',label='Storm threshold')
     ## Label subplots    
     site_dam.set_ylabel('Stage(cm)'),site_dam.set_xlabel('Q(L/sec)'),site_dam_zoom.set_xlabel('Q(L/sec)')
     ## Format subplots
-    site_dam.set_ylim(0,PT3['stage'].max()+10)#,site_dam.set_xlim(0,HEC_piecewise(PT3['stage'].max()+10).values)
+    site_dam.set_ylim(0,PT3['stage(cm)'].max()+10)#,site_dam.set_xlim(0,HEC_piecewise(PT3['stage'].max()+10).values)
     site_dam_zoom.set_ylim(0,20),site_dam_zoom.set_xlim(0,500)
     ## Legends
     site_dam.legend(loc='best',fancybox=True)    
@@ -1577,34 +1208,34 @@ def plotQratingDAM(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     savefig(save,filename)
     return
 #plotQratingDAM(ms=6,show=True,log=False,save=False,filename=figdir+'')
-#plotQratingDAM(show=True,log=False,save=True)
-#plotQratingDAM(show=True,log=True,save=True)
-#plotQratingDAM(show=True,log=True,save=False)
+#plotQratingDAM(ms=6,show=True,log=True,save=False,filename=figdir+'')
 
 #### CALCULATE DISCHARGE
 ## Calculate Q for LBJ
 ## Stage
-LBJ = DataFrame(PT1,columns=['stage']) ## Build DataFrame with all stage records for location (cm)
+LBJ = DataFrame(PT1,columns=['stage(cm)']) ## Build DataFrame with all stage records for location (cm)
 ## Mannings
-LBJ['Q-Mannings'] = LBJ_Man['Q']*1000
+LBJ['Q-Mannings'] = LBJ_Man['Q(m3/s)']*1000
 ## Power Models
 a,b = 10**LBJ_AVLog.beta[1], LBJ_AVLog.beta[0]# beta[1] is the intercept = log10(a), so a = 10**beta[1] # beta[0] is the slope = b
-LBJ['Q-AVLog'] = a * (LBJ['stage']**b)
+LBJ['Q-AVLog'] = a * (LBJ['stage(cm)']**b)
 a,b = 10**LBJ_AManningVLog.beta[1], LBJ_AManningVLog.beta[0]
-LBJ['Q-AManningVLog'] = a*(LBJ['stage']**b)
+LBJ['Q-AManningVLog'] = a*(LBJ['stage(cm)']**b)
 
 ## Calculate Q for DAM
 ## Stage
-DAM = DataFrame(PT3,columns=['stage']) ## Build DataFrame with all stage records for location
+DAM = DataFrame(PT3,columns=['stage(cm)']) ## Build DataFrame with all stage records for location
 ## Mannings
-DAM['Q-Mannings']=DAM_Man['Q']*1000 ## m3/s to L/sec
+DAM['Q-Mannings']=DAM_Man['Q(m3/s)']*1000 ## m3/s to L/sec
 ## Linear Model
-DAM['Q-AV']=(DAM['stage']*DAM_AV.beta[0]) + DAM_AV.beta[1] ## Calculate Q from AV rating=
+DAM['Q-AV']=(DAM['stage(cm)']*DAM_AV.beta[0]) + DAM_AV.beta[1] ## Calculate Q from AV rating=
 ## Power Model
 a,b = 10**DAM_AVLog.beta[1], DAM_AVLog.beta[0]
-DAM['Q-AVLog']=(a)*(DAM['stage']**b) 
+DAM['Q-AVLog']=(a)*(DAM['stage(cm)']**b) 
 ## HEC-RAS Model
-DAM['Q-HEC']= HEC_piecewise(DAM['stage'])
+DAM['Q-HEC']= HEC_piecewise(DAM['stage(cm)'])
+
+
 
 #### CHOOSE Q RATING CURVE
 LBJ['Q']= LBJ['Q-Mannings']
@@ -1615,28 +1246,25 @@ DAM['Q-RMSE'] = DAM_HEC_rmse
 print 'DAM Q from HEC-RAS and Surveyed Cross Section'
 
 
-
-
-
-#### Calculate Q for QUARRY TODO
-QUARRY = pd.DataFrame((DAM['Q']/.9)*1.17) ## Q* from DAM x Area Quarry
-QUARRY['Q-RMSE'] = DAM['Q-RMSE']
-QUARRY['stage']=DAM['stage']
+#### Calculate Q for QUARRY based on specific discharge from watershed (m3/s/km2)
+QUARRY = pd.DataFrame((DAM['Q']/.9)*1.17) ## Q* from DAM (m3/s/0.9km2) x Area Quarry (=1.17km2)
+QUARRY['Q-RMSE'] = DAM['Q-RMSE'] ## RMSE same as for DAM
+QUARRY['stage(cm)']=DAM['stage(cm)']
 ## Convert to 15min interval LBJ
 LBJq = (LBJ*900) ## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
-LBJq['stage']=PT1['stage'] ## put unaltered stage back in
+LBJq['stage(cm)']=PT1['stage(cm)'] ## put unaltered stage back in
 
 ## Convert to 15min interval QUARRY
 QUARRYq = (QUARRY*900) ## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
-QUARRYq['stage']=PT3['stage'] ## put unaltered stage back in
+QUARRYq['stage(cm)']=PT3['stage(cm)'] ## put unaltered stage back in
 
 ## Convert to 15min interval DAM
 DAMq= (DAM*900)## Q above is in L/sec; L/sec * 900sec/15Min = L/15Min
-DAMq['stage']=PT3['stage'] ## put unaltered stage back in
+DAMq['stage(cm)']=PT3['stage(cm)'] ## put unaltered stage back in
 
 
-    
-def QYears(log=False,show=False,save=False,filename=''):
+### Plot Q 
+def plot_Q_by_year(log=False,show=False,save=False,filename=''):
     mpl.rc('lines',markersize=6)
     fig, (Q2012,Q2013,Q2014)=plt.subplots(3)
     letter_subplots(fig,0.1,0.95,'top','right','k',font_size=10,font_weight='bold')
@@ -1646,11 +1274,13 @@ def QYears(log=False,show=False,save=False,filename=''):
         #ax.plot(LBJstageDischarge.index,LBJstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='k')
         ax.plot_date(DAM['Q'].index,DAM['Q'],ls='-',marker='None',c='grey',label='Q FG1')
         #ax.plot(DAMstageDischarge.index,DAMstageDischarge['Q-AV(L/sec)'],ls='None',marker='o',color='grey')
-        ax.set_ylim(0,LBJ['Q'].max()+500)    
+        ax.set_ylim(0,LBJ['Q'].max()+500)  
+        
     Q2012.set_xlim(start2012,stop2012),Q2013.set_xlim(start2013,stop2013),Q2014.set_xlim(start2014,stop2014)
     Q2012.legend(loc='best')
     Q2013.set_ylabel('Discharge (Q) L/sec')
     #Q2012.set_title("Discharge (Q) L/sec at the Upstream and Downstream Sites, Faga'alu")
+    
     for ax in fig.axes:
         ax.locator_params(nbins=6,axis='y')
         ax.xaxis.set_major_locator(mpl.dates.MonthLocator(interval=2))
@@ -1661,9 +1291,146 @@ def QYears(log=False,show=False,save=False,filename=''):
     show_plot(show,fig)
     savefig(save,filename)
     return
-#QYears(log=False,show=True,save=False,filename='')
+#plot_Q_by_year(log=False,show=True,save=False,filename='')
+
+
+
+
+#### Separate Storm Hydrographs - Define storm start/end
+#### Baseflow Separation
+from rpy2.robjects.packages import importr
+import rpy2.robjects as ro
+import pandas.rpy.common as com
+
+## Make sure R is communicating
+ro.r('x=c()')
+ro.r('x[1]="lets talk to R"')
+print(ro.r('x'))
+
+
+def Separate_Storms_by_Baseflow(Q_data):
+    ## convert to R Data Frame
+    hydrograph = com.convert_to_r_dataframe(pd.DataFrame({'Q':Q_data['Q'].values},index = Q_data['Q'].index))
+    ## Send to R
+    ro.globalenv['flowdata'] = hydrograph
+    ## replace blanks with NA
+    ro.r('flowdata[flowdata==""]<-NA')
+    ## Drop NA rows from Data Frame
+    ro.r('flow = flowdata[complete.cases(flowdata),]')
+    ## run Baseflow Separation
+    ro.r("library(EcoHydRology)")
+    print 'running R baseflow separation....'
+    ro.r("base = BaseflowSeparation(flow, filter_parameter = 0.95, passes=3)")
+    print 'baseflow separated!'
+    ## Convert back to Pandas
+    flowdf = com.load_data("base")
+    ## reindex with the original time index WITHOUT NA's (they're dropped in the R code)
+    flow = pd.DataFrame({'Flow':Q_data['Q'].dropna().values,'bt':flowdf['bt'].values,'qft':flowdf['qft'].values},index=Q_data['Q'].dropna().index)
     
-### ..
+    ## optional threshold argument
+    stormthresh = 0
+    StormFlow = flow['qft'].where(flow['qft']>flow['bt']*0.10)
+    ##returns list of data points that meet the condition, the rest are NaN (same shape as original array)
+    ## or
+    #PT1storm = PT1[PT1>stormthresh] ## NaN values are filtered out
+    minimum_length = 4
+    #### Get start and end times of events that meet >=stormthresh
+    startstops=[]
+    dprev = nan ## set first datapoint as NaN
+    for d in StormFlow.iteritems():
+        if isnan(d[1])==False and isnan(dprev)==True: ### Start of storm
+            starttime = d[0]
+            endtime = d[0]
+            dprev = d[1]
+        elif isnan(d[1])==False and isnan(dprev)==False:## Next value in storm
+            endtime = d[0]
+            dprev = d[1]
+        elif isnan(d[1])==True and isnan(dprev)==False: ## Start of non-storm 
+            startstops.append((starttime,endtime))
+            dprev = d[1]
+            pass
+        elif isnan(d[1])==True and isnan(dprev)==True: ## Next value in non-storm
+            dprev = d[1]
+            pass
+    #### Slice hydrograph by start:stop times and give count and summary
+    eventlist = []
+    for t in startstops:
+        ## Adjust start of storm by X minutes to capture very start of hydrograph rise
+        start = t[0]-dt.timedelta(minutes=15)
+        end= t[1]
+        event = flow.ix[start:end]
+        eventduration = end-start
+        seconds = eventduration.total_seconds()
+        hours = seconds / 3600
+        eventduration = round(hours,2)
+        ## Filter out short storms and storms with low Qmax
+        if event['qft'].count() >= minimum_length and event['qft'].max()>=100:
+            eventlist.append([start,end,eventduration])
+        
+    StormEvents=pd.DataFrame(eventlist,columns=['start','end','duration (hrs)'])
+    #drop_rows = Events[Events['duration (min)'] <= timedelta(minutes=120)] ## Filters events that are too short
+    #Events = Events.drop(drop_rows.index) ## Filtered DataFrame of storm start,stop,count,sum
+    return StormEvents, flow
+    
+Storms_LBJ_PT, LBJ_flow_separated = Separate_Storms_by_Baseflow(LBJ)
+Storms_DAM_PT, DAM_flow_separated = Separate_Storms_by_Baseflow(DAM)
+
+
+
+for storm in Storms_DAM_PT.iterrows():
+    start,end = storm[1]['start'], storm[1]['end']
+    if len(LBJ['Q'][start:end].dropna()) == 0:
+        #print 'No LBJ PT data for storm, adding storm from DAM PT data'
+        Storms_LBJ_PT = Storms_LBJ_PT.append(storm[1])
+All_Storms = Storms_LBJ_PT       
+
+
+def plot_Q_and_StormEvents(Storms_LBJ_PT, LBJ_flow_separated, Storms_DAM_PT, DAM_flow_separated):
+    fig, (lbj, dam) = plt.subplots(2,1,sharex=True,sharey=True,figsize=(12,6))
+    lbj.xaxis.set_visible(False)
+    ax1 = lbj.twinx()
+    ## Precip
+    PrecipFilled.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    PrecipFilled['Precip'].plot(ax=lbj,color='b',alpha=0.5,ls='steps-pre',label='Timu1')
+    lbj.set_ylim(0,25), lbj.set_ylabel('Precip mm')
+    ## Q LBJ
+    LBJ_flow_separated = LBJ_flow_separated .reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    ax1.plot_date(LBJ_flow_separated.index,LBJ_flow_separated['Flow'],marker='None',ls='-',c='k', label='Q LBJ +15min start')
+    ax1.plot_date(LBJ_flow_separated.index,LBJ_flow_separated['bt'],marker='None',ls='-',c='grey')
+    ax1.set_ylim(0,LBJ_flow_separated['Flow'].max()+0.05*LBJ_flow_separated['Flow'].max())
+    ax1.set_ylabel('Q L/s')
+    ax1.legend()
+    ## Shade over Storm Intervals
+    for storm in Storms_LBJ_PT.iterrows(): ## shade over storm intervals
+        ax1.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor='grey', alpha=0.25)
+        
+    ax2 = dam.twinx()
+    ## Precip
+    PrecipFilled.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    PrecipFilled['Precip'].plot(ax=dam,color='b',alpha=0.5,ls='steps-pre',label='Timu1')
+    dam.set_ylim(0,25), dam.set_ylabel('Precip mm')
+    ## Q LBJ
+    DAM_flow_separated = DAM_flow_separated.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    ax2.plot_date(DAM_flow_separated.index,DAM_flow_separated['Flow'],marker='None',ls='-',c='k', label='Q DAM')
+    ax2.plot_date(DAM_flow_separated.index,DAM_flow_separated['bt'],marker='None',ls='-',c='grey')
+    #ax2.set_ylim(0,DAM_flow_separated['Flow'].max()+0.05*DAM_flow_separated['Flow'].max())
+    ax2.set_ylabel('Q L/s')
+    ax2.legend()
+    ## Shade over Storm Intervals
+    for storm in Storms_DAM_PT.iterrows(): ## shade over storm intervals
+        ax2.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor='grey', alpha=0.25)  
+        
+    plt.tight_layout(pad=0.1)
+    plt.show()
+#plot_Q_and_StormEvents(Storms_LBJ_PT, LBJ_flow_separated, Storms_DAM_PT, DAM_flow_separated)
+
+###
+
+# At this point in the code there is data for Precip, Q, and the Storm Intervals are defined
+print "Precip and Q are calculated, Storms are defined; moving on to SSC"
+###
+
+
 ## Import SSC Data
 def loadSSC(SSCXL,sheet='ALL_MASTER',round_to_5=False,round_to_15=False):
     print 'loading SSC...'
@@ -1694,28 +1461,26 @@ def loadSSC(SSCXL,sheet='ALL_MASTER',round_to_5=False,round_to_15=False):
     SSC= SSCXL.parse(sheet,header=0,parse_dates=[['Date','Time']],date_parser=my_parser,index_col=['Date_Time'])
     SSC['NTU'], SSC['SSC (mg/L)'] = SSC['NTU'].round(0), SSC['SSC (mg/L)'].round(0)
     return SSC
-SSCXL = pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx')
+
 ## ALL SSC samples
-SSC= loadSSC(SSCXL,'ALL_MASTER',round_to_15=True)
-SSC = SSC[SSC['SSC (mg/L)']>0]
+SSC= loadSSC(pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx'),'ALL_MASTER',round_to_15=True)
+SSC = SSC[SSC['SSC (mg/L)']>0] ## Filter out any negative values
 
+## Precip Data over previous 24 hours for SSC samples
 precip_24hr = pd.DataFrame()
-
 for ssc in SSC.iterrows():
     ssc_precip = PrecipFilled['Precip'][ssc[0]-dt.timedelta(hours=24):pd.to_datetime(ssc[0])].sum()
-    print ssc[0], ssc_precip
+    #print ssc[0], ssc_precip
     precip_24hr= precip_24hr.append(pd.DataFrame({'24hr_precip':ssc_precip},index=[ssc[0]]))
-    
-    
 SSC['24hr_precip']=precip_24hr['24hr_precip']
 
 ## ALL SSC stormflow samples
 SSC_all_storm_samples = pd.DataFrame()
-for storm_index,storm in LBJ_StormIntervals.iterrows():
+for storm_index,storm in All_Storms.iterrows():
     #print storm[1]['start']
-    start, end =storm['start']-dt.timedelta(minutes=60), storm['end']
-    SSC_storm = SSC[start:end]
-    SSC_all_storm_samples = SSC_all_storm_samples.append(SSC_storm)
+    start, end =storm['start'], storm['end']
+    SSC_during_storm = SSC[start:end]
+    SSC_all_storm_samples = SSC_all_storm_samples.append(SSC_during_storm)
 ## ALL SSC baseflow samples
 SSC_all_baseflow_samples = SSC.drop(SSC_all_storm_samples.index) 
 
@@ -1732,6 +1497,46 @@ SSC_post_mitigation_baseflow_samples = SSC_all_baseflow_samples[SSC_all_baseflow
 SSC_dict={'ALL':SSC,'ALL-storm':SSC_all_storm_samples,'Pre-ALL':SSC_pre_mitigation,'Pre-storm':SSC_pre_mitigation_storm_samples,'Pre-baseflow':SSC_pre_mitigation_baseflow_samples,'Post-ALL':SSC_post_mitigation,'Post-storm':SSC_post_mitigation_storm_samples,'Post-baseflow':SSC_post_mitigation_baseflow_samples }
 #SSC_raw_time = loadSSC(SSCXL,'ALL_MASTER')
 #SSC_raw_time[SSC_raw_time['Location'].isin(['LBJ'])]['SSC (mg/L)'].plot(ls='None',marker='.',c='g')
+
+
+def make_patch_spines_invisible(ax):
+    ax.set_frame_on(True)
+    ax.patch.set_visible(False)
+    for sp in ax.spines.itervalues():
+        sp.set_visible(False)
+
+def plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_storm_samples, SSC_post_mitigation_baseflow_samples):
+    fig, ax1 = plt.subplots(1,1,figsize=(12,4))
+    ax2 = ax1.twinx()
+    ## Precip
+    PrecipFilled.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    PrecipFilled['Precip'].plot(ax=ax1,color='b',alpha=0.5,ls='steps-pre',label='Precip-Timu1')
+    ax1.set_ylim(0,25), ax1.set_ylabel('Precip mm')
+    ax1.tick_params(axis='y', colors='b'), ax1.yaxis.label.set_color('b')
+    ## Q LBJ
+    LBJ_flow_separated = LBJ_flow_separated .reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    ax2.plot_date(LBJ_flow_separated.index,LBJ_flow_separated['Flow'],marker='None',ls='-',c='k', label='Q LBJ')
+    ax2.plot_date(LBJ_flow_separated.index,LBJ_flow_separated['bt'],marker='None',ls='-',c='grey')
+    ax2.set_ylim(0,LBJ_flow_separated['Flow'].max()+0.05*LBJ_flow_separated['Flow'].max())
+    ax2.set_ylabel('Q L/s')
+    ax2.tick_params(axis='y', colors='k'), ax2.yaxis.label.set_color('k')
+    ## Plot SSC data
+    ax3 = ax1.twinx()
+    ax3.plot_date(SSC_pre_mitigation_storm_samples.index,SSC_pre_mitigation_storm_samples['SSC (mg/L)'],c='r',label='Storm samples')
+    ax3.plot_date(SSC_pre_mitigation_baseflow_samples.index,SSC_pre_mitigation_baseflow_samples['SSC (mg/L)'],c='b',label='Baseflow samples')
+    ax3.set_ylim(0,SSC_pre_mitigation_storm_samples['SSC (mg/L)'].max()),ax3.set_yscale('log')
+    ax3.spines["right"].set_position(("axes", 1.1))
+    ax3.tick_params(axis='y', colors='r'), ax3.yaxis.label.set_color('r')
+    make_patch_spines_invisible(ax3)
+    ax3.spines["right"].set_visible(True)
+    ## Shade over Storm Intervals
+    for storm in All_Storms.iterrows(): ## shade over storm intervals
+        ax1.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor='grey', alpha=0.25)    
+    
+    plt.tight_layout(pad=0.1)
+    plt.show()
+#plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_storm_samples, SSC_post_mitigation_baseflow_samples)
+
 
 #### SSC Grab sample ANALYSIS
 def sample_counts(SSCdata):
@@ -1784,70 +1589,7 @@ DAM['Grab-SSC-mg/L'] = DAMgrab.drop_duplicates(cols='index')['SSC (mg/L)']
 
 
 
-
-
-def SSCprobplots(subset='pre',withR2=False,show=False,save=False,filename=figdir+''):
-   
-    ## Subset SSC
-    ## Pre-mitigation baseflow
-    SSC = SSC_dict[subset[0]]
-    LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
-    QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
-    DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
-    if withR2==True:
-        ## Add samples from Autosampler at QUARRY
-        print 'Adding R2 samples to QUARRY Grab (DT)'
-        QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])]
-    elif withR2==False:
-        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]  
-    ## Compile
-    GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],
-                                 LBJgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)']],ignore_index=True,axis=1)    
-    GrabSamples.columns = ['DAM','QUARRY','LBJ']
-    
-    ax1 = plt.subplot(231)
-    stats.probplot(GrabSamples['DAM'].dropna(), plot=plt)
-    
-    ax2 = plt.subplot(232)
-    stats.probplot(GrabSamples['QUARRY'].dropna(), plot=plt)
-    ax3 = plt.subplot(233)
-    stats.probplot(GrabSamples['LBJ'].dropna(), plot=plt)    
-    
-    ## Subset SSC
-    ## Pre-mitigation stormflow
-    SSC = SSC_dict[subset[1]]
-    LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]
-    QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]
-    DAMgrab = SSC[SSC['Location'].isin(['DAM'])]
-    if withR2==True:
-        ## Add samples from Autosampler at QUARRY
-        print 'Adding R2 samples to QUARRY Grab (DT)'
-        QUARRYgrab =SSC[SSC['Location'].isin(['DT','R2'])]
-    elif withR2==False:
-        QUARRYgrab =SSC[SSC['Location'].isin(['DT'])]  
-    ## Compile
-    GrabSamples = pd.concat([DAMgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],QUARRYgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)'],
-                                 LBJgrab['SSC (mg/L)'].reset_index()['SSC (mg/L)']],ignore_index=True,axis=1)    
-    GrabSamples.columns = ['DAM','QUARRY','LBJ']
-    
-    ax4 = plt.subplot(234)
-    stats.probplot(GrabSamples['DAM'].dropna(), plot=plt)
-    ax5 = plt.subplot(235)
-    stats.probplot(GrabSamples['QUARRY'].dropna(), plot=plt)
-    ax6 = plt.subplot(236)
-    stats.probplot(GrabSamples['LBJ'].dropna(), plot=plt)
-    
-    ax1.set_ylabel('Baseflow'), ax4.set_ylabel('Stormflow')
-    
-    ax1.set_title('DAM'), ax2.set_title('QUARRY'), ax3.set_title('LBJ')
-    ax4.set_title('DAM'), ax5.set_title('QUARRY'), ax6.set_title('LBJ')
-    plt.tight_layout(pad=0.1)
-    show_plot(show)
-    savefig(save,filename)
-    return
-#SSCprobplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,show=True,save=False,filename=figdir+'')
-
-def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,filename=figdir+''):
+def SSC_box_plots(subset='pre',withR2=False,log=False,show=False,save=False,filename=figdir+''):
     #mpl.rc('lines',markersize=300)
     mpl.rc('legend',scatterpoints=1)  
     fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,3),sharey=True)
@@ -1887,7 +1629,7 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     print "QUARRY v LBJ mannwhit: u = %g  p/2 = %g" % QUARRY_LBJ_mannwhit1 
     
 
-    GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
+    GrabSampleMeans_1 = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
     GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
     GrabSampleCategories = np.concatenate([[1]*len(DAMgrab['SSC (mg/L)']),[2]*len(QUARRYgrab['SSC (mg/L)']),[3]*len(LBJgrab['SSC (mg/L)'])])
     GrabSamples.columns = ['FG1','FG2','FG3']
@@ -1925,7 +1667,7 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     QUARRY_LBJ_mannwhit2 = stats.mannwhitneyu(GrabSamples['QUARRY'].dropna(), GrabSamples['LBJ'].dropna())   
     print "QUARRY v LBJ mannwhit: u = %g  p/2 = %g" % QUARRY_LBJ_mannwhit2  
     
-    GrabSampleMeans = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
+    GrabSampleMeans_2 = [DAMgrab['SSC (mg/L)'].mean(),QUARRYgrab['SSC (mg/L)'].mean(),LBJgrab['SSC (mg/L)'].mean()]
     GrabSampleVals = np.concatenate([DAMgrab['SSC (mg/L)'].values.tolist(),QUARRYgrab['SSC (mg/L)'].values.tolist(),LBJgrab['SSC (mg/L)'].values.tolist()])
     GrabSampleCategories = np.concatenate([[1]*len(DAMgrab['SSC (mg/L)']),[2]*len(QUARRYgrab['SSC (mg/L)']),[3]*len(LBJgrab['SSC (mg/L)'])])
     GrabSamples.columns = ['FG1','FG2','FG3']    
@@ -1939,155 +1681,60 @@ def plotSSCboxplots(subset='pre',withR2=False,log=False,show=False,save=False,fi
     plt.setp(bp1['medians'], color='black', marker='+'), plt.setp(bp2['medians'], color='black', marker='+') 
 
     ## Add Mean values
-    ax1.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')
-    ax2.scatter([1,2,3],GrabSampleMeans,s=40,color='k',label='Mean SSC (mg/L)')    
+    ax1.scatter([1,2,3],GrabSampleMeans_1,s=40,color='k',label='Mean SSC (mg/L)')
+    ax2.scatter([1,2,3],GrabSampleMeans_2,s=40,color='k',label='Mean SSC (mg/L)')    
     
     #ax1.legend(), ax2.legend()    
     if log==True:
         ax1.set_yscale('log'), ax2.set_yscale('log')   
     ax1.set_ylabel('SSC (mg/L)'),ax1.set_xlabel('Location'),ax2.set_xlabel('Location')
     #plt.suptitle("Suspended Sediment Concentrations at sampling locations in Fag'alu",fontsize=16)
-    plt.legend()
+    ax1.legend()
     plt.tight_layout(pad=0.1)
     show_plot(show)
     savefig(save,filename)
     return f1,p1,QUARRY_DAM_ttest1,QUARRY_LBJ_ttest1,H1,KWp1,QUARRY_DAM_mannwhit1,QUARRY_LBJ_mannwhit1, f2,p2,QUARRY_DAM_ttest2,QUARRY_LBJ_ttest2,H2, KWp2,QUARRY_DAM_mannwhit2,QUARRY_LBJ_mannwhit2
-## Premitigation
-#plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
-#plotSSCboxplots(subset='Pre-storm',withR2=False,show=True,save=False,filename='')
-#plotSSCboxplots(subset='pre',withR2=True,show=True) # R2 samples not comparable with others
+## Pre-mitigation
+#SSC_box_plots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=True,save=False,filename='')
+## Post-mitigation
+#SSC_box_plots(subset=['Post-baseflow','Post-storm'],withR2=False,log=True,show=True,save=False,filename='')
 
-## Postmitigation
-#plotSSCboxplots(subset='post',storm_samples_only=False,withR2=False,show=True,save=False,filename='')
 
-### Build data for Discharge/Concentration Rating Curve   
+### Discharge/Concentration Rating Curve   
    
-def plotQvsC_with_timeseries(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,save=False,filename=figdir+''):  
+def plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=False,save=False,filename=figdir+''):  
     ## Subset SSC
-    if subset=='pre' and storm_samples_only==True:
-        SSC = SSC_dict['Pre-storm']
-    elif subset=='pre' and  storm_samples_only==False:
-        SSC = SSC_dict['Pre-ALL']
-    elif subset=='post' and storm_samples_only==True:
-        SSC = SSC_dict['Post-storm']
-    elif subset=='post' and  storm_samples_only==False:
-        SSC = SSC_dict['Post-ALL']    
-    ## Append Discharge (Q) data
-    dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM']['SSC (mg/L)'])
-    dam_ssc['Q']=DAM['Q']
-    dam_ssc = dam_ssc.dropna()
-    quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])]['SSC (mg/L)'])
-    quarry_ssc['Q']=QUARRY['Q']
-    quarry_ssc =quarry_ssc.dropna()
-    lbj_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ']['SSC (mg/L)'])
-    lbj_ssc['Q']=LBJ['Q']
-    lbj_ssc=lbj_ssc.dropna()
-    ## Subset by year
-    dam_ssc2012,dam_ssc2013,dam_ssc2014 = dam_ssc[start2012:stop2012],dam_ssc[start2013:stop2013],dam_ssc[start2014:stop2014]
-    quarry2012,quarry2013,quarry2014 = quarry_ssc[start2012:stop2012],quarry_ssc[start2013:stop2013],quarry_ssc[start2014:stop2014]
-    lbj_ssc2012,lbj_ssc2013,lbj_ssc2014 = lbj_ssc[start2012:stop2012],lbj_ssc[start2013:stop2013],lbj_ssc[start2014:stop2014]
-    ## Regression
-    damQC = pd.ols(y=dam_ssc['SSC (mg/L)'],x=dam_ssc['Q'])
-    quarQC =  pd.ols(y=quarry_ssc['SSC (mg/L)'],x=quarry_ssc['Q'])
-    lbjQC = pd.ols(y=lbj_ssc['SSC (mg/L)'],x=lbj_ssc['Q'])
-
-    fig=plt.figure(figsize=(10,6))
-    ts_log = plt.subplot2grid((3,3),(0,0),colspan=3)
-    ts = plt.subplot2grid((3,3),(1,0),colspan=3)
-    up = plt.subplot2grid((3,3),(2,0))
-    quar = plt.subplot2grid((3,3),(2,1))
-    down = plt.subplot2grid((3,3),(2,2))
-    ts_log.text(0.05,0.95,'(a)',verticalalignment='top', horizontalalignment='right',transform=ts_log.transAxes,color='k',fontsize=10,fontweight='bold')
-    ts.text(0.05,0.95,'(b)',verticalalignment='top', horizontalalignment='right',transform=ts.transAxes,color='k',fontsize=10,fontweight='bold')
-    up.text(0.1,0.95,'(c)',verticalalignment='top', horizontalalignment='right',transform=up.transAxes,color='k',fontsize=10,fontweight='bold')
-    quar.text(0.1,0.95,'(d)',verticalalignment='top', horizontalalignment='right',transform=quar.transAxes,color='k',fontsize=10,fontweight='bold')
-    down.text(0.1,0.95,'(e)',verticalalignment='top', horizontalalignment='right',transform=down.transAxes,color='k',fontsize=10,fontweight='bold')
-    #fig, (up,quar,down) = plt.subplots(1,3,figsize=(8,3))
-    mpl.rc('lines',markersize=ms)
-    mpl.rc('grid',alpha=0.0) 
-    ## plot LBJ samples
-    down.set_title('FG3',fontsize=10)
-    down.loglog(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
-    down.loglog(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='2013')
-    down.loglog(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='2014')
-    ## loglog quarry samples
-    quar.set_title('FG2',fontsize=10)
-    quar.loglog(quarry2012['Q'],quarry2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
-    quar.loglog(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='2013')
-    quar.loglog(quarry2014['Q'],quarry2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='2014')
-    ## loglog DAM samples
-    up.set_title('FG1',fontsize=10)
-    up.loglog(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
-    up.loglog(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='2013')
-    up.loglog(dam_ssc2014['Q'],dam_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='2014')
-    ## plot a line marking storm threshold and label it
-    storm_Q_DAM = DAM[DAM['stage']==DAM_storm_threshold.round(0)]['Q'][0]
-    storm_Q_LBJ = LBJ[LBJ['stage']==LBJ_storm_threshold.round(0)]['Q'][0]
-    up.axvline(x=storm_Q_DAM,ls='--',color='k'),quar.axvline(x=storm_Q_DAM,ls='--',color='k'),down.axvline(x=storm_Q_LBJ,ls='--',color='k')  
-    ## Limits
-    down.set_ylim(10**0,10**5), quar.set_ylim(10**0,10**5), up.set_ylim(10**0,10**5)
-    down.set_xlim(10**1,10**5),quar.set_xlim(10**1,10**5),up.set_xlim(10**1,10**5)
-    up.set_ylabel('SSC (mg/L)'), up.set_xlabel('Q (L/sec)'), quar.set_xlabel('Q (L/sec)'), down.set_xlabel('Q (L/sec)')
-    up.legend(loc='best'), quar.legend(loc='best'), down.legend(loc='best')
-    ## Time series plot
-    DAM_Stormflow_conditions = DAM[DAM['stage']==DAM_storm_threshold.round(0)]['Q'][0]
-    QUARRY_Stormflow_conditions = (DAM_Stormflow_conditions/.9)*1.17 
-    SSC = SSC_dict['Pre-ALL']
-    dam_ssc = dam_ssc[dam_ssc['Q'] <  DAM_Stormflow_conditions]
-    quarry_ssc = quarry_ssc[quarry_ssc['Q'] < QUARRY_Stormflow_conditions]
-    #log
-    dam_ssc['SSC (mg/L)'].plot(ax=ts_log,ls='None',marker='s',fillstyle='none',color='grey',label='FG1')
-    quarry_ssc['SSC (mg/L)'].plot(ax=ts_log,ls='None',marker='o',fillstyle='none',color='k',label='FG2')
-    ts_log.legend(),ts_log.set_ylabel('SSC mg/L'),ts_log.set_yscale('log')
-    ts_log.axvline(dt.datetime(2012,8,1),0,13000,c='k',ls='--'),ts_log.text(dt.datetime(2012,8,1),5000,'Baseflow sediment mitigtaion at quarry')
-    ts_log.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
-    ts_log.spines['bottom'].set_visible(False)
-    #linear
-    dam_ssc['SSC (mg/L)'].plot(ax=ts,ls='None',marker='s',fillstyle='none',color='grey',label='FG1')
-    quarry_ssc['SSC (mg/L)'].plot(ax=ts,ls='None',marker='o',fillstyle='none',color='k',label='FG2')
-    ts.legend(),ts.set_ylabel('SSC mg/L')#,ts.set_yscale('log')
-    ts.axvline(dt.datetime(2012,8,1),0,13000,c='k',ls='--')
-    ts.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
-    ts.spines['bottom'].set_visible(False)
+    ## Pre-mitigation baseflow
+    SSC = SSC_dict[subset[0]]
+    ## DAM Baseflow
+    dam_base_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM'][['SSC (mg/L)','24hr_precip']])
+    dam_base_ssc['Q']=DAM['Q']
+    dam_base_ssc = dam_base_ssc.dropna()
+    ## QUARRY baseflow
+    quarry_base_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])][['SSC (mg/L)','24hr_precip']])
+    quarry_base_ssc['Q']=QUARRY['Q']
+    quarry_base_ssc =quarry_base_ssc.dropna()
+    ## LBJ baseflow
+    lbj_base_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ'][['SSC (mg/L)','24hr_precip']])
+    lbj_base_ssc['Q']=LBJ['Q']
+    lbj_base_ssc=lbj_base_ssc.dropna()
     
-    plt.tight_layout(pad=0.1)
-    show_plot(show,fig)
-    savefig(save,filename)
-    return
+    ## Pre-mitigation stormflow#
+    SSC = SSC_dict[subset[1]]
+    ## DAM Stormflow
+    dam_storm_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM'][['SSC (mg/L)','24hr_precip']])
+    dam_storm_ssc['Q']=DAM['Q']
+    dam_storm_ssc = dam_storm_ssc.dropna()
+    ## QUARRY Stormflow
+    quarry_storm_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])][['SSC (mg/L)','24hr_precip']])
+    quarry_storm_ssc['Q']=QUARRY['Q']
+    quarry_storm_ssc =quarry_storm_ssc.dropna()
+    ## LBJ Stormflow
+    lbj_storm_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ'][['SSC (mg/L)','24hr_precip']])
+    lbj_storm_ssc['Q']=LBJ['Q']
+    lbj_storm_ssc=lbj_storm_ssc.dropna()
     
-def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,save=False,filename=figdir+''):  
-    ## Subset SSC
-    if subset=='pre' and storm_samples_only==True:
-        SSC = SSC_dict['Pre-storm']
-    elif subset=='pre' and  storm_samples_only==False:
-        SSC = SSC_dict['Pre-ALL']
-    elif subset=='post' and storm_samples_only==True:
-        SSC = SSC_dict['Post-storm']
-    elif subset=='post' and  storm_samples_only==False:
-        SSC = SSC_dict['Post-ALL']    
-    ## Append Discharge (Q) data
-    dam_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM'][['SSC (mg/L)','24hr_precip']])
-    dam_ssc['Q']=DAM['Q']
-    dam_ssc = dam_ssc.dropna()
-    quarry_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])][['SSC (mg/L)','24hr_precip']])
-    quarry_ssc['Q']=QUARRY['Q']
-    quarry_ssc =quarry_ssc.dropna()
-    quarry_ssc_noP = quarry_ssc[(quarry_ssc['24hr_precip']<=0) & (quarry_ssc['SSC (mg/L)']>=500)]
-    lbj_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ'][['SSC (mg/L)','24hr_precip']])
-    lbj_ssc['Q']=LBJ['Q']
-    lbj_ssc=lbj_ssc.dropna()
-    lbj_ssc_noP = lbj_ssc[lbj_ssc['24hr_precip']<=2]
-    ## Subset by year
-    dam_ssc2012,dam_ssc2013,dam_ssc2014 = dam_ssc[start2012:stop2012],dam_ssc[start2013:stop2013],dam_ssc[start2014:stop2014]
-    quarry2012,quarry2013,quarry2014 = quarry_ssc[start2012:stop2012],quarry_ssc[start2013:stop2013],quarry_ssc[start2014:stop2014]
-    lbj_ssc2012,lbj_ssc2013,lbj_ssc2014 = lbj_ssc[start2012:stop2012],lbj_ssc[start2013:stop2013],lbj_ssc[start2014:stop2014]
-    
-    Pquarry2012,Pquarry2013,Pquarry2014 = quarry_ssc_noP[start2012:stop2012],quarry_ssc_noP[start2013:stop2013],quarry_ssc_noP[start2014:stop2014]
-    ## Regression
-    damQC = pd.ols(y=dam_ssc['SSC (mg/L)'],x=dam_ssc['Q'])
-    quarQC =  pd.ols(y=quarry_ssc['SSC (mg/L)'],x=quarry_ssc['Q'])
-    lbjQC = pd.ols(y=lbj_ssc['SSC (mg/L)'],x=lbj_ssc['Q'])
-
+    ### PLOT
     fig, (up,quar,down) = plt.subplots(1,3,figsize=(8,3))
     letter_subplots(fig,0.1,0.95,'top','right','k',font_size=10,font_weight='bold')
     #
@@ -2095,30 +1742,17 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     mpl.rc('grid',alpha=0.0) 
     ## plot LBJ samples
     down.set_title('FG3',fontsize=10)
-    down.loglog(lbj_ssc2012['Q'],lbj_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
-    down.loglog(lbj_ssc2013['Q'],lbj_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='2013')
-    down.loglog(lbj_ssc2014['Q'],lbj_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='2014')
-    #down.loglog(lbj_ssc_noP['Q'],lbj_ssc_noP['SSC (mg/L)'],'s',fillstyle='none',c='r',label='<12mm P')
+    down.loglog(lbj_base_ssc['Q'],lbj_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Baseflow')
+    down.loglog(lbj_storm_ssc['Q'],lbj_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Stormflow')
     ## loglog quarry samples
     quar.set_title('FG2',fontsize=10)
-    quar.loglog(quarry2012['Q'],quarry2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
-    quar.loglog(quarry2013['Q'],quarry2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='2013')
-    quar.loglog(quarry2014['Q'],quarry2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='2014')
-    ## with no P
-    quar.loglog(Pquarry2012['Q'],Pquarry2012['SSC (mg/L)'],'o',c='k',label='2012-no P')
-    quar.loglog(Pquarry2013['Q'],Pquarry2013['SSC (mg/L)'],'^',c='k',label='2013-no P')
-    quar.loglog(Pquarry2014['Q'],Pquarry2014['SSC (mg/L)'],'s',c='k',label='2014-no P')
-    
-    
+    quar.loglog(quarry_base_ssc['Q'],quarry_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Baseflow')
+    quar.loglog(quarry_storm_ssc['Q'],quarry_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Stormflow')
     ## loglog DAM samples
     up.set_title('FG1',fontsize=10)
-    up.loglog(dam_ssc2012['Q'],dam_ssc2012['SSC (mg/L)'],'o',fillstyle='none',c='k',label='2012')
-    up.loglog(dam_ssc2013['Q'],dam_ssc2013['SSC (mg/L)'],'^',fillstyle='none',c='k',label='2013')
-    up.loglog(dam_ssc2014['Q'],dam_ssc2014['SSC (mg/L)'],'s',fillstyle='none',c='k',label='2014')
-    ## plot a line marking storm threshold and label it
-    storm_Q_DAM = DAM[DAM['stage']==DAM_storm_threshold.round(0)]['Q'][0]
-    storm_Q_LBJ = LBJ[LBJ['stage']==LBJ_storm_threshold.round(0)]['Q'][0]
-    up.axvline(x=storm_Q_DAM,ls='--',color='k'),quar.axvline(x=storm_Q_DAM,ls='--',color='k'),down.axvline(x=storm_Q_LBJ,ls='--',color='k')  
+    up.loglog(dam_base_ssc['Q'],dam_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Baseflow')
+    up.loglog(dam_storm_ssc['Q'],dam_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Stormflow')
+
     ## Limits
     down.set_ylim(10**0,10**5), quar.set_ylim(10**0,10**5), up.set_ylim(10**0,10**5)
     down.set_xlim(10**1,10**5),quar.set_xlim(10**1,10**5),up.set_xlim(10**1,10**5)
@@ -2131,12 +1765,15 @@ def plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=False,log=False,sav
     savefig(save,filename)
     return
 ## Pre-mitigation
-#plotQvsC(subset='pre',storm_samples_only=False,ms=6,show=True,log=True,save=False,filename=figdir+'')
-#plotQvsC(subset='pre',storm_samples_only=False,ms=5,show=True,log=False,save=False,filename=figdir+'')
+plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=True,log=True,save=False,filename=figdir+'')
+#plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=5,show=True,log=False,save=False,filename=figdir+'')
 ## Post-mitgation
-#plotQvsC(subset='post',storm_samples_only=False,ms=6,show=True,log=False,save=False,filename=figdir+'')
-#plotQvsC(subset='post',storm_samples_only=True,ms=8,show=True,log=False,save=False,filename=figdir+'')
-#    
+plotQvsC(subset=['Post-baseflow','Post-storm'],ms=6,show=True,log=False,save=False,filename=figdir+'')
+#plotQvsC(subset=['Post-baseflow','Post-storm'],ms=8,show=True,log=False,save=False,filename=figdir+'')
+
+
+print "A"+1
+    
 ### Grab samples to SSYev   
 def InterpolateGrabSamples(Stormslist,Data,storm_offset=0):
     Events=pd.DataFrame()

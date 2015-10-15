@@ -15,7 +15,7 @@ document = Document(maindir+'Manuscript/JOH-template.docx')
 tables = Document()
 
 
-
+#### Formatting Styles
 ## Body Style
 document.styles['Normal'].font.name = 'Times'
 document.styles['Normal'].font.size = Pt(12)
@@ -129,6 +129,24 @@ def tab_count():
     table_count+=1
     return str(table_count)
 # Prepare LULC Data
+def LandCover_table():
+    landcoverXL = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx')
+    landcover_table = landcoverXL.parse('Fagaalu_Revised')
+    landcover_table = landcover_table[['Subwatershed (pourpoint)','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
+    # Format Table data                       
+    for column in landcover_table.columns:
+        try:
+            if column.startswith('%')==True or column.startswith('Cumulative %')==True:
+                landcover_table.loc[:,column] = landcover_table.loc[:,column]*100.
+                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(1)
+            else:
+                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(2)
+        except:
+            pass
+    landcover_table = landcover_table[landcover_table['Subwatershed (pourpoint)'].isin(['UPPER (FG1)','LOWER_QUARRY (FG2)','LOWER_VILLAGE (FG3)','LOWER (FG3)','TOTAL (FG3)','Fagaalu Stream'])==True].reset_index()
+    landcover_table = landcover_table[['Subwatershed (pourpoint)','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
+    return landcover_table
+LandCover_table()
 landcover_table = LandCover_table()
 landcover_table.table_num = str(tab_count())
 
