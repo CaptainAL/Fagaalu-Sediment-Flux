@@ -389,6 +389,8 @@ if 'Precip' not in locals():
     ## Timu-Fagaalu 1 (by the Quarry)
     ## 2012-2013 Data
     Precip = raingauge(XL,'Timu-Fagaalu1-2013',180) ## (path,sheet,shift) no header needed
+    Precip = Precip.truncate(dt.datetime(2012,1,21,0,0)) ### The Timu1 rain gauge had a wire loose and didn't record data until after 1/20/2012 when I fixed it
+    #Precip= Precip.reindex(pd.date_range(start2012,stop2014,freq='1Min'))
     ## 2014 Data
     Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2014',0)) ## (path,sheet,shift) no header needed
     ## 2015 Data
@@ -438,6 +440,7 @@ if 'FP' not in locals():
     FP = FPa.append(FPb)
 
 Precip['FPrain']=FP['Rain'] ## mm?
+Precip['FPrain']
 Precip['FPrain-30']=Precip['FPrain'].resample('30Min',how=sum)
 Precip['FPhourly'] = Precip['FPrain'].resample('H',how='sum') ## label=left?? 
 Precip['FPdaily'] = Precip['FPrain'].resample('D',how='sum')
@@ -448,7 +451,9 @@ Precip['FPdaily'].dropna().to_csv(datadir+'OUTPUT/FPdaily.csv',header=['FPdaily'
 Precip['FPmonthly'].dropna().to_csv(datadir+'OUTPUT/FPmonthly.csv',header=['FPmonthly'])
 
 ## Filled Precipitation record, priority = Timu1, fill with FPrain
-PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,7):dt.datetime(2013,2,8)],Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12)],Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24)],Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,12,31)]]),columns=['Precip']).dropna()
+PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,6):dt.datetime(2012,1,6,23,59)],Precip['FPrain'][dt.datetime(2012,1,7):dt.datetime(2012,1,20)],Precip['Timu1-15'][dt.datetime(2012,1,21):dt.datetime(2013,2,8)],Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12)],Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24)],Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,1,8)],Precip['Timu1-15'][dt.datetime(2014,1,14):dt.datetime(2014,12,31)]]),columns=['Precip']).dropna()
+
+#PrecipFilled = PrecipFilled.reindex(pd.date_range(dt.datetime(2012,1,7),dt.datetime(2014,12,31),freq='15Min'))
 
 
 #### Import BAROMETRIC Data: NDBC
@@ -1390,11 +1395,10 @@ def plot_Q_and_StormEvents(Storms_LBJ_PT, LBJ_flow_separated, Storms_DAM_PT, DAM
     lbj.xaxis.set_visible(False)
     ax1 = lbj.twinx()
     ## Precip
-    PrecipFilled.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     PrecipFilled['Precip'].plot(ax=lbj,color='b',alpha=0.5,ls='steps-pre',label='Timu1')
     lbj.set_ylim(0,25), lbj.set_ylabel('Precip mm')
     ## Q LBJ
-    LBJ_flow_separated = LBJ_flow_separated .reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    LBJ_flow_separated = LBJ_flow_separated.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     ax1.plot_date(LBJ_flow_separated.index,LBJ_flow_separated['Flow'],marker='None',ls='-',c='k', label='Q LBJ +15min start')
     ax1.plot_date(LBJ_flow_separated.index,LBJ_flow_separated['bt'],marker='None',ls='-',c='grey')
     ax1.set_ylim(0,LBJ_flow_separated['Flow'].max()+0.05*LBJ_flow_separated['Flow'].max())
@@ -1469,8 +1473,11 @@ SSC = SSC[SSC['SSC (mg/L)']>0] ## Filter out any negative values
 ## Precip Data over previous 24 hours for SSC samples
 precip_24hr = pd.DataFrame()
 for ssc in SSC.iterrows():
-    ssc_precip = PrecipFilled['Precip'][ssc[0]-dt.timedelta(hours=24):pd.to_datetime(ssc[0])].sum()
-    #print ssc[0], ssc_precip
+    try:
+        ssc_precip = PrecipFilled['Precip'][ssc[0]-dt.timedelta(hours=24):pd.to_datetime(ssc[0])].sum()
+        #print ssc[0], ssc_precip
+    except:
+        ssc_precip = np.nan
     precip_24hr= precip_24hr.append(pd.DataFrame({'24hr_precip':ssc_precip},index=[ssc[0]]))
 SSC['24hr_precip']=precip_24hr['24hr_precip']
 
@@ -1505,7 +1512,7 @@ def make_patch_spines_invisible(ax):
     for sp in ax.spines.itervalues():
         sp.set_visible(False)
 
-def plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_storm_samples, SSC_post_mitigation_baseflow_samples):
+def plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_storm_samples, SSC_pre_mitigation_baseflow_samples,log=False):
     fig, ax1 = plt.subplots(1,1,figsize=(12,4))
     ax2 = ax1.twinx()
     ## Precip
@@ -1524,7 +1531,9 @@ def plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_s
     ax3 = ax1.twinx()
     ax3.plot_date(SSC_pre_mitigation_storm_samples.index,SSC_pre_mitigation_storm_samples['SSC (mg/L)'],c='r',label='Storm samples')
     ax3.plot_date(SSC_pre_mitigation_baseflow_samples.index,SSC_pre_mitigation_baseflow_samples['SSC (mg/L)'],c='b',label='Baseflow samples')
-    ax3.set_ylim(0,SSC_pre_mitigation_storm_samples['SSC (mg/L)'].max()),ax3.set_yscale('log')
+    ax3.set_ylim(0,SSC_pre_mitigation_storm_samples['SSC (mg/L)'].max())
+    if log==True:    
+        ax3.set_yscale('log')
     ax3.spines["right"].set_position(("axes", 1.1))
     ax3.tick_params(axis='y', colors='r'), ax3.yaxis.label.set_color('r')
     make_patch_spines_invisible(ax3)
@@ -1534,9 +1543,10 @@ def plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_s
         ax1.axvspan(storm[1]['start'],storm[1]['end'],ymin=0,ymax=200,facecolor='grey', alpha=0.25)    
     
     plt.tight_layout(pad=0.1)
+    plt.subplots_adjust(right=0.85)
     plt.show()
-#plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_storm_samples, SSC_post_mitigation_baseflow_samples)
-
+#plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_storm_samples, SSC_pre_mitigation_baseflow_samples, log=True)
+plot_SSC_and_StormEvents(All_Storms,LBJ_flow_separated, SSC_pre_mitigation_storm_samples, SSC_pre_mitigation_baseflow_samples, log=False)
 
 #### SSC Grab sample ANALYSIS
 def sample_counts(SSCdata):
@@ -1557,7 +1567,7 @@ SampleCounts.index=range(1,len(SampleCounts)+1)
 ## LBJ
 LBJgrab = SSC[SSC['Location'].isin(['LBJ'])]#.resample('5Min',fill_method='pad',limit=0)
 LBJgrab['index']=LBJgrab.index
-LBJ_grab_count = SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='LBJ'].ix[2] ## the # in .ix[#] is the row number in SampleCounts above
+LBJ_grab_count = SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='LBJ'].ix[1] ## the # in .ix[#] is the row number in SampleCounts above
 #LBJ_R2 = SSC[SSC['Location'].isin(['LBJ R2'])].resample('5Min',fill_method='pad',limit=0)
 #LBJ_R2_grab_count = SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='LBJ R2'].ix[12] ## the # in .ix[#] is the row number in SampleCounts above
 
@@ -1577,7 +1587,7 @@ QUARRY_DT_and_R2['index'] = QUARRY_DT_and_R2.index
 ## DAM
 DAMgrab = SSC[SSC['Location'].isin(['DAM'])]#.resample('5Min',fill_method='pad',limit=0)
 DAMgrab['index'] = DAMgrab.index
-DAM_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DAM'].ix[1] ## the # in .ix[#] is the row number in SampleCounts above
+DAM_grab_count =  SampleCounts['#ofSSCsamples'][SampleCounts['Location']=='DAM'].ix[2] ## the # in .ix[#] is the row number in SampleCounts above
 
 
 ## ADD Grab samples to Site DataFrames
@@ -1593,8 +1603,8 @@ def SSC_box_plots(subset='pre',withR2=False,log=False,show=False,save=False,file
     #mpl.rc('lines',markersize=300)
     mpl.rc('legend',scatterpoints=1)  
     fig, (ax1,ax2)=plt.subplots(1,2,figsize=(6,3),sharey=True)
-    ax1.text(0.01,0.95,'(a) Baseflow',verticalalignment='top', horizontalalignment='left',transform=ax1.transAxes,color='k',fontsize=10,fontweight='bold')
-    ax2.text(0.01,0.95,'(b) Stormflow',verticalalignment='top', horizontalalignment='left',transform=ax2.transAxes,color='k',fontsize=10,fontweight='bold')        
+    ax1.text(0.01,0.95,'(a) Non-storm',verticalalignment='top', horizontalalignment='left',transform=ax1.transAxes,color='k',fontsize=10,fontweight='bold')
+    ax2.text(0.01,0.95,'(b) Storm',verticalalignment='top', horizontalalignment='left',transform=ax2.transAxes,color='k',fontsize=10,fontweight='bold')        
     
     ## Subset SSC
     ## Pre-mitigation baseflow
@@ -1708,30 +1718,33 @@ def plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=False,save=
     SSC = SSC_dict[subset[0]]
     ## DAM Baseflow
     dam_base_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM'][['SSC (mg/L)','24hr_precip']])
-    dam_base_ssc['Q']=DAM['Q']
+    dam_base_ssc['Q']=DAM['Q'].dropna()
     dam_base_ssc = dam_base_ssc.dropna()
+    dam_ssc_noP = dam_base_ssc[dam_base_ssc['24hr_precip']<=2]
     ## QUARRY baseflow
     quarry_base_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])][['SSC (mg/L)','24hr_precip']])
-    quarry_base_ssc['Q']=QUARRY['Q']
+    quarry_base_ssc['Q']=QUARRY['Q'].dropna()
     quarry_base_ssc =quarry_base_ssc.dropna()
+    quarry_ssc_noP = quarry_base_ssc[quarry_base_ssc['24hr_precip']<=2]
     ## LBJ baseflow
     lbj_base_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ'][['SSC (mg/L)','24hr_precip']])
-    lbj_base_ssc['Q']=LBJ['Q']
+    lbj_base_ssc['Q']=LBJ['Q'].dropna()
     lbj_base_ssc=lbj_base_ssc.dropna()
+    lbj_ssc_noP = lbj_base_ssc[lbj_base_ssc['24hr_precip']<=2]
     
     ## Pre-mitigation stormflow#
     SSC = SSC_dict[subset[1]]
     ## DAM Stormflow
     dam_storm_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM'][['SSC (mg/L)','24hr_precip']])
-    dam_storm_ssc['Q']=DAM['Q']
+    dam_storm_ssc['Q']=DAM['Q'].dropna()
     dam_storm_ssc = dam_storm_ssc.dropna()
     ## QUARRY Stormflow
     quarry_storm_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])][['SSC (mg/L)','24hr_precip']])
-    quarry_storm_ssc['Q']=QUARRY['Q']
+    quarry_storm_ssc['Q']=QUARRY['Q'].dropna()
     quarry_storm_ssc =quarry_storm_ssc.dropna()
     ## LBJ Stormflow
     lbj_storm_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ'][['SSC (mg/L)','24hr_precip']])
-    lbj_storm_ssc['Q']=LBJ['Q']
+    lbj_storm_ssc['Q']=LBJ['Q'].dropna()
     lbj_storm_ssc=lbj_storm_ssc.dropna()
     
     ### PLOT
@@ -1742,16 +1755,20 @@ def plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=False,save=
     mpl.rc('grid',alpha=0.0) 
     ## plot LBJ samples
     down.set_title('FG3',fontsize=10)
-    down.loglog(lbj_base_ssc['Q'],lbj_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Baseflow')
-    down.loglog(lbj_storm_ssc['Q'],lbj_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Stormflow')
+    down.loglog(lbj_base_ssc['Q'],lbj_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Non-storm')
+    down.loglog(lbj_storm_ssc['Q'],lbj_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Storm')
+    down.loglog(lbj_ssc_noP['Q'],lbj_ssc_noP['SSC (mg/L)'],'v',c='k',label='No prior precip')
     ## loglog quarry samples
     quar.set_title('FG2',fontsize=10)
-    quar.loglog(quarry_base_ssc['Q'],quarry_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Baseflow')
-    quar.loglog(quarry_storm_ssc['Q'],quarry_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Stormflow')
+    quar.loglog(quarry_base_ssc['Q'],quarry_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Non-storm')
+    quar.loglog(quarry_storm_ssc['Q'],quarry_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Storm')
+    quar.loglog(quarry_ssc_noP['Q'],quarry_ssc_noP['SSC (mg/L)'],'v',c='k',label='No prior precip')
+    labelindex(quarry_ssc_noP.index,quarry_ssc_noP['Q'],quarry_ssc_noP['SSC (mg/L)'],quar)
     ## loglog DAM samples
     up.set_title('FG1',fontsize=10)
-    up.loglog(dam_base_ssc['Q'],dam_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Baseflow')
-    up.loglog(dam_storm_ssc['Q'],dam_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Stormflow')
+    up.loglog(dam_base_ssc['Q'],dam_base_ssc['SSC (mg/L)'],'v',fillstyle='none',c='k',label='Non-storm')
+    up.loglog(dam_storm_ssc['Q'],dam_storm_ssc['SSC (mg/L)'],'s',fillstyle='none',c='k',label='Storm')
+    up.loglog(dam_ssc_noP['Q'],dam_ssc_noP['SSC (mg/L)'],'v',c='k',label='No prior precip')
 
     ## Limits
     down.set_ylim(10**0,10**5), quar.set_ylim(10**0,10**5), up.set_ylim(10**0,10**5)
@@ -1765,15 +1782,14 @@ def plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=False,save=
     savefig(save,filename)
     return
 ## Pre-mitigation
-plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=True,log=True,save=False,filename=figdir+'')
+#plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=True,log=True,save=False,filename=figdir+'')
 #plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=5,show=True,log=False,save=False,filename=figdir+'')
 ## Post-mitgation
-plotQvsC(subset=['Post-baseflow','Post-storm'],ms=6,show=True,log=False,save=False,filename=figdir+'')
+#plotQvsC(subset=['Post-baseflow','Post-storm'],ms=6,show=True,log=False,save=False,filename=figdir+'')
 #plotQvsC(subset=['Post-baseflow','Post-storm'],ms=8,show=True,log=False,save=False,filename=figdir+'')
 
 
-print "A"+1
-    
+   
 ### Grab samples to SSYev   
 def InterpolateGrabSamples(Stormslist,Data,storm_offset=0):
     Events=pd.DataFrame()
@@ -1803,7 +1819,7 @@ def InterpolateGrabSamples(Stormslist,Data,storm_offset=0):
     return Events
     
 ## LBJ
-LBJGrabSampleSSC=InterpolateGrabSamples(LBJ_StormIntervals, LBJgrab,60)      
+LBJGrabSampleSSC=InterpolateGrabSamples(All_Storms, LBJgrab,60)      
 LBJ['GrabInt-SSC-mg/L'] = LBJGrabSampleSSC['GrabInterpolated']
 LBJ['GrabInt-SSC-mg/L-RMSE'] = 0
 LBJ['GrabInt-SedFlux-mg/sec']=LBJ['Q'] * LBJ['GrabInt-SSC-mg/L']# Q(L/sec) * C (mg/L)
@@ -1812,12 +1828,12 @@ LBJ['GrabInt-SedFlux-tons/15min']=LBJ['GrabInt-SedFlux-tons/sec']*900. ## 15min 
  
 ## QUARRY
 # Grab only
-QuarryGrabSampleSSC=InterpolateGrabSamples(QUARRY_StormIntervals, QUARRYgrab,60)   
+QuarryGrabSampleSSC=InterpolateGrabSamples(All_Storms, QUARRYgrab,60)   
 # R2 only
-R2GrabSampleSSC=InterpolateGrabSamples(QUARRY_StormIntervals, QUARRY_R2,60) 
+R2GrabSampleSSC=InterpolateGrabSamples(All_Storms, QUARRY_R2,60) 
 # Combined Grab and R2
 QUARRY_grab_and_R2 = SSC[SSC['Location'].isin(['DT','R2'])].resample('5Min',fill_method='pad',limit=0)
-QUARRY_grab_and_R2_SSC = InterpolateGrabSamples(QUARRY_StormIntervals, QUARRY_grab_and_R2,60)   
+QUARRY_grab_and_R2_SSC = InterpolateGrabSamples(All_Storms, QUARRY_grab_and_R2,60)   
 QUARRY['GrabInt-SSC-mg/L'] = QUARRY_grab_and_R2_SSC['GrabInterpolated']
 QUARRY['GrabInt-SSC-mg/L-RMSE'] = 0
 QUARRY['GrabInt-SedFlux-mg/sec']=QUARRY['Q'] * QUARRY['GrabInt-SSC-mg/L']# Q(L/sec) * C (mg/L)
@@ -1825,7 +1841,7 @@ QUARRY['GrabInt-SedFlux-tons/sec']=QUARRY['GrabInt-SedFlux-mg/sec']*(10**-9) ## 
 QUARRY['GrabInt-SedFlux-tons/15min']=QUARRY['GrabInt-SedFlux-tons/sec']*900. ## 15min x 60sec/min = 900sec -> tons/sec * 900sec/15min = tons/15min  
 
 ## DAM
-DAMGrabSampleSSC=InterpolateGrabSamples(DAM_StormIntervals, DAMgrab,60) 
+DAMGrabSampleSSC=InterpolateGrabSamples(All_Storms, DAMgrab,60) 
 DAM['GrabInt-SSC-mg/L'] = DAMGrabSampleSSC['GrabInterpolated']
 DAM['GrabInt-SSC-mg/L-RMSE'] = 0
 DAM['GrabInt-SedFlux-mg/sec']=DAM['Q'] * DAM['GrabInt-SSC-mg/L']# Q(L/sec) * C (mg/L)
@@ -1852,8 +1868,11 @@ def plot_eventSSCinterpolated(GrabSamples,show=False):
     if show==True:
         plt.show()
     return
-#plot_eventSSCinterpolated(QuarryGrabSampleSSC,show=True)
-#plot_eventSSCinterpolated(R2GrabSampleSSC,show=True)
+plot_eventSSCinterpolated(QuarryGrabSampleSSC,show=True)
+plot_eventSSCinterpolated(R2GrabSampleSSC,show=True)
+
+
+print "A"+1
 
 #### ..
 #### Import Turbidity Data
