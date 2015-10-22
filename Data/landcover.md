@@ -1,0 +1,118 @@
+<table class='gmisc_table' style='border-collapse: collapse;' >
+<thead>
+<tr><td colspan='15' style='text-align: left;'>
+Table 1. Land use categories in Faga'alu subwatersheds (NOAA Ocean Service and Coastal Services Center, 2010). Land cover percentages are of the subwatershed.</td></tr>
+<tr>
+<th style='border-top: 2px solid grey;'></th>
+<th colspan='2' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>Cumulative Area</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='2' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>Subwatershed Area</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='8' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>Land cover as % subwatershed area <sup>a</sup></th>
+</tr>
+<tr>
+<th style='font-weight: 900; border-bottom: 1px solid grey; text-align: center;'>Subwatershed (pourpoint)</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>km<sup>2</sup></th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>% </th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>km<sup>2</sup></th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>%</th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>   B   </th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>   HI   </th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>   DOS   </th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>   GA   </th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>   F   </th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>   S   </th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>Disturbed=B+HI+DOS+GA</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>Undisturbed=F+S</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style='text-align: left;'>UPPER (FG1)</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>0.9</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>48</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>0.90</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>48</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.4</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.0</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.0</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.1</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>82</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>17.1</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'> 0.4</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>100</td>
+</tr>
+<tr>
+<td style='text-align: left;'>LOWER_QUARRY (FG2)</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>1.2</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>63</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>0.27</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>14</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>5.7</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.7</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.1</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.5</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>92</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'> 0.9</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'> 6.5</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'> 94</td>
+</tr>
+<tr>
+<td style='text-align: left;'>LOWER_VILLAGE (FG3)</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>1.8</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>0.60</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>32</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.0</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>9.0</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>2.6</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.2</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>88</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'> 0.6</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>11.7</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'> 88</td>
+</tr>
+<tr>
+<td style='text-align: left;'>LOWER (FG3)</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>1.8</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>0.88</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>47</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>1.8</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>6.4</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>1.8</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>0.3</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'>89</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: right;'> 0.7</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'>10.1</td>
+<td style='padding-left: .5em; padding-right: .2em; text-align: center;'> 90</td>
+</tr>
+<tr>
+<td style='border-bottom: 2px solid grey; text-align: left;'>TOTAL (FG3)</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: center;'>1.8</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: center;'>96</td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: center;'>1.78</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: center;'>96</td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: right;'>1.1</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: right;'>3.2</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: right;'>0.9</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: right;'>0.2</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: right;'>86</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: right;'> 9.0</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: center;'> 5.2</td>
+<td style='padding-left: .5em; padding-right: .2em; border-bottom: 2px solid grey; text-align: center;'> 95</td>
+</tr>
+</tbody>
+<tfoot><tr><td colspan='15'>
+a. B=Bare, HI=High Intensity Developed, DOS=Developed Open Space, GA=Grassland (agriculture), F=Forest, S=Scrub/Shrub </td></tr></tfoot>
+</table>

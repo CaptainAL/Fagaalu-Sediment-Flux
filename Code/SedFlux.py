@@ -4,21 +4,18 @@ Created on Wed Aug 13 07:40:01 2014
 
 @author: Alex
 """
+#timer
+import datetime as dt
+start_time = dt.datetime.now()
+print 'Start time: '+start_time.strftime('%H:%M:%S')
+
+
 
 #### Import modules
 ## Data Processing
 import os
 import numpy as np
 import pandas as pd
-#import math
-import datetime as dt
-import matplotlib.pyplot as plt
-
-##custom modules
-import misc_time
-from misc_time import * 
-from misc_numpy import *
-from misc_matplotlib import * 
 
 ## Statistical Analysis
 from scipy import stats
@@ -29,10 +26,17 @@ from scipy.stats import spearmanr as spearman_r
 import statsmodels.formula.api as smf
 import statsmodels.stats.api
 
-#timer
-import datetime as dt
-start_time = dt.datetime.now()
-print 'Start time: '+start_time.strftime('%H:%M:%S')
+## Call R modules
+#from rpy2.robjects.packages import importr
+import rpy2.robjects as ro
+import pandas.rpy.common as com
+
+## Make sure R is communicating
+ro.r('x=c()')
+ro.r('x[1]="lets talk to R"')
+print(ro.r('x'))
+
+import pypandoc
 
 #### Plotting Tools
 import matplotlib.pyplot as plt
@@ -44,6 +48,11 @@ import seaborn as sns
 plt.close('all')
 plt.ion()
 
+##custom modules
+import misc_time
+from misc_time import * 
+from misc_numpy import *
+from misc_matplotlib import * 
 
 ## Set Pandas display options
 pd.set_option('display.large_repr', 'truncate')
@@ -348,6 +357,24 @@ def Sum_Storms(Storm_list,Data,offset=0):
             eventlist.append((storm['start'],[storm['start'],storm['end'],eventcount,eventsum,eventmax])) 
     Events=DataFrame.from_items(eventlist,orient='index',columns=['start','end','count','sum','max'])
     return Events
+    
+
+def table_to_html_R(dataframe, caption='', table_num='', filename=maindir, save=False, show=True):
+    ## convert to R Data Frame
+    table_df = com.convert_to_r_dataframe(dataframe)
+    ## Send to R
+    ro.globalenv['table_df'] = table_df
+    ro.globalenv['table_caption'] = 'Table '+str(table_num)+'. '+caption
+    ## import htmlTable
+    ro.r("library(htmlTable)")
+    ro.r("table_out <- htmlTable(table_df, caption=table_caption)")
+    htmlcode = com.load_data("table_out")[0]
+    if show==True:
+        print htmlcode
+    if save==True:
+        pypandoc.convert(htmlcode, 'html', format='markdown', outputfile= filename)
+    return htmlcode
+
 
 
 ## Year Interval Times
@@ -363,6 +390,73 @@ fieldstart2014b, fieldstop2014b =  dt.datetime(2014,9,29,0,0), dt.datetime(2015,
 ## Mitigation
 Mitigation = dt.datetime(2014,10,1,0,0)
 
+
+#### Load Land Cover Data
+def LandCover_table():
+    
+    ## Read in Excel sheet of data, indexed by subwatershed
+    landcover_table = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx').parse('Fagaalu_Revised', index_col = 'Subwatershed (pourpoint)')
+    landcover_table = landcover_table[['Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
+    # Format Table data                       
+    for column in landcover_table.columns:
+        try:
+            if column.startswith('%')==True or column.startswith('Cumulative %')==True:
+                landcover_table.loc[:,column] = landcover_table.loc[:,column]*100.
+                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(1)
+            else:
+                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(2)
+        except:
+            pass
+        
+    ## Select the subwatersheds you want
+    landcover_table = landcover_table[landcover_table.index.isin(['UPPER (FG1)','LOWER_QUARRY (FG2)','LOWER_VILLAGE (FG3)','LOWER (FG3)','TOTAL (FG3)','Fagaalu Stream'])==True]
+    ## Rename the table columns
+    landcover_table.columns=['km2 ','% ',' km2',' %','Bare (B)','High Intensity Developed (HI)',
+                             'Developed Open Space (DOS)','Grassland (agriculture) (GA)','Forest (F)','Scrub/ Shrub (S)',
+                             'Disturbed B+HI+DOS+GA','Undisturbed F+S']
+    
+    ## convert to R Data Frame
+    table_df = com.convert_to_r_dataframe(landcover_table)
+    caption="Land use categories in Faga'alu subwatersheds (NOAA Ocean Service and Coastal Services Center, 2010). Land cover percentages are of the subwatershed."
+    table_num=1
+    ## Send to R
+    ro.globalenv['table_df_vals'] = table_df
+    ## format #s
+    ro.r("table_df= apply(table_df_vals,2,function(x) as.character(format(x,digits=2)))")
+    ro.r("rownames(table_df)<- rownames(table_df_vals) ")
+    #print (ro.r('table_df'))
+    ro.globalenv['table_caption'] = 'Table '+str(table_num)+'. '+caption
+    ## import htmlTable
+    ro.r("library(htmlTable)")
+    ## Create table in R
+    table_code_str = " \
+    table_df, \
+    header= c('km<sup>2</sup>','% ','km<sup>2</sup>', '%', '   B   ', '   HI   ', '   DOS   ', '   GA   ', '   F   ', '   S   ', 'Disturbed=B+HI+DOS+GA', 'Undisturbed=F+S'), \
+    rowlabel='"+landcover_table.index.name+"',\
+    align='lccccrrrrrrcc', \
+    caption=table_caption, \
+    cgroup = c('Cumulative Area','Subwatershed Area','Land cover as % subwatershed area <sup>a</sup>'), \
+    n.cgroup = c(2,2,8), \
+    tfoot='a. B=Bare, HI=High Intensity Developed, DOS=Developed Open Space, GA=Grassland (agriculture), F=Forest, S=Scrub/Shrub ', \
+    css.cell = 'padding-left: .5em; padding-right: .2em;'  \
+    "
+    ## run htmlTable
+    ro.r("table_out <- htmlTable("+table_code_str+")")
+    ## output to browser
+    #print (ro.r("table_out"))
+    ## save to html from R
+    ro.r("setwd("+"'"+datadir+"'"+")")
+    ro.r("sink('landcover.md')")
+    ro.r("print(table_out,type='html',useViewer=FALSE)")
+    ro.r("sink()")
+    
+    ## send back to python
+    #htmlcode = com.load_data("table_out")[0] 
+    #print htmlcode
+    ## output to file through pandoc
+    #pypandoc.convert(htmlcode, 'markdown', format='markdown', outputfile= datadir+'landcover.md')
+    return landcover_table
+LandCover_table()
 
 ### LOAD FIELD DATA
 if 'XL' not in locals():
@@ -1296,18 +1390,8 @@ def plot_Q_by_year(log=False,show=False,save=False,filename=''):
 #plot_Q_by_year(log=False,show=True,save=False,filename='')
 
 
-
-
 #### Separate Storm Hydrographs - Define storm start/end
 #### Baseflow Separation
-from rpy2.robjects.packages import importr
-import rpy2.robjects as ro
-import pandas.rpy.common as com
-
-## Make sure R is communicating
-ro.r('x=c()')
-ro.r('x[1]="lets talk to R"')
-print(ro.r('x'))
 
 
 def Separate_Storms_by_Baseflow(Q_data):
@@ -1376,7 +1460,8 @@ def Separate_Storms_by_Baseflow(Q_data):
     
 Storms_LBJ_PT, LBJ_flow_separated = Separate_Storms_by_Baseflow(LBJ)
 Storms_DAM_PT, DAM_flow_separated = Separate_Storms_by_Baseflow(DAM)
-
+LBJ['Q bf'] = LBJ_flow_separated['bt']
+DAM['Q bf'] = DAM_flow_separated['bt']
 
 
 for storm in Storms_DAM_PT.iterrows():
@@ -1407,7 +1492,7 @@ def plot_Q_and_StormEvents(Storms_LBJ_PT, LBJ_flow_separated, Storms_DAM_PT, DAM
         
     ax2 = dam.twinx()
     ## Precip
-    PrecipFilled.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+    #PrecipFilled.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     PrecipFilled['Precip'].plot(ax=dam,color='b',alpha=0.5,ls='steps-pre',label='Timu1')
     dam.set_ylim(0,25), dam.set_ylabel('Precip mm')
     ## Q LBJ
@@ -2629,70 +2714,6 @@ print calc_RMSE(T_SSC_LBJ_OBS)
 #T_SSC_SSC= pd.concat([T_SSC_LBJ_YSI[1]['SSC (mg/L)'],T_SSC_DAM_TS3K[1]['SSC (mg/L)'],T_SSC_DAM_YSI[1]['SSC (mg/L)']])
 #T_SSC_ALL_NTU_RMSE = pd.DataFrame({'NTUmeasured':T_SSC_NTU,'SSCmeasured':T_SSC_SSC})
 
-def plotNTUratingstable_mpl(show=False,save=False):
-    ## NTU
-    ## Lab
-    LAB = linearfunction(SSC[SSC['Location']=='LBJ']['NTU'],SSC[SSC['Location']=='LBJ']['SSC (mg/L)'])
-    lab = ['%.2f'%LAB['b'],'%.2f'%LAB['r2'],'%.2f'%LAB['pearson'],'%.2f'%LAB['spearman'],'%.2f'%LAB['rmse']]
-    ## DAM TS3000
-    DAM_TS3K = linearfunction(T_SSC_DAM_TS3K[1]['T-NTU'],T_SSC_DAM_TS3K[1]['SSC (mg/L)'])
-    dam_ts3k = ['%.2f'%DAM_TS3K['b'],'%.2f'%DAM_TS3K['r2'],'%.2f'%DAM_TS3K['pearson'],'%.2f'%DAM_TS3K['spearman'],'%.2f'%DAM_TS3K['rmse']]
-    ## DAM YSI
-    DAM_YSI = linearfunction(T_SSC_DAM_YSI[1]['T-NTU'],T_SSC_DAM_YSI[1]['SSC (mg/L)'])
-    dam_ysi = ['%.2f'%DAM_YSI['b'],'%.2f'%DAM_YSI['r2'],'%.2f'%DAM_YSI['pearson'],'%.2f'%DAM_YSI['spearman'],'%.2f'%DAM_YSI['rmse']]    
-    ## LBJ YSI
-    LBJ_YSI = linearfunction(T_SSC_LBJ_YSI[1]['T-NTU'],T_SSC_LBJ_YSI[1]['SSC (mg/L)'])
-    lbj_ysi = ['%.2f'%LBJ_YSI['b'],'%.2f'%LBJ_YSI['r2'],'%.2f'%LBJ_YSI['pearson'],'%.2f'%LBJ_YSI['spearman'],'%.2f'%LBJ_YSI['rmse']]
-    ## LBJ OBSa 2013
-    LBJ_OBS_2013 = linearfunction(T_SSC_LBJ_OBSa[1]['T-NTU'],T_SSC_LBJ_OBSa[1]['SSC (mg/L)'])
-    lbj_obs_2013 = ['%.2f'%LBJ_OBS_2013['b'],'%.2f'%LBJ_OBS_2013['r2'],'%.2f'%LBJ_OBS_2013['pearson'],'%.2f'%LBJ_OBS_2013['spearman'],'%.2f'%LBJ_OBS_2013['rmse']]    
-    ## LBJ OBSb 2014
-    LBJ_OBS_2014 = linearfunction(T_SSC_LBJ_OBSb[1]['T-NTU'],T_SSC_LBJ_OBSb[1]['SSC (mg/L)'])
-    lbj_obs_2014 = ['%.2f'%LBJ_OBS_2014['b'],'%.2f'%LBJ_OBS_2014['r2'],'%.2f'%LBJ_OBS_2014['pearson'],'%.2f'%LBJ_OBS_2014['spearman'],'%.2f'%LBJ_OBS_2014['rmse']]    
-    ## QUARRY OBS
-    QUARRY_OBS = linearfunction(T_SSC_QUARRY_OBS[1]['T-NTU'],T_SSC_QUARRY_OBS[1]['SSC (mg/L)'])
-    qua_obs = ['%.2f'%QUARRY_OBS['b'],'%.2f'%QUARRY_OBS['r2'],'%.2f'%QUARRY_OBS['pearson'],'%.2f'%QUARRY_OBS['spearman'],'%.2f'%QUARRY_OBS['rmse']]    
-
-    nrows, ncols = 3,5
-    hcell, wcell=0.3,1
-    hpad, wpad = 1,1
-    fig = plt.figure(figsize=(ncols*wcell+wpad,nrows*hcell+hpad)) 
-    coeff = fig.add_subplot(111)
-    coeff.patch.set_visible(False), coeff.axis('off')
-    coeff.xaxis.set_visible(False), coeff.yaxis.set_visible(False) 
-    coeff.table(cellText = [lab,lbj_ysi,lbj_obs_2013,lbj_obs_2014,qua_obs,dam_ts3k,dam_ysi], 
-                rowLabels=['Lab','LBJ-YSI','LBJ-OBS-2013','LBJ-OBS-2014','QUA-OBS','DAM-TS3K','DAM-YSI'], 
-                colLabels=[r'$\beta$',r'$r^2$',"Pearson's","Spearman's",'RMSE'],loc='center left')
-    
-    plt.suptitle('Paramters for Turbidity to Suspended Sediment Concetration Rating Curves',fontsize=12)    
-    
-    
-    
-    plt.tight_layout()
-    plt.subplots_adjust(left=0.2)
-    if show==True:
-        plt.show()
-    return
-#plotNTUratingstable(show=True,save=False)
-
-def table_to_html_R(dataframe, caption='', table_num='', filename=maindir, save=False, show=True):
-    ## convert to R Data Frame
-    table_df = com.convert_to_r_dataframe(dataframe)
-    ## Send to R
-    ro.globalenv['table_df'] = table_df
-    ro.globalenv['table_caption'] = 'Table '+str(table_num)+'. '+caption
-    ## import htmlTable
-    ro.r("library(htmlTable)")
-    ro.r("table_out <- htmlTable(table_df, caption=table_caption)")
-    htmlcode = com.load_data("table_out")[0]
-    if show==True:
-        print htmlcode
-    if save==True:
-        pypandoc.convert(htmlcode, 'html', format='markdown', outputfile= filename)
-    return htmlcode
-
-#table_to_html_R(df, caption='Rating parameters', table_num='1', filename=datadir+'htmltabletest.html', save=True, show=True)
-
 
 def NTUratingstable_html(caption,table_num,filename,save=False,show=False):
     
@@ -2739,7 +2760,8 @@ def NTUratingstable_html(caption,table_num,filename,save=False,show=False):
     return
 #NTUratingstable_html(caption='T-SSC relationship parameters', table_num='1', filename=datadir+'htmltabletest.html', show=True,save=False)
 
-
+## Old test code:
+#table_to_html_R(df, caption='Rating parameters', table_num='1', filename=datadir+'htmltabletest.html', save=True, show=True)
 
 #### ..
 #### TURBIDITY TO SSC to SEDFLUX
@@ -2833,12 +2855,13 @@ DAM['SedFlux-kg/sec']=DAM['SedFlux-tons/sec']*10**3 ## tons x 10**3 = kg
 DAM['SedFlux-tons/15min']=DAM['T-SedFlux-tons/15min'].where(DAM['T-SedFlux-tons/15min']>=0,DAM['GrabInt-SedFlux-tons/15min'])
 
 
-#### ..
+#### 
 #### EVENT-WISE ANALYSES
 
 #### Analyze Storm Precip Characteristics: Intensity, Erosivity Index etc. ####
 def StormPrecipAnalysis(storms=All_Storms):
     #### EROSIVITY INDEX for storms (ENGLISH UNITS)
+    print 'Analyzing storm event precipitation...'
     Stormdf = pd.DataFrame()
     for storm in storms.iterrows():
         StormIndex = storm[1]['start']
@@ -2876,7 +2899,7 @@ DAM_Stormdf = LBJ_Stormdf
  
 #### Integrate over P and Q over Storm Event
 ## LBJ P and Q
-Pstorms_LBJ = Sum_Storms(All_Storms,PrecipFilled['Precip']) ##30minute offset to get precip before stage started rising
+Pstorms_LBJ = Sum_Storms(All_Storms,PrecipFilled['Precip']) 
 Pstorms_LBJ.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_LBJ['EI'] = LBJ_Stormdf['EI']
 
@@ -2885,7 +2908,7 @@ Qstorms_LBJ.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
 Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900 ## Have to divide by 900 to get instantaneous 
 
 ## QUARRY P and Q
-Pstorms_QUARRY = Sum_Storms(All_Storms,PrecipFilled['Precip']) ##30minute offset to get precip before stage started rising
+Pstorms_QUARRY = Sum_Storms(All_Storms,PrecipFilled['Precip']) 
 Pstorms_QUARRY.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_QUARRY['EI'] = QUARRY_Stormdf['EI']
 Qstorms_QUARRY= Sum_Storms(All_Storms,QUARRYq['Q']) 
@@ -2893,7 +2916,7 @@ Qstorms_QUARRY.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
 Qstorms_QUARRY['Qmax']=Qstorms_QUARRY['Qmax']/900 ## Have to divide by 900 to get instantaneous 
 
 ## DAM P and Q
-Pstorms_DAM = Sum_Storms(All_Storms,PrecipFilled['Precip'],60) ##30minute offset to get precip before stage started rising
+Pstorms_DAM = Sum_Storms(All_Storms,PrecipFilled['Precip']) 
 Pstorms_DAM.columns=['Pstart','Pend','Pcount','Psum','Pmax']
 Pstorms_DAM['EI'] = DAM_Stormdf['EI']
 Qstorms_DAM= Sum_Storms(All_Storms,DAMq['Q']) 
@@ -2912,37 +2935,51 @@ StormsDAM=Pstorms_DAM[Pstorms_DAM['Psum']>0].join(Qstorms_DAM)
 StormsDAM['PsumVol'] = (StormsDAM['Psum']/1000)*(0.9*1000000)*1000  
 StormsDAM['RunoffCoeff']=StormsDAM['Qsum']/StormsDAM['PsumVol']
 
-def PQvol_years_BOTH(StormsLBJ,StormsDAM,show=False):
-    fig, (site_lbj,site_dam)=plt.subplots(1,2,sharey=True,sharex=True)
-    dotsize=20
+def Runoff_Coeff_by_Year(StormsLBJ,StormsDAM,show=False):
+    fig, (site_lbj,site_dam)=plt.subplots(1,2,sharey=True,sharex=True,figsize=(12,6))
+    
+    ## LBJ
     RCmax, RCmean, RCmin = StormsLBJ['RunoffCoeff'].describe()[[7,1,3]]
     site_lbj.annotate('Runoff Coeff-Max:'+'%.2f'%RCmax+' Mean:'+'%.2f'%RCmean+' Min:'+'%.2f'%RCmin, xy=(0.05, 0.95), xycoords='axes fraction')
+    
     stormsLBJ=StormsLBJ[['PsumVol','Qsum']]/1000
     stormsLBJ['Pmax']=StormsLBJ[['Pmax']]
-    site_lbj.scatter(stormsLBJ['PsumVol'][start2012:stop2012],stormsLBJ['Qsum'][start2012:stop2012],color='g',marker='o',s=scaleSeries(stormsLBJ['Pmax'][start2012:stop2012].dropna().values),label='2012')
-    site_lbj.scatter(stormsLBJ['PsumVol'][start2013:stop2013],stormsLBJ['Qsum'][start2013:stop2013],color='y',marker='o',s=scaleSeries(stormsLBJ['Pmax'][start2013:stop2013].dropna().values),label='2013')
-    site_lbj.scatter(stormsLBJ['PsumVol'][start2014:stop2014],stormsLBJ['Qsum'][start2014:stop2014],color='r',marker='o',s=scaleSeries(stormsLBJ['Pmax'][start2014:stop2014].dropna().values),label='2014')
+    
+    site_lbj.scatter(stormsLBJ['PsumVol'][stormsLBJ.index<stop2012],stormsLBJ['Qsum'][stormsLBJ.index<stop2012], 
+                     edgecolors='g',marker='o',facecolors='none',s=scaleSeries(stormsLBJ['Pmax'][stormsLBJ.index<stop2012].dropna().values),label='2012')
+                     
+    site_lbj.scatter(stormsLBJ['PsumVol'][(stormsLBJ.index>start2013) & (stormsLBJ.index<stop2013)],stormsLBJ['Qsum'][(stormsLBJ.index>start2013) & (stormsLBJ.index<stop2013)],
+                     edgecolors='y',marker='o',facecolors='none',s=scaleSeries(stormsLBJ['Pmax'][(stormsLBJ.index>start2013) & (stormsLBJ.index<stop2013)].dropna().values),label='2013')
+                     
+    site_lbj.scatter(stormsLBJ['PsumVol'][stormsLBJ.index>start2014],stormsLBJ['Qsum'][stormsLBJ.index>start2014],
+                     edgecolors='r',marker='o',facecolors='none',s=scaleSeries(stormsLBJ['Pmax'][stormsLBJ.index>start2014].dropna().values),label='2014')
 
     site_lbj.set_title('LBJ')
     site_lbj.set_ylabel('Event Discharge (m3)'),site_lbj.set_xlabel('Precipitation (m3) - DotSize=15minMaxPrecip(mm)')
-    #site_lbj.set_ylim(0,stormsLBJ['Qsum'].max()+50000000), site_lbj.set_xlim(0,250)
-    site_lbj.legend(loc=4)
-    site_lbj.grid(True)
+    site_lbj.set_ylim(0,stormsLBJ['Qsum'].max()+stormsLBJ['Qsum'].max()*.05), site_lbj.set_xlim(0,  stormsLBJ['PsumVol'].max()+stormsLBJ['PsumVol'].max()*.05)
 
+    ## DAM
     RCmax, RCmean, RCmin = StormsDAM['RunoffCoeff'].describe()[[7,1,3]]
     site_dam.annotate('Runoff Coeff-Max:'+'%.2f'%RCmax+' Mean:'+'%.2f'%RCmean+' Min:'+'%.2f'%RCmin, xy=(0.05, 0.95), xycoords='axes fraction')
 
     stormsDAM=StormsDAM[['PsumVol','Qsum']]/1000
     stormsDAM['Pmax']=StormsDAM[['Pmax']]
-    site_dam.scatter(stormsDAM['PsumVol'][start2012:stop2012],stormsDAM['Qsum'][start2012:stop2012],color='g',marker='o',s=scaleSeries(stormsDAM['Pmax'].dropna()[start2012:stop2012].values),label='2012')
-    site_dam.scatter(stormsDAM['PsumVol'][start2013:stop2013],stormsDAM['Qsum'][start2013:stop2013],color='y',marker='o',s=scaleSeries(stormsDAM['Pmax'].dropna()[start2013:stop2013].values),label='2013')
-    site_dam.scatter(stormsDAM['PsumVol'][start2014:stop2014],stormsDAM['Qsum'][start2014:stop2014],color='r',marker='o',s=scaleSeries(stormsDAM['Pmax'].dropna()[start2014:stop2014].values),label='2014')
+    ## 2012
+    site_dam.scatter(stormsDAM['PsumVol'][stormsDAM.index<stop2012],stormsDAM['Qsum'][stormsDAM.index<stop2012],
+                     edgecolors='g',marker='o',facecolors='none',s=scaleSeries(stormsDAM['Pmax'][stormsDAM.index<stop2012].dropna().values),label='2012')
+    ## 2013
+    site_dam.scatter(stormsDAM['PsumVol'][(stormsDAM.index>start2013) & (stormsDAM.index<stop2013)],stormsDAM['Qsum'][(stormsDAM.index>start2013) & (stormsDAM.index<stop2013)],
+                     edgecolors='y',marker='o',facecolors='none',s=scaleSeries(stormsDAM['Pmax'][(stormsDAM.index>start2013) & (stormsDAM.index<stop2013)].dropna().values),label='2013')
+    ## 2014
+    site_dam.scatter(stormsDAM['PsumVol'][stormsDAM.index>start2014],stormsDAM['Qsum'][stormsDAM.index>start2014],
+                     edgecolors='r',marker='o',facecolors='none',s=scaleSeries(stormsDAM['Pmax'][stormsDAM.index>start2014].dropna().values),label='2014')
     
     site_dam.set_title('DAM')
     site_dam.set_ylabel('Event Discharge (m3)'),site_dam.set_xlabel('Precipitation (m3) - DotSize=15minMaxPrecip(mm)')
-    #site_dam.set_ylim(0,stormsLBJ['Qsum'].max()+50000000), site_dam.set_xlim(0,250)
-    site_dam.legend(loc=4)
-    site_dam.grid(True)
+    
+    for ax in fig.axes:
+        ax.legend(loc='lower right')
+        ax.grid(True)
     
     ### Label on click
     labelindex_subplot(site_lbj,stormsLBJ.index,stormsLBJ['PsumVol'],stormsLBJ['Qsum'])
@@ -2960,7 +2997,7 @@ def PQvol_years_BOTH(StormsLBJ,StormsDAM,show=False):
     if show==True:
         plt.show()
     return
-#PQvol_years_BOTH(StormsLBJ,StormsDAM,True)
+#Runoff_Coeff_by_Year(StormsLBJ,StormsDAM,True)
 
 def Q_storm_diff_table():
     Q_Diff = pd.DataFrame({'UPPER m3':StormsDAM['Qsum']/1000,'TOTAL m3':StormsLBJ['Qsum']/1000,'Precip (mm)':StormsLBJ['Psum']}).dropna()
@@ -2968,6 +3005,7 @@ def Q_storm_diff_table():
     Q_Diff['UPPER m3']=Q_Diff['UPPER m3'].apply(np.int) #m3
     Q_Diff['TOTAL m3']=Q_Diff['TOTAL m3'].apply(np.int) #m3
     Q_Diff['LOWER m3']=Q_Diff['TOTAL m3'] - Q_Diff['UPPER m3']
+    Q_Diff = Q_Diff[Q_Diff['LOWER m3']>0]
     ## Calculate percentages
     Q_Diff['% Upper'] = Q_Diff['UPPER m3']/Q_Diff['TOTAL m3']*100
     Q_Diff['% Upper'] = Q_Diff['% Upper'].apply(np.int)
@@ -2984,46 +3022,17 @@ def Q_storm_diff_table():
     Q_Diff=Q_Diff.append(pd.DataFrame({'Storm Start':'-','Storm#':'-','Precip (mm)':'-','UPPER m3':'-','LOWER m3':'-','TOTAL m3':'Average:','% Upper':"%.0f"%Percent_Upper,'% Lower':"%.0f"%Percent_Lower},index=['']))
     Q_Diff=Q_Diff[['Storm Start','Storm#','Precip (mm)','UPPER m3','LOWER m3','TOTAL m3','% Upper','% Lower']]
     return Q_Diff
-Q_storm_diff_table()
+#Q_storm_diff_table()
+    
+## Save Q diff table to html
+table_to_html_R(Q_storm_diff_table(), save=True, filename=datadir+'Storm event Q difference.md', show=False)
 
-## Calculate the percent of total Q with raw vales, BEFORE NORMALIZING by area!
-def plotQ_storm_table(show=False):
-    diff = pd.DataFrame({'Qupper':StormsDAM['Qsum']/1000,
-    'Qtotal':StormsLBJ['Qsum']/1000,'Psum':StormsLBJ['Psum']}).dropna()
-    ## Calculate Q from just Lower watershed
-    diff['Qupper']=diff['Qupper'].apply(np.int) #m3
-    diff['Qtotal']=diff['Qtotal'].apply(np.int) # m3
-    diff['Qlower']=diff['Qtotal'] - diff['Qupper']
-    ## Calculate percentages
-    diff['% Upper'] = diff['Qupper']/diff['Qtotal']*100
-    diff['% Upper'] = diff['% Upper'].round(0)
-    diff['% Lower'] = diff['Qlower']/diff['Qtotal']*100
-    diff['% Lower'] = diff['% Lower'].round(0)
-    diff['Psum'] = diff['Psum'].apply(np.int)
-    diff['Storm#']=range(1,len(diff)+1)
-    ## add summary stats to bottom of table
-    diff=diff.append(pd.DataFrame({'Storm#':'-','Psum':'-','Qupper':'-','Qlower':'-','Qtotal':'Average:','% Upper':'%.1f'%diff['% Upper'].mean(),'% Lower':'%.1f'%diff['% Lower'].mean()},index=['']))
-    ## Build table
-    nrows, ncols = len(diff),len(diff.columns)
-    hcell, wcell=0.2,1
-    hpad, wpad = .8,.5
-    fig = plt.figure(figsize=(ncols*wcell+wpad,nrows*hcell+hpad)) 
-    ax = fig.add_subplot(111)
-    ax.patch.set_visible(False), ax.axis('off')
-    ax.xaxis.set_visible(False), ax.yaxis.set_visible(False)
-    celldata = np.array(diff[['Storm#','Psum','Qupper','Qlower','Qtotal','% Upper','% Lower']].values)
-    ax.table(cellText=celldata,rowLabels=[pd.to_datetime(t) for t in diff.index.values],colLabels=['Storm#','Precip(mm)','Upper(m3)','Lower(m3)','Total(m3)','%Upper','%Lower'],loc='center')
-    plt.suptitle("Discharge (Q) from Upstream (DAM) and Downstream (LBJ) watersheds in Faga'alu")
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#plotQ_storm_table(True)
+
 
 ### ALL SSY Data
-def SSY_Data(storm_threshold,storm_intervals,title,show=False):
+def timeseries_SSY_Data(title,storm_intervals=All_Storms,show=False):
     #storm_data = storm_data[dt.datetime(2014,2,14,14,30):dt.datetime(2014,2,14,19,30)]
-    fig, (P,Q,T,SSC,SED) = plt.subplots(nrows=5,ncols=1,sharex=True) 
+    fig, (P,Q,T,SSC,SED) = plt.subplots(nrows=5,ncols=1,sharex=True, figsize=(12,6)) 
     P.tick_params(\
     axis='x',          # changes apply to the x-axis
     which='both',      # both major and minor ticks are affected
@@ -3031,37 +3040,28 @@ def SSY_Data(storm_threshold,storm_intervals,title,show=False):
     top='off',         # ticks along the top edge are off
     labelbottom='off') # labels along the bottom edge are off
     ## Precip
-    PrecipFilled['Precip'].plot(ax=P,color='b',ls='steps-pre',label='RG1')
-    max_yticks =4
-    yloc = MaxNLocator(max_yticks)
-    P.yaxis.set_major_locator(yloc) 
+    PrecipFilled.reindex(pd.date_range(start2012,stop2014,freq='15Min'))['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Precip_Filled')
     P.set_ylabel('P\nmm/15min'), P.grid(False)
     P.set_ylim(0,28)
     ## Discharge
-    LBJ['Q'].plot(ax=Q,color='r',label='VILLAGE')
-    #storm_data['QUARRY-Q''].plot(ax=Q,color='y',label='QUARRY-Q')
-    DAM['Q'].plot(ax=Q,color='g',label='FOREST')
-    Q.legend()
+    LBJ['Q'].plot(ax=Q,color='r',label='FG3')
+    LBJ['Q bf'].plot(ax=Q,color='r',alpha=0.5,label='FG3 bf')
+    #storm_data['QUARRY-Q''].plot(ax=Q,color='y',label='FG2')
+    DAM['Q'].plot(ax=Q,color='g',label='FG1')
+    DAM['Q bf'].plot(ax=Q,color='g',alpha=0.5,label='FG1 bf')
     Q.set_ylabel('Q\nL/s'),#, Q.set_yscale('log')
-    Q.spines['bottom'].set_visible(False),Q.grid(False)
-    Q.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
-    max_yticks = 4
-    yloc = plt.MaxNLocator(max_yticks)    
-    Q.yaxis.set_major_locator(yloc)    
+     
     ## SSC grab samples
-    LBJ['Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='VILLAGE')
-    QUARRY['Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY')
-    DAM['Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='FOREST')
+    LBJ['Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='FG3')
+    QUARRY['Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='FG2')
+    DAM['Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='FG1')
+    
     ## Turbidity
-    LBJ['NTU'].plot(ax=T,color='r',label='VILLAGE')
-    QUARRY['NTU'].plot(ax=T,color='r',alpha=0.8,label='QUARRY')
-    DAM['NTU'].plot(ax=T,color='g',label='FOREST')
+    LBJ['NTU'].plot(ax=T,color='r',label='FG3')
+    QUARRY['NTU'].plot(ax=T,color='r',alpha=0.8,label='FG2')
+    DAM['NTU'].plot(ax=T,color='g',label='FG1')
     T.set_ylabel('T NTU'),T.set_ylim(-1)
-    max_yticks = 4
-    yloc = plt.MaxNLocator(max_yticks)
-    T.yaxis.set_major_locator(yloc) 
-    T.grid(False), T.spines['bottom'].set_visible(False)
-    T.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+        
     ## SSC from turbidity
     LBJ['T-SSC-mg/L'].plot(ax=SSC,color='r',label='VILLAGE')
     QUARRY['T-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY')
@@ -3070,54 +3070,54 @@ def SSY_Data(storm_threshold,storm_intervals,title,show=False):
     LBJ['GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='r',label='VILLAGE')
     QUARRY['GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC-grab')
     DAM['GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='g',label='FOREST')
-    SSC.set_ylabel('SSC\nmg/L')#, SSC.set_ylim(0,1400)
-    max_yticks = 4
-    yloc = plt.MaxNLocator(max_yticks)
-    SSC.yaxis.set_major_locator(yloc) 
+    SSC.set_ylabel('SSC\nmg/L'), SSC.set_ylim(0,15000)
     SSC.grid(False),SSC.spines['bottom'].set_visible(False)
-    SSC.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+    
     ## Sediment Yield from Interpolated grab samples
-    LBJ['GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='--')
-    QUARRY['GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux-grab',ls='--')
-    DAM['GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='g',label='FOREST',ls='--')
+    LBJ['GrabInt-SedFlux-kg/sec'] = LBJ['GrabInt-SedFlux-tons/sec']/1000
+    LBJ['GrabInt-SedFlux-kg/sec'].plot(ax=SED,ls='--',color='r',label='FG3-grab int')
+    QUARRY['GrabInt-SedFlux-kg/sec'] = QUARRY['GrabInt-SedFlux-tons/sec']/1000
+    QUARRY['GrabInt-SedFlux-kg/sec'].plot(ax=SED,ls='--',color='y',label='FG2-grab int')
+    DAM['GrabInt-SedFlux-kg/sec'] = DAM['GrabInt-SedFlux-tons/sec']/1000
+    DAM['GrabInt-SedFlux-kg/sec'].plot(ax=SED,ls='--',color='g',label='FG1-grab int')
+    
     ## Sediment discharge from Turbidity Measurements
     LBJ['T-SedFlux-kg/sec']=LBJ['T-SedFlux-tons/sec']/1000
-    LBJ['T-SedFlux-kg/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='-')
+    LBJ['T-SedFlux-kg/sec'].plot(ax=SED,color='r',ls='-',label='FG3')
     QUARRY['T-SedFlux-kg/sec']=QUARRY['T-SedFlux-tons/sec']/1000    
-    QUARRY['T-SedFlux-kg/sec'].plot(ax=SED,color='y',label='QUARRY',ls='-')
+    QUARRY['T-SedFlux-kg/sec'].plot(ax=SED,color='y',ls='-',label='FG2')
     DAM['T-SedFlux-kg/sec']=DAM['T-SedFlux-tons/sec']/1000
-    DAM['T-SedFlux-kg/sec'].plot(ax=SED,color='g',label='FOREST',ls='-')
+    DAM['T-SedFlux-kg/sec'].plot(ax=SED,color='g',ls='-',label='FG1')
     SED.set_ylabel('SSY\nkg/s')#, SED.set_yscale('log')#, SED.set_ylim(0,10)
-    max_yticks = 3
-    yloc = plt.MaxNLocator(max_yticks)
-    SED.yaxis.set_major_locator(yloc) 
-    SED.grid(False), SED.spines['bottom'].set_visible(False)
 
     #QP.legend(loc=0), P.legend(loc=1)             
     #SSC.legend(loc=0),SED.legend(loc=1)
-    #Shade Storms
-    showstormintervals(P,storm_threshold,storm_intervals)
-    showstormintervals(Q,storm_threshold,storm_intervals)
-    showstormintervals(T,storm_threshold,storm_intervals)
-    showstormintervals(SSC,storm_threshold,storm_intervals)
-    showstormintervals(SED,storm_threshold,storm_intervals)
+
+    from matplotlib.ticker import MaxNLocator
+    for ax in fig.axes[:-1]:
+        ax.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+        ax.grid(False), ax.spines['bottom'].set_visible(False)
+    for ax in fig.axes: 
+        ax.yaxis.set_major_locator(MaxNLocator(3)) 
+        showstormintervals(ax,storm_intervals)
+
     #plt.suptitle(title)
     plt.tight_layout(pad=0.1)
     show_plot(show)
     return
-#SSY_Data(All_Storms,'All_Storms',show=True)
+#timeseries_SSY_Data('All_Storms',All_Storms,show=True)
 
 
 #### Event Sediment Flux Data
-def stormdata(StormIntervals,print_stats=False):
-    #storm_data = pd.DataFrame(columns=['Precip','LBJq','DAMq','LBJssc','DAMssc','LBJ-Sed','DAM-Sed','LBJgrab','QUARRYgrab','DAMgrab'],dtype=np.float64,index=pd.date_range(PT1.index[0],PT1.index[-1],freq='15Min'))   
+## Slice the data just for storm periods and calculate the Cumulative Sediment Yield from the storm
+def slice_storm_data(StormIntervals,print_stats=False):
     storm_data = pd.DataFrame()
     count = 0
     for storm in All_Storms.iterrows():
         count+=1
         start = storm[1]['start']
         end =  storm[1]['end']
-        print start, end
+        #print start, end
         ## Slice data from storm start to start end
         ## LBJ
         LBJ_storm = LBJ[start:end]
@@ -3146,34 +3146,14 @@ def stormdata(StormIntervals,print_stats=False):
         #print data.index[0], data.index[-1]     
         ## add each storm to each other
         storm_data = storm_data.append(LBJ_storm.join(DAM_storm).join(QUARRY_storm).join(P_storm)) ## add each storm to each other
-    storm_data = storm_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+        
+    # Not sure if you can reindex since some storms start/end on the same time so there are duplicate indices    
+    #storm_data = storm_data.reindex(pd.date_range(start2012,stop2014,freq='15Min'))
     return storm_data
-storm_data_LBJ = stormdata(All_Storms)
-storm_data_QUARRY = stormdata(All_Storms)
-storm_data_DAM = stormdata(All_Storms)
+storm_data = slice_storm_data(All_Storms)
 
 
-def Q_EMC(storm_data, show=False):
-    fig, qemc = plt.subplots(1,1)
-    #Plot event mean concentration
-    storm_data['sEMC-LBJ'].dropna().plot(ax=qemc,c='r',marker='o',ls='None')
-    storm_data['sEMC-QUARRY'].dropna().plot(ax=qemc,c='y',marker='o',ls='None')
-    storm_data['sEMC-DAM'].dropna().plot(ax=qemc,c='g',marker='o',ls='None')
-    #Plot grab samples
-    storm_data['LBJgrab'].plot(ax=qemc,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
-    storm_data['QUARRYgrab'].plot(ax=qemc,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
-    storm_data['DAMgrab'].plot(ax=qemc,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
-    
-    showstormintervals(qemc,All_Storms)
-    plt.grid()
-    
-    plt.draw()
-    if show==True:
-        plt.show()
-    return
-#Q_EMC(storm_data_LBJ,True)
-
-def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
+def plot_storm_data(storm_data,storm_intervals=All_Storms,show=False):
     #storm_data = storm_data[dt.datetime(2014,2,14,14,30):dt.datetime(2014,2,14,19,30)]
     fig, (P,Q,T,SSC,SED,SEDcum) = plt.subplots(nrows=6,ncols=1,sharex=True) 
     P.tick_params(\
@@ -3184,54 +3164,46 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     labelbottom='off') # labels along the bottom edge are off
     ## Precip
     storm_data['Precip'].plot(ax=P,color='b',ls='steps-pre',label='RG1')
-    max_yticks =4
-    yloc = MaxNLocator(max_yticks)
-    P.yaxis.set_major_locator(yloc) 
     P.set_ylabel('P\nmm/15min'), P.grid(False)
     P.set_ylim(0,28)
     ## Discharge
-    storm_data['LBJ-Q'].plot(ax=Q,color='r',label='VILLAGE')
-    #storm_data['QUARRY-Q''].plot(ax=Q,color='y',label='QUARRY-Q')
-    storm_data['DAM-Q'].plot(ax=Q,color='g',label='FOREST')
-    Q.legend()
+    storm_data['LBJ-Q'].plot(ax=Q,color='r',label='FG3')
+    storm_data['LBJ-Q bf'].plot(ax=Q,color='r',alpha=0.5,label='FG3 bf')
+    #storm_data['QUARRY-Q''].plot(ax=Q,color='y',label='FG2')
+    storm_data['DAM-Q'].plot(ax=Q,color='g',label='FG1')
+    storm_data['DAM-Q bf'].plot(ax=Q,color='g',alpha=0.5,label='FG1 bf')
     Q.set_ylabel('Q\nL/s'),#, Q.set_yscale('log')
-    Q.spines['bottom'].set_visible(False),Q.grid(False)
-    Q.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
-    max_yticks = 4
-    yloc = plt.MaxNLocator(max_yticks)    
-    Q.yaxis.set_major_locator(yloc)    
+    
     ## SSC grab samples
     storm_data['LBJ-Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='VILLAGE')
     storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY')
     storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='FOREST')
+    
     ## Turbidity
     storm_data['LBJ-NTU'].plot(ax=T,color='r',label='VILLAGE')
     storm_data['QUARRY-NTU'].plot(ax=T,color='r',alpha=0.8,label='QUARRY')
     storm_data['DAM-NTU'].plot(ax=T,color='g',label='FOREST')
     T.set_ylabel('T NTU'),T.set_ylim(-1)
-    max_yticks = 4
-    yloc = plt.MaxNLocator(max_yticks)
-    T.yaxis.set_major_locator(yloc) 
-    T.grid(False), T.spines['bottom'].set_visible(False)
-    T.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+    
     ## SSC from turbidity
     storm_data['LBJ-T-SSC-mg/L'].plot(ax=SSC,color='r',label='VILLAGE')
     storm_data['QUARRY-T-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY')
     storm_data['DAM-T-SSC-mg/L'].plot(ax=SSC,color='g')
+    
     ### SSC interpolated from grab samples
     storm_data['LBJ-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='r',label='VILLAGE')
     storm_data['QUARRY-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC-grab')
     storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='g',label='FOREST')
     SSC.set_ylabel('SSC\nmg/L')#, SSC.set_ylim(0,1400)
-    max_yticks = 4
-    yloc = plt.MaxNLocator(max_yticks)
-    SSC.yaxis.set_major_locator(yloc) 
-    SSC.grid(False),SSC.spines['bottom'].set_visible(False)
-    SSC.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+
     ## Sediment Yield from Interpolated grab samples
-    storm_data['LBJ-GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='--')
-    storm_data['QUARRY-GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux-grab',ls='--')
-    storm_data['DAM-GrabInt-SedFlux-tons/sec'].plot(ax=SED,color='g',label='FOREST',ls='--')
+    storm_data['LBJ-GrabInt-SedFlux-kg/sec'] = storm_data['LBJ-GrabInt-SedFlux-tons/sec']/1000
+    storm_data['LBJ-GrabInt-SedFlux-kg/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='--')
+    storm_data['QUARRY-GrabInt-SedFlux-kg/sec'] = storm_data['QUARRY-GrabInt-SedFlux-tons/sec']/1000
+    storm_data['QUARRY-GrabInt-SedFlux-kg/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux-grab',ls='--')
+    storm_data['DAM-GrabInt-SedFlux-kg/sec'] = storm_data['DAM-GrabInt-SedFlux-tons/sec']/1000
+    storm_data['DAM-GrabInt-SedFlux-kg/sec'].plot(ax=SED,color='g',label='FOREST',ls='--')
+    
     ## Sediment discharge from Turbidity Measurements
     storm_data['LBJ-T-SedFlux-kg/sec']=storm_data['LBJ-T-SedFlux-tons/sec']/1000
     storm_data['LBJ-T-SedFlux-kg/sec'].plot(ax=SED,color='r',label='VILLAGE',ls='-')
@@ -3240,176 +3212,29 @@ def Storm_SedFlux(storm_data,storm_threshold,storm_intervals,title,show=False):
     storm_data['DAM-T-SedFlux-kg/sec']=storm_data['DAM-T-SedFlux-tons/sec']/1000
     storm_data['DAM-T-SedFlux-kg/sec'].plot(ax=SED,color='g',label='FOREST',ls='-')
     SED.set_ylabel('SSY\nkg/s')#, SED.set_yscale('log')#, SED.set_ylim(0,10)
-    max_yticks = 3
-    yloc = plt.MaxNLocator(max_yticks)
-    SED.yaxis.set_major_locator(yloc) 
-    SED.grid(False), SED.spines['bottom'].set_visible(False)
-    SED.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+    
     ## Cumulative Sediment Load
-    storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='r',ls='-',label='VILLAGE')
-    storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='y',ls='-',label='QUARRY-Cumulative Sed')    
-    storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='g',ls='-',label='FOREST') 
+    storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='r',ls='-',label='FG3')
+    storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='y',ls='-',label='FG2')    
+    storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='g',ls='-',label='FG1') 
     SEDcum.set_ylabel('Cum. SSY\ntons')
-    max_yticks = 4
-    yloc = plt.MaxNLocator(max_yticks)
-    SEDcum.yaxis.set_major_locator(yloc) 
-    SEDcum.yaxis.set_ticks_position('right')
-    SEDcum.grid(False)
+    
     #QP.legend(loc=0), P.legend(loc=1)             
     #SSC.legend(loc=0),SED.legend(loc=1)
-    #Shade Storms
-    showstormintervals(P,storm_threshold,storm_intervals)
-    showstormintervals(Q,storm_threshold,storm_intervals)
-    showstormintervals(T,storm_threshold,storm_intervals)
-    showstormintervals(SSC,storm_threshold,storm_intervals)
-    showstormintervals(SED,storm_threshold,storm_intervals)
-    showstormintervals(SEDcum,storm_threshold,storm_intervals)
-    #plt.suptitle(title)
+    
+    from matplotlib.ticker import MaxNLocator
+    for ax in fig.axes[:-1]:
+        ax.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off') # labels along the bottom edge are off
+        ax.grid(False), ax.spines['bottom'].set_visible(False)
+    for ax in fig.axes: 
+        ax.yaxis.set_major_locator(MaxNLocator(3)) 
+        showstormintervals(ax,storm_intervals)
     show_plot(show)
     return
-#Storm_SedFlux(storm_data_LBJ,All_Storms,'All_Storms',show=True)
-#Storm_SedFlux(storm_data_DAM,DAM_storm_threshold,All_Storms,'All_Storms',show=True)
+plot_storm_data(storm_data,All_Storms,show=True)
 
-def plot_all_storms_individually(storm_threshold,storm_intervals,show=False,save=True):
-    count = 0
-    for storm in storm_intervals.iterrows():
-        count+=1
-        start = storm[1]['start']-dt.timedelta(minutes=60)
-        end =  storm[1]['end']+dt.timedelta(minutes=60)
-        #print start, end
-        ## Slice data from storm start to start end
-        ## LBJ
-        LBJ_storm = LBJ[start:end]
-        LBJ_storm['Sed-cumsum'] = LBJ_storm['SedFlux-tons/15min'].cumsum()
-        LBJ_new_columns = []
-        for column in LBJ_storm.columns:
-            #print column
-            LBJ_new_columns.append('LBJ-'+column)
-        LBJ_storm.columns = LBJ_new_columns 
-        ## QUARRY
-        QUARRY_storm = QUARRY[start:end]
-        QUARRY['Sed-cumsum'] = QUARRY_storm['SedFlux-tons/15min'].cumsum()
-        QUARRY_new_columns=[]
-        for column in QUARRY_storm.columns:
-            QUARRY_new_columns.append('QUARRY-'+column)
-        QUARRY_storm.columns = QUARRY_new_columns
-        ## DAM
-        DAM_storm = DAM[start:end]
-        DAM_storm['Sed-cumsum'] = DAM_storm['SedFlux-tons/15min'].cumsum()
-        DAM_new_columns = []
-        for column in DAM_storm.columns:
-            DAM_new_columns.append('DAM-'+column)
-        DAM_storm.columns = DAM_new_columns
-        
-        P_storm = PrecipFilled['Precip'][start:end]
 
-        storm_data = LBJ_storm.join(DAM_storm).join(QUARRY_storm).join(P_storm)
-        ## Summary stats
-        total_storm = len(storm_data[start:end])
-        percent_P = len(storm_data['Precip'].dropna())/total_storm *100.
-        percent_Q_LBJ = len(storm_data['LBJ-Q'].dropna())/total_storm * 100.
-        percent_Q_DAM = len(storm_data['DAM-Q'].dropna())/total_storm * 100.
-        percent_SSC_LBJ = len(storm_data['LBJ-SSC-mg/L'].dropna())/total_storm * 100.
-        percent_SSC_QUARRY = len(storm_data['QUARRY-SSC-mg/L'].dropna())/total_storm * 100.
-        percent_SSC_DAM = len(storm_data['DAM-SSC-mg/L'].dropna())/total_storm * 100.
-        count_LBJgrab = len(LBJ['Grab-SSC-mg/L'].dropna())
-        count_QUARRYgrab = len(QUARRY['Grab-SSC-mg/L'].dropna())
-        count_DAMgrab = len(DAM['Grab-SSC-mg/L'].dropna())
-        #print str(start)+' '+str(end)+' Storm#:'+str(count)
-        #print '%P:'+str(percent_P)+' %Q_LBJ:'+str(percent_Q_LBJ)+' %Q_DAM:'+str(percent_Q_DAM)
-        #print '%SSC_LBJ:'+str(percent_SSC_LBJ)+' %SSC_DAM:'+str(percent_SSC_DAM)
-        #print '#LBJgrab:'+str(count_LBJgrab)+' #QUARRYgrab:'+str(count_QUARRYgrab)+' #DAMgrab:'+str(count_DAMgrab)        
-        ##Plotting per storm
-        plt.ioff()
-        fig, (P,Q,T,SSC,SED,SEDcum) = plt.subplots(nrows=6,ncols=1,sharex=True) 
-        P.tick_params(\
-        axis='x',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom='off',      # ticks along the bottom edge are off
-        top='off',         # ticks along the top edge are off
-        labelbottom='off') # labels along the bottom edge are off
-        plt.suptitle('Storm: '+str(count)+' start: '+str(start)+' end: '+str(end), fontsize=22)
-        ## Precip
-        storm_data['Precip'].plot(ax=P,color='b',ls='steps-pre',label='Timu1')
-        P_max, P_sum = storm_data['Precip'].max(), storm_data['Precip'].sum()
-        P.set_ylabel('Precip mm'),P.set_ylim(-1,Precip['Timu1-15'].max()+2)
-        ## Discharge
-        storm_data['LBJ-Q'].plot(ax=Q,color='r',label='LBJ-Q')
-        LBJ_Qmax, LBJ_Qmean, LBJ_Qsum = storm_data['LBJ-Q'].max(), storm_data['LBJ-Q'].mean(), storm_data['LBJ-Q'].sum()
-        storm_data['QUARRY-Q'].plot(ax=Q,color='y',label='QUARRY-Q')
-        QUARRY_Qmax, QUARRY_Qmean, QUARRY_Qsum = storm_data['QUARRY-Q'].max(),storm_data['QUARRY-Q'].mean(),storm_data['QUARRY-Q'].sum()
-        storm_data['DAM-Q'].plot(ax=Q,color='g',label='DAM-Q')
-        DAM_Qmax, DAM_Qmean, DAM_Qsum = storm_data['DAM-Q'].max(), storm_data['DAM-Q'].mean(), storm_data['DAM-Q'].sum()
-        Q.set_ylabel('Q L/sec'), Q.set_ylim(-1,6000)
-        ## Turbidity
-        storm_data['LBJ-NTU'].plot(ax=T,color='r',label='LBJ-NTU')
-        LBJ_NTUmax, LBJ_NTUmean = storm_data['LBJ-NTU'].max(), storm_data['LBJ-NTU'].mean()
-        storm_data['QUARRY-NTU'].plot(ax=T,color='y',label='QUARRY-NTU')
-        QUARRY_NTUmax, QUARRY_NTUmean = storm_data['QUARRY-NTU'].max(), storm_data['QUARRY-NTU'].mean()
-        storm_data['DAM-NTU'].plot(ax=T,color='g',label='DAM-NTU')
-        DAM_NTUmax, DAM_NTUmean = storm_data['DAM-NTU'].max(), storm_data['DAM-NTU'].mean()
-        T.set_ylabel('T (NTU)'),T.set_ylim(-1,2000)
-        ## SSC from Turbidity
-        storm_data['LBJ-T-SSC-mg/L'].plot(ax=SSC,color='r',label='LBJ-SSC')
-        LBJ_SSCmax, LBJ_SSCmean = storm_data['LBJ-T-SSC-mg/L'].max(), storm_data['LBJ-T-SSC-mg/L'].mean()
-        storm_data['QUARRY-T-SSC-mg/L'].plot(ax=SSC,color='y',label='QUARRY-SSC')
-        QUARRY_SSCmax, QUARRY_SSCmean = storm_data['QUARRY-T-SSC-mg/L'].max(), storm_data['QUARRY-T-SSC-mg/L'].mean()
-        storm_data['DAM-T-SSC-mg/L'].plot(ax=SSC,color='g',label='DAM-SSC')
-        DAM_SSCmax, DAM_SSCmean = storm_data['DAM-T-SSC-mg/L'].max(), storm_data['DAM-T-SSC-mg/L'].mean()
-        ## Grabs
-        storm_data['LBJ-Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='LBJ-grab')
-        storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY-grab')
-        storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='DAM-grab')
-        SSC.set_ylabel('SSC mg/L'), SSC.set_ylim(-1,1500)
-        ### SSC interpolated from grab samples
-        storm_data['LBJ-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='r',label='LBJ-SSC')
-        LBJ_SSCgrabmax, LBJ_SSCgrabmean = storm_data['LBJ-GrabInt-SSC-mg/L'].max(), storm_data['LBJ-GrabInt-SSC-mg/L'].mean()
-        storm_data['QUARRY-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='y',label='QUARRY-SSC')
-        QUARRY_SSCgrabmax, QUARRY_SSCgrabmean = storm_data['QUARRY-GrabInt-SSC-mg/L'].max(), storm_data['QUARRY-GrabInt-SSC-mg/L'].mean()
-        storm_data['DAM-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='g',label='DAM-SSC')
-        DAM_SSCgrabmax, DAM_SSCgrabmean = storm_data['DAM-GrabInt-SSC-mg/L'].max(), storm_data['DAM-GrabInt-SSC-mg/L'].mean()
-        ## Sediment discharge
-        storm_data['LBJ-SedFlux-tons/sec'].plot(ax=SED,color='r',label='LBJ-SedFlux',ls='-')
-        LBJ_Smax, LBJ_Smean, LBJ_Ssum = storm_data['LBJ-SedFlux-tons/sec'].max(), storm_data['LBJ-SedFlux-tons/sec'].mean(), storm_data['LBJ-SedFlux-tons/sec'].sum()
-        storm_data['QUARRY-SedFlux-tons/sec'].plot(ax=SED,color='y',label='QUARRY-SedFlux',ls='-')
-        QUARRY_Smax, QUARRY_Smean, QUARRY_Ssum = storm_data['QUARRY-SedFlux-tons/sec'].max(), storm_data['QUARRY-SedFlux-tons/sec'].mean(), storm_data['QUARRY-SedFlux-tons/sec'].sum()
-        storm_data['DAM-SedFlux-tons/sec'].plot(ax=SED,color='g',label='DAM-SedFlux',ls='-')
-        DAM_Smax, DAM_Smean, DAM_Ssum = storm_data['DAM-SedFlux-tons/sec'].max(), storm_data['DAM-SedFlux-tons/sec'].mean(), storm_data['DAM-SedFlux-tons/sec'].sum()
-        SED.set_ylabel('SSY tons/sec')#, SED.set_ylim(-.1,4000)
-        #P.legend(loc='best'), 
-        Q.legend(loc='best',ncol=2), T.legend(loc='best',ncol=3)          
-        SSC.legend(loc='best',ncol=5),SED.legend(loc='best',ncol=2)
-        ## Cumulative Sediment Load
-        storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='r',ls='--',label='VILLAGE')
-        storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='y',ls='--',label='QUARRY-Cumulative Sed')    
-        storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='g',ls='--',label='FOREST') 
-        SEDcum.set_ylabel('Cum. SSY\ntons')
-        max_yticks = 4
-        yloc = plt.MaxNLocator(max_yticks)
-        SEDcum.yaxis.set_major_locator(yloc) 
-        SEDcum.yaxis.set_ticks_position('right')
-        SEDcum.grid(False)
-        #Shade Storms
-        shade_color='grey'
-        start, end = storm[1]['start'], storm[1]['end']
-        P.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), Q.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        T.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), SSC.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        SED.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        SEDcum.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        plt.tight_layout()        
-    
-        title='Storm_'+str(count)+' '+str(start.year)+'-'+str(start.month)+'-'+str(start.day)
-        if save ==True:
-            plt.savefig(figdir+'storm_figures/'+title+'.png')
-        if show==True:
-            plt.show()
-        elif show==False:
-            plt.close('all')
-    plt.ion()
-    return
-#plot_all_storms_individually(All_Storms,show=True,save=False) # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
-
-def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=''):
+def plot_storm_individually(storm,show=False,save=True,filename=''):
     ## Storm Intervals -60 minutes to show whole storm
     start = storm['start']-dt.timedelta(minutes=60)
     end =  storm['end']+dt.timedelta(minutes=60)
@@ -3532,10 +3357,9 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     if shade_storms==True:
         shade_color='grey'
         start, end = storm[1]['start'], storm[1]['end']
-        P.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), Q.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        T.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25), SSC.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        SED.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
-        SEDcum.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+        for ax in fig.axes:
+            ax.axvspan(start,end,ymin=0,ymax=200,facecolor=shade_color, alpha=0.25)
+        
     letter_subplots(fig,x=0.10,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     plt.tight_layout(pad=0.1)        
     #title=str(start.year)+'-'+str(start.month)+'-'+str(start.day)
@@ -3543,41 +3367,51 @@ def plot_storm_individually(storm_threshold,storm,show=False,save=True,filename=
     savefig(save,filename)
     return
 # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
-plot_storm_individually(All_Storms.loc[63],show=True,save=False,filename='') 
+#plot_storm_individually(All_Storms.loc[63],show=True,save=False,filename='') 
 
 
 #### Event Sediment Flux
+### Summarize Time Series data into storm event data
+
 AV_Q_measurement_RMSE = 8.5 # these come from Harmel 2009 lookup table in DUET-HWQ
 SSC_measurement_RMSE = 12.4 + 3.9 # includes collection and lab analysis; these come from Harmel 2009 lookup table in DUET-HWQ
+
 #### LBJ Event-wise Sediment Flux DataFrame
-SedFluxStorms_LBJ = Sum_Storms(All_Storms,LBJ['SedFlux-tons/15min'])
-SedFluxStorms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
-SedFluxStorms_LBJ=SedFluxStorms_LBJ.join(Qstorms_LBJ) ## Add Event Discharge
-SedFluxStorms_LBJ = SedFluxStorms_LBJ.join(Pstorms_LBJ)
-## SSY RMSE
-SedFluxStorms_LBJ['Stage-Q-model-RMSE'] = Sum_Storms(All_Storms,LBJ['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
-SedFluxStorms_LBJ['T-SSC-model-RMSE'] = Sum_Storms(All_Storms,LBJ['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
-SedFluxStorms_LBJ['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(SedFluxStorms_LBJ['Stage-Q-model-RMSE']**2. + SedFluxStorms_LBJ['T-SSC-model-RMSE']**2.))**0.5 ## Calculate Cumulative Probable Error Harmel  2009
+Storms_LBJ = Sum_Storms(All_Storms,LBJ['SedFlux-tons/15min'])
+Storms_LBJ.columns = ['Sstart','Send','Scount','Ssum','Smax']
+## Add Event Discharge and Precipitation
+Storms_LBJ = Storms_LBJ.join(Qstorms_LBJ) 
+Storms_LBJ = Storms_LBJ.join(Pstorms_LBJ)
+## SSY RMSE for Stage-Q model and T-SSC model (time-variant)
+Storms_LBJ['Stage-Q-model-RMSE'] = Sum_Storms(All_Storms,LBJ['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
+Storms_LBJ['T-SSC-model-RMSE'] = Sum_Storms(All_Storms,LBJ['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
+## Calculate Cumulative Probable Error Harmel  2009
+Storms_LBJ['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(Storms_LBJ['Stage-Q-model-RMSE']**2. + Storms_LBJ['T-SSC-model-RMSE']**2.))**0.5 
+
 
 #### QUARRY Event-wise Sediment Flux DataFrame
-SedFluxStorms_QUARRY = Sum_Storms(All_Storms,QUARRY['SedFlux-tons/15min'])
-SedFluxStorms_QUARRY.columns = ['Sstart','Send','Scount','Ssum','Smax']
-SedFluxStorms_QUARRY=SedFluxStorms_QUARRY.join(Qstorms_QUARRY)
-SedFluxStorms_QUARRY=SedFluxStorms_QUARRY.join(Pstorms_QUARRY)
-## SSY RMSE
-SedFluxStorms_QUARRY['Stage-Q-model-RMSE'] = Sum_Storms(All_Storms,QUARRY['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
-SedFluxStorms_QUARRY['T-SSC-model-RMSE'] = Sum_Storms(All_Storms,QUARRY['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
-SedFluxStorms_QUARRY['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(SedFluxStorms_QUARRY['Stage-Q-model-RMSE']**2. + SedFluxStorms_QUARRY['T-SSC-model-RMSE']**2.))**0.5 ## Calculate Cumulative Probable Error Harmel  2009
+Storms_QUARRY = Sum_Storms(All_Storms,QUARRY['SedFlux-tons/15min'])
+Storms_QUARRY.columns = ['Sstart','Send','Scount','Ssum','Smax']
+## Add Event Discharge and Precipitation
+Storms_QUARRY = Storms_QUARRY.join(Qstorms_QUARRY)
+Storms_QUARRY = Storms_QUARRY.join(Pstorms_QUARRY)
+## SSY RMSE for Stage-Q model and T-SSC model (time-variant)
+Storms_QUARRY['Stage-Q-model-RMSE'] = Sum_Storms(All_Storms,QUARRY['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
+Storms_QUARRY['T-SSC-model-RMSE'] = Sum_Storms(All_Storms,QUARRY['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
+## Calculate Cumulative Probable Error Harmel  2009
+Storms_QUARRY['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(Storms_QUARRY['Stage-Q-model-RMSE']**2. + Storms_QUARRY['T-SSC-model-RMSE']**2.))**0.5 
 
 #### DAM Event-wise Sediment Flux DataFrame
-SedFluxStorms_DAM = Sum_Storms(All_Storms,DAM['SedFlux-tons/15min'])
-SedFluxStorms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
-SedFluxStorms_DAM=SedFluxStorms_DAM.join(Qstorms_DAM)
-SedFluxStorms_DAM=SedFluxStorms_DAM.join(Pstorms_DAM)
-## SSY RMSE
-SedFluxStorms_DAM['Stage-Q-model-RMSE'] = Sum_Storms(All_Storms,DAM['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
-SedFluxStorms_DAM['T-SSC-model-RMSE'] = Sum_Storms(All_Storms,DAM['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
-SedFluxStorms_DAM['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(SedFluxStorms_DAM['Stage-Q-model-RMSE']**2. + SedFluxStorms_DAM['T-SSC-model-RMSE']**2.))**0.5 ## Calculate Cumulative Probable Error Harmel  2009
+Storms_DAM = Sum_Storms(All_Storms,DAM['SedFlux-tons/15min'])
+Storms_DAM.columns = ['Sstart','Send','Scount','Ssum','Smax']
+## Add Event Discharge and Precipitation
+Storms_DAM = Storms_DAM.join(Qstorms_DAM)
+Storms_DAM = Storms_DAM.join(Pstorms_DAM)
+## SSY RMSE for Stage-Q model and T-SSC model (time-variant)
+Storms_DAM['Stage-Q-model-RMSE'] = Sum_Storms(All_Storms,DAM['Q-RMSE'])['max'] ## Add Stage-Q model RMSE
+Storms_DAM['T-SSC-model-RMSE'] = Sum_Storms(All_Storms,DAM['SSC-mg/L-RMSE'])['max'] ##  Add T-SSC model RMSE
+## Calculate Cumulative Probable Error Harmel  2009
+Storms_DAM['PE'] = ((AV_Q_measurement_RMSE**2. + SSC_measurement_RMSE**2.)+(Storms_DAM['Stage-Q-model-RMSE']**2. + Storms_DAM['T-SSC-model-RMSE']**2.))**0.5 
 
 
 ### Grab vs T for SSY
@@ -3586,7 +3420,7 @@ LBJ_GrabInt_storms = Sum_Storms(All_Storms,LBJ['GrabInt-SedFlux-tons/15min']).dr
 LBJ_GrabInt_storms['datasource'] = 'int. grab'
 LBJ_T_SSC_storms = Sum_Storms(All_Storms,LBJ['T-SedFlux-tons/15min']).dropna()
 LBJ_T_SSC_storms['datasource'] = 'T-YSI'
-LBJ_T_SSC_storms['datasource'].ix[dt.datetime(2013,1,1):] = 'T-OBS'
+LBJ_T_SSC_storms['datasource'][LBJ_T_SSC_storms.index> dt.datetime(2013,1,1,0,15)] = 'T-OBS'
 SedFluxStorms_LBJ['datasource']= LBJ_T_SSC_storms['datasource']
 SedFluxStorms_LBJ['datasource']=SedFluxStorms_LBJ['datasource'].fillna(LBJ_GrabInt_storms['datasource'])
 ## DAM
@@ -3594,12 +3428,12 @@ DAM_GrabInt_storms = Sum_Storms(All_Storms,DAM['GrabInt-SedFlux-tons/15min']).dr
 DAM_GrabInt_storms['datasource'] = 'int. grab'
 DAM_T_SSC_storms = Sum_Storms(All_Storms,DAM['T-SedFlux-tons/15min']).dropna()
 DAM_T_SSC_storms['datasource'] = 'T-TS'
-DAM_T_SSC_storms['datasource'].ix[dt.datetime(2013,1,1):] = 'T-YSI'
+DAM_T_SSC_storms['datasource'][DAM_T_SSC_storms.index>dt.datetime(2013,1,1,0,15)] = 'T-YSI'
 SedFluxStorms_DAM['datasource']= DAM_T_SSC_storms['datasource']
 SedFluxStorms_DAM['datasource']=SedFluxStorms_DAM['datasource'].fillna(DAM_GrabInt_storms['datasource'])
 
 #### Calculate correlation coefficients and sediment rating curves    
-def compileALLStorms(subset = 'pre'):
+def compile_Storms_data(subset = 'pre'):
     ## Sediment Yield
     ALLStorms=pd.DataFrame({'Supper':SedFluxStorms_DAM['Ssum'],'Supper_PE':SedFluxStorms_DAM['PE'],
     'Slower':SedFluxStorms_LBJ['Ssum']-SedFluxStorms_DAM['Ssum'],
@@ -3626,10 +3460,10 @@ def compileALLStorms(subset = 'pre'):
     elif subset == 'post':
         ALLStorms = ALLStorms[ALLStorms.index>Mitigation]
     return ALLStorms
-ALLStorms = compileALLStorms()
+ALLStorms = compile_Storms_data()
 
 def S_storm_diff_table(subset='pre'):
-    S_diff = compileALLStorms(subset)
+    S_diff = compile_Storms_data(subset)
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
     #S_diff['UPPER SSY data source'] = S_diff['SSY_data_source_upper']
@@ -3674,7 +3508,7 @@ def S_storm_diff_table(subset='pre'):
 S_storm_diff_table()
 
 def SSY_dist_table(subset='pre'):
-    S_diff = compileALLStorms(subset)
+    S_diff = compile_Storms_data(subset)
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
     #S_diff['UPPER SSY data source'] = S_diff['SSY_data_source_upper']
@@ -3752,7 +3586,7 @@ SSY_dist_table()
 
 
 def S_storm_diff_table_quarry(subset='pre',manual_edit=True):
-    S_diff = compileALLStorms(subset)
+    S_diff = compile_Storms_data(subset)
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
@@ -3802,7 +3636,7 @@ def S_storm_diff_table_quarry(subset='pre',manual_edit=True):
 #S_storm_diff_table_quarry(manual_edit=True)
     
 def SSY_dist_table_quarry(subset='pre',manual_edit=True):
-    S_diff = compileALLStorms(subset)
+    S_diff = compile_Storms_data(subset)
     ## Calculate percent contributions from upper and lower watersheds
     S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
     S_diff['UPPER tons']=S_diff['Supper'].round(2)
@@ -3888,7 +3722,7 @@ SSY_dist_table_quarry(manual_edit=True)
 
 ## Calculate the percent of total SSY with raw vales, BEFORE NORMALIZING by area!
 def plotS_storm_table(show=False):
-    diff = compileALLStorms()
+    diff = compile_Storms_data()
     diff = diff[diff['Stotal']>0]
     diff = diff[diff['Supper']>0]
     ## Calculate percent contributions from upper and lower watersheds
@@ -3928,7 +3762,7 @@ def plotS_storm_table(show=False):
 #plotS_storm_table(show=True)
     
 def Q_S_storm_diff_summary_table(subset='pre'):
-    diff = compileALLStorms(subset)
+    diff = compile_Storms_data(subset)
     ## Calculate percent contributions from upper and lower watersheds
     
     # Precip
@@ -3977,7 +3811,7 @@ def Q_S_storm_diff_summary_table(subset='pre'):
 Q_S_storm_diff_summary_table()
 
 def Spec_SSY_Quarry(subset='post'):
-    diff = compileALLStorms(subset)
+    diff = compile_Storms_data(subset)
 
     diff['QUARRY tons']=diff['Squarry'].round(3) - diff['Supper'].round(3)
     diff['km2SQUARRY'] = diff['QUARRY tons']/.27 #km2
@@ -3988,7 +3822,7 @@ def Spec_SSY_Quarry(subset='post'):
 #Spec_SSY_Quarry()    
 
 def plotS_storm_table_summary(fs=16,show=False):
-    diff = compileALLStorms().dropna()
+    diff = compile_Storms_data().dropna()
     ## Calculate percent contributions from upper and lower watersheds
     ## Sediment
     diff['Supper']=diff['Supper'].round(3)
@@ -4064,7 +3898,7 @@ def NormalizeSSYbyCatchmentArea(ALLStorms):
     return ALLStorms
     
 def Pearson_r_Table(pvalue=0.05):
-    ALLStorms = compileALLStorms()
+    ALLStorms = compile_Storms_data()
     Upper = ALLStorms[['Pstorms','EI','Qsumupper','Qmaxupper','Supper','Supper_PE']].dropna()
     Lower = ALLStorms[['Pstorms','EI','Qsumlower','Qmaxlower','Slower']].dropna()
     Total = ALLStorms[['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal','Stotal_PE']].dropna()
@@ -4125,7 +3959,7 @@ def plotPearsonTable(pvalue=0.05,show=False):
     pearson.patch.set_visible(False), pearson.axis('off')
     pearson.xaxis.set_visible(False), pearson.yaxis.set_visible(False) 
   
-    ALLStorms = compileALLStorms()
+    ALLStorms = compile_Storms_data()
     Upper = ALLStorms[['Pstorms','EI','Qsumupper','Qmaxupper','Supper','Supper_PE']].dropna()
     Lower = ALLStorms[['Pstorms','EI','Qsumlower','Qmaxlower','Slower']].dropna()
     Total = ALLStorms[['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal','Stotal_PE']].dropna()
@@ -4192,7 +4026,7 @@ def plotPearsonTable(pvalue=0.05,show=False):
 #plotPearsonTable(pvalue=0.05,show=True)
 
 def Spearman_r_Table(pvalue=0.05):
-    ALLStorms = compileALLStorms()
+    ALLStorms = compile_Storms_data()
     Upper = ALLStorms[['Pstorms','EI','Qsumupper','Qmaxupper','Supper','Supper_PE']].dropna()
     Lower = ALLStorms[['Pstorms','EI','Qsumlower','Qmaxlower','Slower']].dropna()
     Total = ALLStorms[['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal','Stotal_PE']].dropna()
@@ -4253,7 +4087,7 @@ def plotSpearmanTable(pvalue=0.05,show=False):
     spearman.patch.set_visible(False), spearman.axis('off')
     spearman.xaxis.set_visible(False), spearman.yaxis.set_visible(False) 
     
-    ALLStorms = compileALLStorms()
+    ALLStorms = compile_Storms_data()
     Upper = ALLStorms[['Supper','Supper_PE','Qsumupper','Qmaxupper','Pstorms','EI']].dropna()
     Lower = ALLStorms[['Slower','Qsumlower','Qmaxlower','Pstorms','EI']].dropna()
     Total = ALLStorms[['Stotal','Stotal_PE','Qsumtotal','Qmaxtotal','Pstorms','EI']].dropna()
@@ -4326,7 +4160,7 @@ def plotSpearmanTable(pvalue=0.05,show=False):
     
 def plotCoeffTable(show=False,norm=False):
     if norm==True:
-        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
+        ALLStorms=NormalizeSSYbyCatchmentArea(compile_Storms_data())
         Upper = powerfunction(ALLStorms['Qmaxupper'],ALLStorms['Supper'])
         Total = powerfunction(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'])    
         
@@ -4343,7 +4177,7 @@ def plotCoeffTable(show=False,norm=False):
         coeff.table(cellText = [Up,Tot],rowLabels=['Upper','Total'],colLabels=[r'$\alpha$',r'$\beta$',r'$r^2$',"Pearson's","Spearman's",'RMSE'],loc='center left',fontsize=14)
    
     elif norm==False:
-        ALLStorms = compileALLStorms()
+        ALLStorms = compile_Storms_data()
         Upper = powerfunction(ALLStorms['Qmaxupper'],ALLStorms['Supper'])
         Lower = powerfunction(ALLStorms['Qmaxlower'],ALLStorms['Slower'])    
         Total = powerfunction(ALLStorms['Qmaxtotal'],ALLStorms['Stotal'])
@@ -4441,10 +4275,10 @@ def plotALLStorms_ALLRatings(subset='pre',ms=10,norm=False,log=False,show=False,
     title = 'All sediment rating curves for all predictors'
     ## Normalize by area
     if norm==True:
-        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms(subset))
+        ALLStorms=NormalizeSSYbyCatchmentArea(compile_Storms_data(subset))
         ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = r'$SSY (Mg/km^2)$','Precip (mm)','Erosivity Index', r'$(m^3/km^2)$', r'$(m^3/sec/km^2)$'
     else:
-        ALLStorms=compileALLStorms(subset)
+        ALLStorms=compile_Storms_data(subset)
         ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = 'SSY (Mg)','Precip (mm)','Erosivity Index',r'$(m^3)$',r'$(m^3/sec)$'
     xy=None ## let the Fit functions plot their own lines
     
@@ -4567,10 +4401,10 @@ def plotQmaxS(show=True,log=True,save=False,norm=True):
     lowerdotsize = 50#scaleSeries(SedFluxStorms_LBJ['Qsum']/1000)
     
     if norm==True:
-        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
+        ALLStorms=NormalizeSSYbyCatchmentArea(compile_Storms_data())
         ylabel,xlabel= r'$SSY (Mg \ km^{-2})$',r'$Q_{max} (m^3 s^{-1} km^{-2})$'
     elif norm==False:
-        ALLStorms=compileALLStorms()
+        ALLStorms=compile_Storms_data()
         ylabel,xlabel = 'SSY (Mg)',r'$Qmax (m^3 s^{-1})$'
    
     ## Lower is below in norm==False loop
@@ -4643,10 +4477,10 @@ def plotQmaxStotal(subset='pre',ms=10,norm=False,log=False,show=False,save=False
     fig, qmaxs = plt.subplots(figsize=(5,4))
     ## Normalize by area
     if norm==True:
-        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms(subset))
+        ALLStorms=NormalizeSSYbyCatchmentArea(compile_Storms_data(subset))
         ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = r'$SSY (Mg/km^2)$','Precip (mm)','Erosivity Index', r'$(m^3/km^2)$', r'$(m^3/sec/km^2)$'
     else:
-        ALLStorms=compileALLStorms(subset)
+        ALLStorms=compile_Storms_data(subset)
         ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = 'SSY (Mg)','Precip (mm)','Erosivity Index',r'$(m^3)$',r'$(m^3/sec)$'
     xy=None ## let the Fit functions plot their own lines
     ## Qmax vs S at Upper, Total  
@@ -4687,10 +4521,10 @@ def plotQmaxSseparate(show=True,log=True,save=False,norm=True):
     lowerdotsize = 50#scaleSeries(SedFluxStorms_LBJ['Qsum']/1000)
     
     if norm==True:
-        ALLStorms=NormalizeSSYbyCatchmentArea(compileALLStorms())
+        ALLStorms=NormalizeSSYbyCatchmentArea(compile_Storms_data())
         ylabel,xlabel= r'$SSY (Mg \ km^{-2})$',r'$Q_{max} (m^3 s^{-1} km^{-2})$'
     elif norm==False:
-        ALLStorms=compileALLStorms()
+        ALLStorms=compile_Storms_data()
         ylabel,xlabel = 'SSY (Mg)',r'$Qmax (m^3 s^{-1})$'
    
     ## Lower is below in norm==False loop

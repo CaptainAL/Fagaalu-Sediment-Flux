@@ -213,3 +213,52 @@ def plotNTUratings_no_int(plot_param_table=True,show=False,log=False,save=False,
         plt.show()
     return
 #plotNTUratings_no_int(plot_param_table=True,show=True,log=False,save=True,lwidth=0.5,ms=20)    
+    
+    
+def plotNTUratingstable_mpl(show=False,save=False):
+    ## NTU
+    ## Lab
+    LAB = linearfunction(SSC[SSC['Location']=='LBJ']['NTU'],SSC[SSC['Location']=='LBJ']['SSC (mg/L)'])
+    lab = ['%.2f'%LAB['b'],'%.2f'%LAB['r2'],'%.2f'%LAB['pearson'],'%.2f'%LAB['spearman'],'%.2f'%LAB['rmse']]
+    ## DAM TS3000
+    DAM_TS3K = linearfunction(T_SSC_DAM_TS3K[1]['T-NTU'],T_SSC_DAM_TS3K[1]['SSC (mg/L)'])
+    dam_ts3k = ['%.2f'%DAM_TS3K['b'],'%.2f'%DAM_TS3K['r2'],'%.2f'%DAM_TS3K['pearson'],'%.2f'%DAM_TS3K['spearman'],'%.2f'%DAM_TS3K['rmse']]
+    ## DAM YSI
+    DAM_YSI = linearfunction(T_SSC_DAM_YSI[1]['T-NTU'],T_SSC_DAM_YSI[1]['SSC (mg/L)'])
+    dam_ysi = ['%.2f'%DAM_YSI['b'],'%.2f'%DAM_YSI['r2'],'%.2f'%DAM_YSI['pearson'],'%.2f'%DAM_YSI['spearman'],'%.2f'%DAM_YSI['rmse']]    
+    ## LBJ YSI
+    LBJ_YSI = linearfunction(T_SSC_LBJ_YSI[1]['T-NTU'],T_SSC_LBJ_YSI[1]['SSC (mg/L)'])
+    lbj_ysi = ['%.2f'%LBJ_YSI['b'],'%.2f'%LBJ_YSI['r2'],'%.2f'%LBJ_YSI['pearson'],'%.2f'%LBJ_YSI['spearman'],'%.2f'%LBJ_YSI['rmse']]
+    ## LBJ OBSa 2013
+    LBJ_OBS_2013 = linearfunction(T_SSC_LBJ_OBSa[1]['T-NTU'],T_SSC_LBJ_OBSa[1]['SSC (mg/L)'])
+    lbj_obs_2013 = ['%.2f'%LBJ_OBS_2013['b'],'%.2f'%LBJ_OBS_2013['r2'],'%.2f'%LBJ_OBS_2013['pearson'],'%.2f'%LBJ_OBS_2013['spearman'],'%.2f'%LBJ_OBS_2013['rmse']]    
+    ## LBJ OBSb 2014
+    LBJ_OBS_2014 = linearfunction(T_SSC_LBJ_OBSb[1]['T-NTU'],T_SSC_LBJ_OBSb[1]['SSC (mg/L)'])
+    lbj_obs_2014 = ['%.2f'%LBJ_OBS_2014['b'],'%.2f'%LBJ_OBS_2014['r2'],'%.2f'%LBJ_OBS_2014['pearson'],'%.2f'%LBJ_OBS_2014['spearman'],'%.2f'%LBJ_OBS_2014['rmse']]    
+    ## QUARRY OBS
+    QUARRY_OBS = linearfunction(T_SSC_QUARRY_OBS[1]['T-NTU'],T_SSC_QUARRY_OBS[1]['SSC (mg/L)'])
+    qua_obs = ['%.2f'%QUARRY_OBS['b'],'%.2f'%QUARRY_OBS['r2'],'%.2f'%QUARRY_OBS['pearson'],'%.2f'%QUARRY_OBS['spearman'],'%.2f'%QUARRY_OBS['rmse']]    
+
+    nrows, ncols = 3,5
+    hcell, wcell=0.3,1
+    hpad, wpad = 1,1
+    fig = plt.figure(figsize=(ncols*wcell+wpad,nrows*hcell+hpad)) 
+    coeff = fig.add_subplot(111)
+    coeff.patch.set_visible(False), coeff.axis('off')
+    coeff.xaxis.set_visible(False), coeff.yaxis.set_visible(False) 
+    coeff.table(cellText = [lab,lbj_ysi,lbj_obs_2013,lbj_obs_2014,qua_obs,dam_ts3k,dam_ysi], 
+                rowLabels=['Lab','LBJ-YSI','LBJ-OBS-2013','LBJ-OBS-2014','QUA-OBS','DAM-TS3K','DAM-YSI'], 
+                colLabels=[r'$\beta$',r'$r^2$',"Pearson's","Spearman's",'RMSE'],loc='center left')
+    
+    plt.suptitle('Paramters for Turbidity to Suspended Sediment Concetration Rating Curves',fontsize=12)    
+    
+    
+    
+    plt.tight_layout()
+    plt.subplots_adjust(left=0.2)
+    if show==True:
+        plt.show()
+    return
+#plotNTUratingstable(show=True,save=False)
+
+
