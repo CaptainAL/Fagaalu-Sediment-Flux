@@ -1,0 +1,58 @@
+<table class='gmisc_table' style='border-collapse: collapse;' >
+<thead>
+<tr><td colspan='4' style='text-align: left;'>
+Table 3. Total Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of UPPER and LOWER subwatersheds for the storm events in Table 2.</td></tr>
+<tr>
+<th style='border-bottom: 1px solid grey; border-top: 2px solid grey;'> </th>
+<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>UPPER<sup>a</sup></th>
+<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>LOWER</th>
+<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>TOTAL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style='text-align: left;'>Fraction of subwatershed area disturbed (%)</td>
+<td style='text-align: center;'>0.4</td>
+<td style='text-align: center;'>10.1</td>
+<td style='text-align: center;'>5.2</td>
+</tr>
+<tr>
+<td style='text-align: left;'>SSY (tons)</td>
+<td style='text-align: center;'>22.9</td>
+<td style='text-align: center;'>178.1</td>
+<td style='text-align: center;'>201.0</td>
+</tr>
+<tr>
+<td style='text-align: left;'>&nbsp;&nbsp;Forested areas</td>
+<td style='text-align: center;'>22.8</td>
+<td style='text-align: center;'>20.1</td>
+<td style='text-align: center;'>42.9</td>
+</tr>
+<tr>
+<td style='text-align: left;'>&nbsp;&nbsp;Disturbed areas</td>
+<td style='text-align: center;'>0.1</td>
+<td style='text-align: center;'>158.0</td>
+<td style='text-align: center;'>158.1</td>
+</tr>
+<tr>
+<td style='text-align: left;'>&nbsp;&nbsp;% from disturbed areas</td>
+<td style='text-align: center;'>0.6</td>
+<td style='text-align: center;'>89</td>
+<td style='text-align: center;'>79</td>
+</tr>
+<tr>
+<td style='text-align: left;'>sSSY, disturbed areas (tons/km<sup>2</sup>)</td>
+<td style='text-align: center;'>36.5</td>
+<td style='text-align: center;'>1777.7</td>
+<td style='text-align: center;'>1708.5</td>
+</tr>
+<tr>
+<td style='border-bottom: 2px solid grey; text-align: left;'>DR for sSSY from disturbed areas</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>1</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>70</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>67</td>
+</tr>
+</tbody>
+<tfoot><tr><td colspan='4'>
+a. Disturbed areas in UPPER are bare areas from landslides.<br>     b. Calculated as (sSSY from disturbed areas)/sSSY from UPPER (22.9 tons/km<sup>2</sup>)</td></tr></tfoot>
+</table>

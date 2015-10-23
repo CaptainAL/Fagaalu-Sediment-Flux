@@ -1,0 +1,325 @@
+<table class='gmisc_table' style='border-collapse: collapse;' >
+<thead>
+<tr><td colspan='15' style='text-align: left;'>
+Table 4. Event-wise suspended sediment yield (SSYEV) from subwatersheds in Faga'alu for events with simultaneous data from FG1, FG2, and FG3. Storm numbers correspond with the storms presented in Table 2 and Appendix Table A3.1.</td></tr>
+<tr>
+<th style='border-top: 2px solid grey;'></th>
+<th colspan='1' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>Storm</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='1' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>Precip</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='5' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>SSY<sub>EV</sub> tons</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='4' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>% of SSY<sub>EV</sub>TOTAL</th>
+</tr>
+<tr>
+<th style='font-weight: 900; border-bottom: 1px solid grey; text-align: center;'>Storm#</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>Start</th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>mm</th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>UPPER<sup>a</sup.</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>LOWER_QUARRY<sup>b</sup.</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>LOWER_VILLAGE<sup>c</sup.</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>LOWER<sup>d</sup.</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>TOTAL<sup>e</sup></th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>UPPER</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>LOWER_QUARRY</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>LOWER_VILLAGE</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>LOWER</th>
+</tr>
+</thead>
+<tbody>
+<tr><td colspan='15' style='font-weight: 900; text-align: left;'></td></tr>
+<tr>
+<td style='text-align: left;'>2</td>
+<td style='text-align: center;'>01/19/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>18</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.06</td>
+<td style='text-align: center;'>0.33</td>
+<td style='text-align: center;'>0.32</td>
+<td style='text-align: center;'>0.65</td>
+<td style='text-align: center;'>0.71</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>8</td>
+<td style='text-align: center;'>46</td>
+<td style='text-align: center;'>45</td>
+<td style='text-align: center;'>91</td>
+</tr>
+<tr>
+<td style='text-align: left;'>7</td>
+<td style='text-align: center;'>02/03/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>11</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.08</td>
+<td style='text-align: center;'>2.01</td>
+<td style='text-align: center;'>0.2</td>
+<td style='text-align: center;'>2.21</td>
+<td style='text-align: center;'>2.29</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>87</td>
+<td style='text-align: center;'>8</td>
+<td style='text-align: center;'>96</td>
+</tr>
+<tr>
+<td style='text-align: left;'>11</td>
+<td style='text-align: center;'>02/06/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.27</td>
+<td style='text-align: center;'>3.85</td>
+<td style='text-align: center;'>1.38</td>
+<td style='text-align: center;'>5.23</td>
+<td style='text-align: center;'>5.5</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4</td>
+<td style='text-align: center;'>70</td>
+<td style='text-align: center;'>25</td>
+<td style='text-align: center;'>95</td>
+</tr>
+<tr>
+<td style='text-align: left;'>16</td>
+<td style='text-align: center;'>03/05/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>22</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.0</td>
+<td style='text-align: center;'>4.78</td>
+<td style='text-align: center;'>0.02</td>
+<td style='text-align: center;'>4.8</td>
+<td style='text-align: center;'>4.8</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0</td>
+<td style='text-align: center;'>99</td>
+<td style='text-align: center;'>0</td>
+<td style='text-align: center;'>100</td>
+</tr>
+<tr>
+<td style='text-align: left;'>57</td>
+<td style='text-align: center;'>03/06/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>22</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.07</td>
+<td style='text-align: center;'>0.25</td>
+<td style='text-align: center;'>0.72</td>
+<td style='text-align: center;'>0.97</td>
+<td style='text-align: center;'>1.04</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>6</td>
+<td style='text-align: center;'>24</td>
+<td style='text-align: center;'>69</td>
+<td style='text-align: center;'>93</td>
+</tr>
+<tr>
+<td style='text-align: left;'>66</td>
+<td style='text-align: center;'>04/16/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>62</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.54</td>
+<td style='text-align: center;'>3.52</td>
+<td style='text-align: center;'>0.44</td>
+<td style='text-align: center;'>3.96</td>
+<td style='text-align: center;'>4.5</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='text-align: center;'>78</td>
+<td style='text-align: center;'>9</td>
+<td style='text-align: center;'>88</td>
+</tr>
+<tr>
+<td style='text-align: left;'>72</td>
+<td style='text-align: center;'>04/23/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>86</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>9.63</td>
+<td style='text-align: center;'>7.21</td>
+<td style='text-align: center;'>9.83</td>
+<td style='text-align: center;'>17.04</td>
+<td style='text-align: center;'>26.67</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>36</td>
+<td style='text-align: center;'>27</td>
+<td style='text-align: center;'>36</td>
+<td style='text-align: center;'>63</td>
+</tr>
+<tr>
+<td style='text-align: left;'>75</td>
+<td style='text-align: center;'>04/30/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>111</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.48</td>
+<td style='text-align: center;'>0.68</td>
+<td style='text-align: center;'>6.9</td>
+<td style='text-align: center;'>7.57</td>
+<td style='text-align: center;'>8.06</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>5</td>
+<td style='text-align: center;'>8</td>
+<td style='text-align: center;'>85</td>
+<td style='text-align: center;'>93</td>
+</tr>
+<tr>
+<td style='text-align: left;'>78</td>
+<td style='text-align: center;'>06/05/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>177</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4.87</td>
+<td style='text-align: center;'>30.74</td>
+<td style='text-align: center;'>4.67</td>
+<td style='text-align: center;'>35.42</td>
+<td style='text-align: center;'>40.28</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='text-align: center;'>76</td>
+<td style='text-align: center;'>11</td>
+<td style='text-align: center;'>87</td>
+</tr>
+<tr>
+<td style='text-align: left;'>109</td>
+<td style='text-align: center;'>02/14/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>25</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.23</td>
+<td style='text-align: center;'>1.04</td>
+<td style='text-align: center;'>0.55</td>
+<td style='text-align: center;'>1.59</td>
+<td style='text-align: center;'>1.82</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='text-align: center;'>57</td>
+<td style='text-align: center;'>30</td>
+<td style='text-align: center;'>87</td>
+</tr>
+<tr>
+<td style='text-align: left;'>113</td>
+<td style='text-align: center;'>02/20/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>29</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.12</td>
+<td style='text-align: center;'>1.61</td>
+<td style='text-align: center;'>2.11</td>
+<td style='text-align: center;'>3.72</td>
+<td style='text-align: center;'>3.84</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>41</td>
+<td style='text-align: center;'>54</td>
+<td style='text-align: center;'>96</td>
+</tr>
+<tr>
+<td style='text-align: left;'>114</td>
+<td style='text-align: center;'>02/21/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>51</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>1.85</td>
+<td style='text-align: center;'>3.99</td>
+<td style='text-align: center;'>3.74</td>
+<td style='text-align: center;'>7.73</td>
+<td style='text-align: center;'>9.58</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>19</td>
+<td style='text-align: center;'>41</td>
+<td style='text-align: center;'>39</td>
+<td style='text-align: center;'>80</td>
+</tr>
+<tr>
+<td style='text-align: left;'>118</td>
+<td style='text-align: center;'>02/27/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>16</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.12</td>
+<td style='text-align: center;'>0.09</td>
+<td style='text-align: center;'>0.59</td>
+<td style='text-align: center;'>0.68</td>
+<td style='text-align: center;'>0.8</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>15</td>
+<td style='text-align: center;'>11</td>
+<td style='text-align: center;'>73</td>
+<td style='text-align: center;'>85</td>
+</tr>
+<tr>
+<td style='text-align: left;'>119</td>
+<td style='text-align: center;'>02/27/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.11</td>
+<td style='text-align: center;'>0.33</td>
+<td style='text-align: center;'>0.93</td>
+<td style='text-align: center;'>1.25</td>
+<td style='text-align: center;'>1.37</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>8</td>
+<td style='text-align: center;'>24</td>
+<td style='text-align: center;'>67</td>
+<td style='text-align: center;'>91</td>
+</tr>
+<tr><td colspan='15' style='font-weight: 900; text-align: left; border-top: 1px solid #BEBEBE;'></td></tr>
+<tr>
+<td style='text-align: left;'>Total/Avg</td>
+<td style='text-align: center;'>14</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>680</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>18</td>
+<td style='text-align: center;'>60</td>
+<td style='text-align: center;'>32</td>
+<td style='text-align: center;'>93</td>
+<td style='text-align: center;'>111</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>17</td>
+<td style='text-align: center;'>54</td>
+<td style='text-align: center;'>29</td>
+<td style='text-align: center;'>83</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Tons/km2</td>
+<td style='text-align: center;'></td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'></td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>20</td>
+<td style='text-align: center;'>224</td>
+<td style='text-align: center;'>54</td>
+<td style='text-align: center;'>105</td>
+<td style='text-align: center;'>63</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>-</td>
+<td style='text-align: center;'>-</td>
+<td style='text-align: center;'>-</td>
+<td style='text-align: center;'>-</td>
+</tr>
+<tr>
+<td style='border-bottom: 2px solid grey; text-align: left;'>DR</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'></td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'></td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>1.0</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>10.93</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>2.6</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>5.2</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>3.1</td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+</tr>
+</tbody>
+<tfoot><tr><td colspan='15'>
+a. Measured SSY<sub>EV</sub> at FG1.<br>     b. SSY<sub>EV</sub> at FG2 &#45; SSY<sub>EV</sub> at FG1. <br>     c. SSY<sub>EV</sub> at FG3 &#45; SSY<sub>EV</sub> at FG2. <br>     d. SSY<sub>EV</sub> at FG3 &#45; SSY<sub>EV</sub> at FG1. <br>     e. Measured SSY<sub>EV</sub> at FG3.</td></tr></tfoot>
+</table>

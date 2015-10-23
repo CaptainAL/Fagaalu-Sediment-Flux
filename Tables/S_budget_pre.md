@@ -1,0 +1,1029 @@
+<table class='gmisc_table' style='border-collapse: collapse;' >
+<thead>
+<tr><td colspan='16' style='text-align: left;'>
+Table 2. Event-wise suspended sediment yield (SSY<sub>EV</sub>) from subwatersheds in Faga'alu for events with simultaneous data from FG1 and FG3. Storm numbers correspond with the storms presented in Table A3.1.</td></tr>
+<tr>
+<th style='border-top: 2px solid grey;'></th>
+<th colspan='1' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>Storm</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='1' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>Precip</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='3' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>SSY<sub>EV</sub> tons</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='2' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>% of SSY<sub>EV</sub>TOTAL</th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='2' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>PE<sup>a</sup></th><th style='border-top: 2px solid grey;; border-bottom: hidden;'>&nbsp;</th>
+<th colspan='1' style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>SSC</th>
+</tr>
+<tr>
+<th style='font-weight: 900; border-bottom: 1px solid grey; text-align: center;'>Storm#</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>Start</th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>mm</th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>UPPER<sup>b</sup.</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>LOWER<sup>c</sup.</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>TOTAL<sup>d</sup></th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>UPPER</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>LOWER</th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>UPPER</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>TOTAL</th>
+<th style='border-bottom: 1px solid grey;' colspan='1'>&nbsp;</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>Data Source</th>
+</tr>
+</thead>
+<tbody>
+<tr><td colspan='16' style='font-weight: 900; text-align: left;'></td></tr>
+<tr>
+<td style='text-align: center;'>2</td>
+<td style='text-align: center;'>01/19/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>18</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.06</td>
+<td style='text-align: center;'>0.65</td>
+<td style='text-align: center;'>0.71</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>7</td>
+<td style='text-align: center;'>92</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>36</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>int. grab</td>
+</tr>
+<tr>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>01/25/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>79</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.41</td>
+<td style='text-align: center;'>0.15</td>
+<td style='text-align: center;'>0.56</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>73</td>
+<td style='text-align: center;'>26</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>36</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>int. grab</td>
+</tr>
+<tr>
+<td style='text-align: center;'>4</td>
+<td style='text-align: center;'>01/31/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>35</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.03</td>
+<td style='text-align: center;'>2.1</td>
+<td style='text-align: center;'>2.13</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>1</td>
+<td style='text-align: center;'>98</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>5</td>
+<td style='text-align: center;'>02/01/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>11</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.01</td>
+<td style='text-align: center;'>0.44</td>
+<td style='text-align: center;'>0.46</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>2</td>
+<td style='text-align: center;'>97</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>6</td>
+<td style='text-align: center;'>02/02/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>16</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.05</td>
+<td style='text-align: center;'>1.12</td>
+<td style='text-align: center;'>1.18</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4</td>
+<td style='text-align: center;'>95</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>7</td>
+<td style='text-align: center;'>02/03/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>11</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.08</td>
+<td style='text-align: center;'>2.21</td>
+<td style='text-align: center;'>2.29</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>8</td>
+<td style='text-align: center;'>02/04/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>6</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.0</td>
+<td style='text-align: center;'>0.56</td>
+<td style='text-align: center;'>0.56</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0</td>
+<td style='text-align: center;'>99</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>9</td>
+<td style='text-align: center;'>02/05/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>23</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.05</td>
+<td style='text-align: center;'>1.08</td>
+<td style='text-align: center;'>1.13</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4</td>
+<td style='text-align: center;'>95</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>10</td>
+<td style='text-align: center;'>02/05/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>21</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.09</td>
+<td style='text-align: center;'>2.12</td>
+<td style='text-align: center;'>2.2</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>11</td>
+<td style='text-align: center;'>02/06/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.27</td>
+<td style='text-align: center;'>5.23</td>
+<td style='text-align: center;'>5.5</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4</td>
+<td style='text-align: center;'>95</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>12</td>
+<td style='text-align: center;'>02/07/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.01</td>
+<td style='text-align: center;'>0.15</td>
+<td style='text-align: center;'>0.16</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>8</td>
+<td style='text-align: center;'>91</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>13</td>
+<td style='text-align: center;'>02/07/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>10</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.03</td>
+<td style='text-align: center;'>0.56</td>
+<td style='text-align: center;'>0.59</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>5</td>
+<td style='text-align: center;'>94</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>14</td>
+<td style='text-align: center;'>02/13/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>11</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.0</td>
+<td style='text-align: center;'>0.29</td>
+<td style='text-align: center;'>0.3</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>1</td>
+<td style='text-align: center;'>98</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>16</td>
+<td style='text-align: center;'>03/05/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>22</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.0</td>
+<td style='text-align: center;'>4.8</td>
+<td style='text-align: center;'>4.8</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0</td>
+<td style='text-align: center;'>99</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>17</td>
+<td style='text-align: center;'>03/06/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>56</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.19</td>
+<td style='text-align: center;'>9.92</td>
+<td style='text-align: center;'>10.1</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>1</td>
+<td style='text-align: center;'>98</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>18</td>
+<td style='text-align: center;'>03/08/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>22</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.08</td>
+<td style='text-align: center;'>3.17</td>
+<td style='text-align: center;'>3.26</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>2</td>
+<td style='text-align: center;'>97</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>19</td>
+<td style='text-align: center;'>03/09/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>19</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.19</td>
+<td style='text-align: center;'>3.06</td>
+<td style='text-align: center;'>3.25</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>5</td>
+<td style='text-align: center;'>94</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>20</td>
+<td style='text-align: center;'>03/15/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>17</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.01</td>
+<td style='text-align: center;'>1.28</td>
+<td style='text-align: center;'>1.29</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0</td>
+<td style='text-align: center;'>99</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>21</td>
+<td style='text-align: center;'>03/16/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>34</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.07</td>
+<td style='text-align: center;'>2.33</td>
+<td style='text-align: center;'>2.4</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>22</td>
+<td style='text-align: center;'>03/17/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>32</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.09</td>
+<td style='text-align: center;'>3.66</td>
+<td style='text-align: center;'>3.74</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>2</td>
+<td style='text-align: center;'>97</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>23</td>
+<td style='text-align: center;'>03/20/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>24</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.03</td>
+<td style='text-align: center;'>0.93</td>
+<td style='text-align: center;'>0.96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>24</td>
+<td style='text-align: center;'>03/21/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>18</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.19</td>
+<td style='text-align: center;'>2.28</td>
+<td style='text-align: center;'>2.47</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>7</td>
+<td style='text-align: center;'>92</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>25</td>
+<td style='text-align: center;'>03/22/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>34</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.35</td>
+<td style='text-align: center;'>6.34</td>
+<td style='text-align: center;'>6.68</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>5</td>
+<td style='text-align: center;'>94</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>26</td>
+<td style='text-align: center;'>03/23/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>16</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.29</td>
+<td style='text-align: center;'>0.45</td>
+<td style='text-align: center;'>0.74</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>61</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>27</td>
+<td style='text-align: center;'>03/24/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>7</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.03</td>
+<td style='text-align: center;'>0.21</td>
+<td style='text-align: center;'>0.24</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>10</td>
+<td style='text-align: center;'>89</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>28</td>
+<td style='text-align: center;'>03/25/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>49</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.66</td>
+<td style='text-align: center;'>13.12</td>
+<td style='text-align: center;'>13.79</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4</td>
+<td style='text-align: center;'>95</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>29</td>
+<td style='text-align: center;'>03/31/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>15</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.03</td>
+<td style='text-align: center;'>0.85</td>
+<td style='text-align: center;'>0.88</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>32</td>
+<td style='text-align: center;'>05/07/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>11</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.0</td>
+<td style='text-align: center;'>1.43</td>
+<td style='text-align: center;'>1.43</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0</td>
+<td style='text-align: center;'>99</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>33</td>
+<td style='text-align: center;'>05/08/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>21</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.13</td>
+<td style='text-align: center;'>7.29</td>
+<td style='text-align: center;'>7.42</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>1</td>
+<td style='text-align: center;'>98</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>34</td>
+<td style='text-align: center;'>05/20/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>13</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.0</td>
+<td style='text-align: center;'>0.52</td>
+<td style='text-align: center;'>0.52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0</td>
+<td style='text-align: center;'>99</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>35</td>
+<td style='text-align: center;'>05/22/2012</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.5</td>
+<td style='text-align: center;'>9.22</td>
+<td style='text-align: center;'>9.72</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>5</td>
+<td style='text-align: center;'>94</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>50</td>
+<td style='text-align: center;'>100</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-YSI</td>
+</tr>
+<tr>
+<td style='text-align: center;'>57</td>
+<td style='text-align: center;'>03/06/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>22</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.07</td>
+<td style='text-align: center;'>0.97</td>
+<td style='text-align: center;'>1.04</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>6</td>
+<td style='text-align: center;'>93</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>28</td>
+<td style='text-align: center;'>36</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>int. grab</td>
+</tr>
+<tr>
+<td style='text-align: center;'>66</td>
+<td style='text-align: center;'>04/16/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>62</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.54</td>
+<td style='text-align: center;'>3.96</td>
+<td style='text-align: center;'>4.5</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>11</td>
+<td style='text-align: center;'>88</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>28</td>
+<td style='text-align: center;'>36</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>int. grab</td>
+</tr>
+<tr>
+<td style='text-align: center;'>72</td>
+<td style='text-align: center;'>04/23/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>86</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>9.63</td>
+<td style='text-align: center;'>17.04</td>
+<td style='text-align: center;'>26.67</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>36</td>
+<td style='text-align: center;'>63</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>28</td>
+<td style='text-align: center;'>36</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>int. grab</td>
+</tr>
+<tr>
+<td style='text-align: center;'>75</td>
+<td style='text-align: center;'>04/30/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>111</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.48</td>
+<td style='text-align: center;'>7.57</td>
+<td style='text-align: center;'>8.06</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>6</td>
+<td style='text-align: center;'>93</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>28</td>
+<td style='text-align: center;'>36</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>int. grab</td>
+</tr>
+<tr>
+<td style='text-align: center;'>78</td>
+<td style='text-align: center;'>06/05/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>177</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4.87</td>
+<td style='text-align: center;'>35.42</td>
+<td style='text-align: center;'>40.28</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='text-align: center;'>87</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>28</td>
+<td style='text-align: center;'>36</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>int. grab</td>
+</tr>
+<tr>
+<td style='text-align: center;'>80</td>
+<td style='text-align: center;'>06/16/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>30</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.15</td>
+<td style='text-align: center;'>0.49</td>
+<td style='text-align: center;'>0.65</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>23</td>
+<td style='text-align: center;'>76</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>47</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>81</td>
+<td style='text-align: center;'>06/24/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>9</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.01</td>
+<td style='text-align: center;'>0.12</td>
+<td style='text-align: center;'>0.13</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>7</td>
+<td style='text-align: center;'>92</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>47</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>82</td>
+<td style='text-align: center;'>06/25/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>16</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.01</td>
+<td style='text-align: center;'>0.32</td>
+<td style='text-align: center;'>0.33</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>4</td>
+<td style='text-align: center;'>95</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>47</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>83</td>
+<td style='text-align: center;'>07/02/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>13</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.02</td>
+<td style='text-align: center;'>0.25</td>
+<td style='text-align: center;'>0.27</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>5</td>
+<td style='text-align: center;'>94</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>47</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>84</td>
+<td style='text-align: center;'>07/13/2013</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>24</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.02</td>
+<td style='text-align: center;'>0.03</td>
+<td style='text-align: center;'>0.04</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>42</td>
+<td style='text-align: center;'>57</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>47</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>109</td>
+<td style='text-align: center;'>02/14/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>25</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.23</td>
+<td style='text-align: center;'>1.59</td>
+<td style='text-align: center;'>1.82</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='text-align: center;'>87</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>110</td>
+<td style='text-align: center;'>02/15/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>7</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.04</td>
+<td style='text-align: center;'>0.63</td>
+<td style='text-align: center;'>0.67</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>5</td>
+<td style='text-align: center;'>94</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>112</td>
+<td style='text-align: center;'>02/18/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.01</td>
+<td style='text-align: center;'>0.81</td>
+<td style='text-align: center;'>0.81</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0</td>
+<td style='text-align: center;'>99</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>113</td>
+<td style='text-align: center;'>02/20/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>29</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.12</td>
+<td style='text-align: center;'>3.72</td>
+<td style='text-align: center;'>3.84</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>3</td>
+<td style='text-align: center;'>96</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>114</td>
+<td style='text-align: center;'>02/21/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>51</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>1.85</td>
+<td style='text-align: center;'>7.73</td>
+<td style='text-align: center;'>9.58</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>19</td>
+<td style='text-align: center;'>80</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>115</td>
+<td style='text-align: center;'>02/24/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>16</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.08</td>
+<td style='text-align: center;'>0.57</td>
+<td style='text-align: center;'>0.65</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='text-align: center;'>87</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>116</td>
+<td style='text-align: center;'>02/24/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>1</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.01</td>
+<td style='text-align: center;'>0.12</td>
+<td style='text-align: center;'>0.13</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>8</td>
+<td style='text-align: center;'>91</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>117</td>
+<td style='text-align: center;'>02/25/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>67</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.54</td>
+<td style='text-align: center;'>7.26</td>
+<td style='text-align: center;'>7.79</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>6</td>
+<td style='text-align: center;'>93</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>118</td>
+<td style='text-align: center;'>02/27/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>16</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.12</td>
+<td style='text-align: center;'>0.68</td>
+<td style='text-align: center;'>0.8</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>14</td>
+<td style='text-align: center;'>85</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>119</td>
+<td style='text-align: center;'>02/27/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>12</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.11</td>
+<td style='text-align: center;'>1.25</td>
+<td style='text-align: center;'>1.37</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>8</td>
+<td style='text-align: center;'>91</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr>
+<td style='text-align: center;'>171</td>
+<td style='text-align: center;'>08/17/2014</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>13</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>0.02</td>
+<td style='text-align: center;'>0.04</td>
+<td style='text-align: center;'>0.06</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>30</td>
+<td style='text-align: center;'>69</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>38</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>T-OBS</td>
+</tr>
+<tr><td colspan='16' style='font-weight: 900; text-align: left; border-top: 1px solid #BEBEBE;'></td></tr>
+<tr>
+<td style='text-align: center;'>Total/Avg:</td>
+<td style='text-align: center;'>52</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>1544</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>22.9</td>
+<td style='text-align: center;'>178.1</td>
+<td style='text-align: center;'>201.0</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>11</td>
+<td style='text-align: center;'>89</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>44</td>
+<td style='text-align: center;'>76</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>-</td>
+</tr>
+<tr>
+<td style='text-align: center;'>Tons/km2</td>
+<td style='text-align: center;'>-</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>-</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>25.4</td>
+<td style='text-align: center;'>202.4</td>
+<td style='text-align: center;'>112.9</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>-</td>
+<td style='text-align: center;'>-</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>-</td>
+<td style='text-align: center;'>-</td>
+<td style='' colspan='1'>&nbsp;</td>
+<td style='text-align: center;'>-</td>
+</tr>
+<tr>
+<td style='border-bottom: 2px solid grey; text-align: center;'>DR</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>1</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>8.0</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>4.4</td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+<td style='border-bottom: 2px solid grey;' colspan='1'>&nbsp;</td>
+<td style='border-bottom: 2px solid grey; text-align: center;'>-</td>
+</tr>
+</tbody>
+<tfoot><tr><td colspan='16'>
+a. PE is cumulative probable error (Eq 6) as a percentage of the mean observed SSY.<br>     b. Measured SSYEV at FG1. <br>     c. SSY<sub>EV</sub> at FG3 &#45; SSY<sub>EV</sub> at FG1. <br>     d. SSY<sub>EV</sub> at FG3.</td></tr></tfoot>
+</table>

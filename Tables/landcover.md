@@ -22,8 +22,8 @@ Table 1. Land use categories in Faga'alu subwatersheds (NOAA Ocean Service and C
 <th style='border-bottom: 1px solid grey; text-align: center;'>   GA   </th>
 <th style='border-bottom: 1px solid grey; text-align: center;'>   F   </th>
 <th style='border-bottom: 1px solid grey; text-align: center;'>   S   </th>
-<th style='border-bottom: 1px solid grey; text-align: center;'>Disturbed=B+HI+DOS+GA</th>
-<th style='border-bottom: 1px solid grey; text-align: center;'>Undisturbed=F+S</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>Disturbed</th>
+<th style='border-bottom: 1px solid grey; text-align: center;'>Undisturbed</th>
 </tr>
 </thead>
 <tbody>
@@ -114,5 +114,5 @@ Table 1. Land use categories in Faga'alu subwatersheds (NOAA Ocean Service and C
 </tr>
 </tbody>
 <tfoot><tr><td colspan='15'>
-a. B=Bare, HI=High Intensity Developed, DOS=Developed Open Space, GA=Grassland (agriculture), F=Forest, S=Scrub/Shrub </td></tr></tfoot>
+a. B=Bare, HI=High Intensity Developed, DOS=Developed Open Space, GA=Grassland (agriculture), F=Forest, S=Scrub/Shrub, Disturbed=B+HI+DOS+GA,  Undisturbed=F+S</td></tr></tfoot>
 </table>
