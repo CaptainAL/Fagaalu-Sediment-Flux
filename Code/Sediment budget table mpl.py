@@ -165,3 +165,90 @@ def plotS_storm_table_summary(fs=16,show=False):
     show_plot(show)
     return
 #plotS_storm_table_summary(fs=22,show=True) 
+    
+    
+    
+def SSY_dist_table_quarry(subset='pre',manual_edit=True):
+    S_diff = compile_Storms_data(subset)
+    ## Calculate percent contributions from upper and lower watersheds
+    S_diff['TOTAL tons']=S_diff['Stotal'].round(2)
+    S_diff['UPPER tons']=S_diff['Supper'].round(2)
+    #S_diff['FOREST PE %'] = S_diff['Supper_PE'].apply(int)
+    S_diff['LOWER_QUARRY tons']=S_diff['Squarry'].round(2) - S_diff['UPPER tons']
+    S_diff['LOWER_VILLAGE tons']= S_diff['TOTAL tons'].round(2) - S_diff['UPPER tons'] - S_diff['LOWER_QUARRY tons'] 
+    #S_diff['TOTAL PE %'] = S_diff['Stotal_PE'].apply(int)
+    S_diff['% UPPER'] = S_diff['UPPER tons']/S_diff['TOTAL tons']*100
+    S_diff['% UPPER'] = S_diff['% UPPER'].dropna().apply(int)
+    S_diff['% LOWER_QUARRY'] = S_diff['LOWER_QUARRY tons']/S_diff['TOTAL tons']*100
+    S_diff['% LOWER_QUARRY'] = S_diff['% LOWER_QUARRY'].dropna().apply(int)    
+    S_diff['% LOWER_VILLAGE'] = S_diff['LOWER_VILLAGE tons']/S_diff['TOTAL tons']*100
+    S_diff['% LOWER_VILLAGE'] = S_diff['% LOWER_VILLAGE'].dropna().apply(int)
+    S_diff['Precip (mm)'] = S_diff['Pstorms'].dropna().apply(int)
+    S_diff = S_diff[S_diff['Precip (mm)']>0]
+    ## Filter negative values for S at LBJ    
+    S_diff = S_diff[S_diff['LOWER_VILLAGE tons']>0]
+    S_diff['Storm#']=range(1,len(S_diff)+1) 
+    S_diff['Storm Start'] = S_diff.index
+    S_diff['Storm Start'] =S_diff['Storm Start'].apply(lambda x: "{:%m/%d/%Y}".format(x))
+    ## Select storms with valid data
+    if manual_edit == True:
+        S_diff = S_diff[S_diff['Storm Start'].isin(['03/06/2013','04/16/2013','04/23/2013','04/30/2013','06/05/2013','02/14/2014','02/20/2014','02/21/2014'])==True]
+    ## Summary Stats    
+    Percent_Forest = S_diff['UPPER tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Quarry= S_diff['LOWER_QUARRY tons'].sum()/S_diff['TOTAL tons'].sum()*100
+    Percent_Village = S_diff['LOWER_VILLAGE tons'].sum()/S_diff['TOTAL tons'].sum()*100
+
+    ## add summary stats to bottom of table
+    # Total/Avg
+    SSY_UPPER, SSY_QUARRY, SSY_VILLAGE, SSY_TOTAL = S_diff['UPPER tons'].sum(), S_diff['LOWER_QUARRY tons'].sum(), S_diff['LOWER_VILLAGE tons'].sum(), S_diff['TOTAL tons'].sum()
+
+    # sSSY
+    sSSY_UPPER, sSSY_QUARRY, sSSY_VILLAGE, sSSY_TOTAL = SSY_UPPER/0.9, SSY_QUARRY/0.27, SSY_VILLAGE/0.61, SSY_TOTAL/1.78
+    
+    # sSSY:sSSY_UPPER
+    DR_sSSY_UPPER, DR_sSSY_QUARRY, DR_sSSY_VILLAGE, DR_sSSY_TOTAL = sSSY_UPPER/sSSY_UPPER,sSSY_QUARRY/sSSY_UPPER,sSSY_VILLAGE/sSSY_UPPER,sSSY_TOTAL/sSSY_UPPER
+    
+    # fraction Disturbed = % disturbed from % Disturbed in Land cover table
+    lc_table = LandCover_table()
+    frac_disturbed_UPPER, frac_disturbed_LOWER_QUARRY, frac_disturbed_LOWER_VILLAGE, frac_disturbed_TOTAL= lc_table.ix[0]['% Disturbed'], lc_table.ix[1]['% Disturbed'], lc_table.ix[2]['% Disturbed'],lc_table.ix[4]['% Disturbed']
+    
+    SSY_dist = pd.DataFrame({' ':'fraction disturbed (%)','UPPER':"%.1f"%frac_disturbed_UPPER,'LOWER_QUARRY':"%.1f"%frac_disturbed_LOWER_QUARRY,'LOWER_VILLAGE':"%.1f"%frac_disturbed_LOWER_VILLAGE,'TOTAL':"%.1f"%frac_disturbed_TOTAL}, index=['fraction disturbed (%)'])
+    
+    # SSY from forested areas of subwatersheds = SSY forest (tons) =  sSSY_UPPER x (1-disturbed_fraction) x subwatershed area
+    def SSY_from_forest(sSSY_UPPER,disturbed_fraction,subwatershed_area):
+        disturbed_fraction= disturbed_fraction/100
+        SSY_forest = sSSY_UPPER*(1-disturbed_fraction)*subwatershed_area
+        return SSY_forest
+    SSY_forest_UPPER,SSY_forest_QUARRY,SSY_forest_VILLAGE, SSY_forest_TOTAL = SSY_from_forest(sSSY_UPPER,frac_disturbed_UPPER,0.9), SSY_from_forest(sSSY_UPPER,frac_disturbed_LOWER_QUARRY,0.27), SSY_from_forest(sSSY_UPPER,frac_disturbed_LOWER_VILLAGE,0.61), SSY_from_forest(sSSY_UPPER,frac_disturbed_TOTAL,1.78)
+    
+    SSY_dist = SSY_dist.append(pd.DataFrame({' ':'SSY from forested areas (tons)','UPPER':"%.1f"%SSY_forest_UPPER,'LOWER_QUARRY':"%.1f"%SSY_forest_QUARRY,'LOWER_VILLAGE':"%.1f"%SSY_forest_VILLAGE,'TOTAL':"%.1f"%SSY_forest_TOTAL}, index=['SSY from forested areas (tons)']))
+    
+    # SSY from disturbed areas
+    SSY_disturbed_UPPER, SSY_disturbed_QUARRY,SSY_disturbed_VILLAGE,SSY_disturbed_TOTAL = SSY_UPPER-SSY_forest_UPPER, SSY_QUARRY-SSY_forest_QUARRY,SSY_VILLAGE-SSY_forest_VILLAGE, SSY_TOTAL-SSY_forest_TOTAL
+    
+    SSY_dist = SSY_dist.append(pd.DataFrame({' ':'SSY from disturbed areas (tons)','UPPER':"%.1f"%SSY_disturbed_UPPER,'LOWER_QUARRY':"%.2f"%SSY_disturbed_QUARRY,'LOWER_VILLAGE':"%.1f"%SSY_disturbed_VILLAGE,'TOTAL':"%.1f"%SSY_disturbed_TOTAL}, index=['SSY from disturbed areas (tons)']))
+      
+    # % from disturbed parts of watershed
+    SSY_percent_dist_UPPER, SSY_percent_dist_QUARRY, SSY_percent_dist_VILLAGE, SSY_percent_dist_TOTAL = SSY_disturbed_UPPER/SSY_UPPER*100, SSY_disturbed_QUARRY/SSY_QUARRY*100, SSY_disturbed_VILLAGE/SSY_VILLAGE*100, SSY_disturbed_TOTAL/SSY_TOTAL*100
+    
+    SSY_dist = SSY_dist.append(pd.DataFrame({' ':'% SSY from disturbed areas','UPPER':"%.1f"%SSY_percent_dist_UPPER,'LOWER_QUARRY':"%.0f"%SSY_percent_dist_QUARRY,'LOWER_VILLAGE':"%.0f"%SSY_percent_dist_VILLAGE,'TOTAL':"%.0f"%SSY_percent_dist_TOTAL}, index=['% SSY from disturbed areas']))  
+    
+    # sSSY from disturbed areas = SSY_disturbed/(fraction_disturbed x subwatershed area)
+    sSSY_disturbed_UPPER, sSSY_disturbed_QUARRY, sSSY_disturbed_VILLAGE, sSSY_disturbed_TOTAL = SSY_disturbed_UPPER/(frac_disturbed_UPPER/100*0.9), SSY_disturbed_QUARRY/(frac_disturbed_LOWER_QUARRY/100*0.27), SSY_disturbed_VILLAGE/(frac_disturbed_LOWER_VILLAGE/100*0.61), SSY_disturbed_TOTAL/(frac_disturbed_TOTAL/100*1.78)
+    
+    SSY_dist = SSY_dist.append(pd.DataFrame({' ':'sSSY from disturbed areas (tons/km2)','UPPER':"%.1f"%sSSY_disturbed_UPPER,'LOWER_QUARRY':"%.1f"%sSSY_disturbed_QUARRY,'LOWER_VILLAGE':"%.1f"%sSSY_disturbed_VILLAGE,'TOTAL':"%.1f"%sSSY_disturbed_TOTAL}, index=['sSSY from disturbed areas (tons/km2)']))        
+ 
+    # sSSY_DR
+    sSSY_DR_QUARRY, sSSY_DR_VILLAGE, sSSY_DR_TOTAL= sSSY_disturbed_QUARRY/sSSY_UPPER, sSSY_disturbed_VILLAGE/sSSY_UPPER, sSSY_disturbed_TOTAL/sSSY_UPPER
+    
+    SSY_dist = SSY_dist.append(pd.DataFrame({' ':'DR for sSSY from disturbed areas','UPPER':'','LOWER_QUARRY':"%.1f"%sSSY_DR_QUARRY,'LOWER_VILLAGE':"%.1f"%sSSY_DR_VILLAGE,'TOTAL':"%.1f"%sSSY_DR_TOTAL}, index=['DR for sSSY from disturbed areas']))     
+    
+    QUARRY_percent_of_TOTAL_SSY = SSY_disturbed_QUARRY/SSY_TOTAL * 100
+    VILLAGE_percent_of_TOTAL_SSY = SSY_disturbed_VILLAGE/SSY_TOTAL * 100
+    QUA_VIL_percent_of_TOTAL_SSY = (SSY_disturbed_QUARRY+SSY_disturbed_VILLAGE)/SSY_TOTAL * 100
+    
+    # Order columns    
+    SSY_dist = SSY_dist[[' ','UPPER','LOWER_QUARRY','LOWER_VILLAGE','TOTAL']]
+    return SSY_dist, "%.0f"%QUARRY_percent_of_TOTAL_SSY, "%.0f"%VILLAGE_percent_of_TOTAL_SSY, "%.0f"%QUA_VIL_percent_of_TOTAL_SSY
+#SSY_dist_table_quarry(manual_edit=False)
+SSY_dist_table_quarry(manual_edit=True)
