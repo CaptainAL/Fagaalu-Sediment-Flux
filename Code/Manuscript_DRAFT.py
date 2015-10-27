@@ -14,7 +14,6 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 document = Document(maindir+'Manuscript/JOH-template.docx')
 tables = Document()
 
-
 #### Formatting Styles
 ## Body Style
 document.styles['Normal'].font.name = 'Times'
@@ -129,53 +128,25 @@ def tab_count():
     table_count+=1
     return str(table_count)
 # Prepare LULC Data
-def LandCover_table():
-    landcoverXL = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx')
-    landcover_table = landcoverXL.parse('Fagaalu_Revised')
-    landcover_table = landcover_table[['Subwatershed (pourpoint)','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
-    # Format Table data                       
-    for column in landcover_table.columns:
-        try:
-            if column.startswith('%')==True or column.startswith('Cumulative %')==True:
-                landcover_table.loc[:,column] = landcover_table.loc[:,column]*100.
-                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(1)
-            else:
-                landcover_table.loc[:,column] = landcover_table.loc[:,column].round(2)
-        except:
-            pass
-    landcover_table = landcover_table[landcover_table['Subwatershed (pourpoint)'].isin(['UPPER (FG1)','LOWER_QUARRY (FG2)','LOWER_VILLAGE (FG3)','LOWER (FG3)','TOTAL (FG3)','Fagaalu Stream'])==True].reset_index()
-    landcover_table = landcover_table[['Subwatershed (pourpoint)','Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
-    return landcover_table
-LandCover_table()
-landcover_table = LandCover_table()
 landcover_table.table_num = str(tab_count())
 
 ### Storm Sediment Discharge Table
-## Prepare table data
-S_Diff_table = S_storm_diff_table() ## function to create table data
-S_Diff_table.table_num = str(tab_count())
+## SSYEV budget for storms with FG1 and FG3 data
+S_budget_table.table_num = str(tab_count())
+S_budget_analysis_table.table_num = str(tab_count())
 
-SSY_disturbed_table, LOWER_percent_of_TOTAL_SSY, TOTAL_percent_of_TOTAL_SSY= SSY_dist_table()
-SSY_disturbed_table.table_num = str(tab_count())
-
-S_Diff_table_quarry = S_storm_diff_table_quarry()
-S_Diff_table_quarry.table_num = str(tab_count())
-
-SSY_disturbed_table_quarry, QUARRY_percent_of_TOTAL_SSY, VILLAGE_percent_of_TOTAL_SSY, QUA_VIL_percent_of_TOTAL_SSY = SSY_dist_table_quarry()
-SSY_disturbed_table_quarry.table_num = str(tab_count())
+## SSYEV budget for storms with FG1, FG2, and FG3 data
+S_budget_2_table.table_num = str(tab_count())
+S_budget_2_analysis_table.table_num = str(tab_count())
 
 ### Model statistics table
-SSYEV_models_stats = ALLRatings_table()
-SSYEV_models_stats.table_num = str(tab_count())
+All_Models_stats_table.table_num = str(tab_count())
 
 ### Annual SSY
-Annual_SSY_tables.table_num = str(tab_count())
+est_Annual_SSY_table.table_num = str(tab_count())
 
-### Storm Q and SSY summary table
-Q_S_Diff_summary_table = Q_S_storm_diff_summary_table()
-Q_S_Diff_summary_table.table_num = str(tab_count())
-
-
+### SSY literature comparision
+lit_values_for_Annual_ssy_table_num = str(tab_count())
 
 #### FIGURES ########################################################################################################################################################
 figure_count=0
@@ -202,30 +173,32 @@ plotQratingDAM(ms=8,show=False,log=False,save=True,filename=DAM_StageDischarge['
 
 ####  T-SSC Rating Curves
 T_SSC_Rating_Curves = {'filename':figdir+'T/T-SSC rating curves','fig_num':str(fig_count())}
-plot_all_T_SSC(Use_All_SSC=False,storm_samples_only=True,show=False,save=True,filename=T_SSC_Rating_Curves['filename'])
+plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=True,show=False,save=True,filename=T_SSC_Rating_Curves['filename'])
 
 ## RESULTS
 ## Discharge time series
 Q_timeseries =  {'filename':figdir+"Q/Q time series 2012-2014",'fig_num':str(fig_count())}
-QYears(log=True,show=False,save=True,filename=Q_timeseries['filename'])
+plot_Q_by_year(log=False,show=False,save=True,filename=Q_timeseries['filename'])
 
 #### Storms
 Example_Storm = {'filename':figdir+'storm_figures/Example_Storm','fig_num':str(fig_count())}
-plot_storm_individually(LBJ_storm_threshold,LBJ_StormIntervals.loc[63],show=False,save=True,filename=Example_Storm['filename']) 
+plot_storm_individually(LBJ_StormIntervals.loc[63],show=False,save=True,filename=Example_Storm['filename']) 
 
 ####  SSC
 ## SSC Boxplots
 SSC_Boxplots= {'filename':figdir+'SSC/Grab sample boxplots baseflow and stormflow','fig_num':str(fig_count())}
+## returns f,p and t-test statistics
+f1,p1,QUARRY_DAM_ttest1,QUARRY_LBJ_ttest1,H1,KWp1,QUARRY_DAM_mannwhit1,QUARRY_LBJ_mannwhit1, f2,p2,QUARRY_DAM_ttest2,QUARRY_LBJ_ttest2,H2, KWp2,QUARRY_DAM_mannwhit2,QUARRY_LBJ_mannwhit2 = SSC_box_plots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=False,save=True,filename=SSC_Boxplots['filename']) 
 
-f1,p1,QUARRY_DAM_ttest1,QUARRY_LBJ_ttest1,H1,KWp1,QUARRY_DAM_mannwhit1,QUARRY_LBJ_mannwhit1, f2,p2,QUARRY_DAM_ttest2,QUARRY_LBJ_ttest2,H2, KWp2,QUARRY_DAM_mannwhit2,QUARRY_LBJ_mannwhit2 = plotSSCboxplots(subset=['Pre-baseflow','Pre-storm'],withR2=False,log=True,show=False,save=True,filename=SSC_Boxplots['filename']) ## returns f,p and t-test statistics
+
 
 ## Discharge vs Sediment Concentration
 Discharge_Concentration = {'filename':figdir+'SSC/Water discharge vs Sediment concentration','fig_num':str(fig_count())}
-plotQvsC(subset='pre',storm_samples_only=False,ms=5,show=False,log=False,save=True,filename=Discharge_Concentration['filename'])
+plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=True,save=True,filename=Discharge_Concentration['filename'])
 
 #### SSY models
 SSY_models_ALL = {'filename':figdir+'SSY/SSY Models ALL pre-mitigation','fig_num':str(fig_count())}
-ALLStorms_ALLRatings = plotALLStorms_ALLRatings(subset='pre',ms=4,norm=True,log=True,show=False,save=True,filename=SSY_models_ALL['filename'])
+All_Storms_All_Models = plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=True,show=True,save=True,filename=SSY_models_ALL['filename'])
 
 ###### EQUATIONS ############################################################################################################################################
 equation_count=0
@@ -235,6 +208,7 @@ def eq_count():
     return str(equation_count)
     
 Equations = Document(maindir+'/Manuscript/Equations.docx').tables
+
 ## SSYev = Q*SSC 
 SSYEV_eq = Equations[0].table
 SSYEV_eq.eq_num = eq_count()
@@ -250,9 +224,11 @@ DR_eq.eq_num = eq_count()
 ## predict_SSYev = aXb
 predict_SSYEV_eq = Equations[3].table
 predict_SSYEV_eq.eq_num = eq_count()
+
 ## SSYannual
 SSY_annual_eq = Equations[4].table
 SSY_annual_eq.eq_num = eq_count()
+
 ## PE = sqrt(sum(Error^2+Error^2))
 PE_eq = Equations[5].table
 PE_eq.eq_num = eq_count()
@@ -261,8 +237,7 @@ PE_eq.eq_num = eq_count()
 #### Appendix
 table_count,figure_count,equation_count=0, 0, 0
 ### Storm Water Discharge Table
-Q_Diff_table = Q_storm_diff_table() ## function to create table data
-Q_Diff_table.table_num =str(tab_count())
+Q_budget.table_num =str(tab_count())
 
 ## Cross-Sections
 #LBJ
@@ -328,7 +303,7 @@ document.add_paragraph("")
 #### ABSTRACT
 abstract_title = document.add_heading('ABSTRACT',level=2)
 abstract_title.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
-abstract = document.add_paragraph("Anthropogenic watershed disturbance by deforestation, mining, agriculture, and urbanization often increases fluvial sediment yields, enhancing sediment stress on aquatic ecosystems near the outlets of impacted watersheds. Suspended sediment yields (SSY) from undisturbed and human-disturbed portions of a small (1.8 km2), steep, tropical watershed that drains to a sediment-stressed coral reef were measured during baseflow and storm events. Event-wise SSY (SSYEV) for 64 storms was calculated from data on precipitation (P), water discharge (Q), turbidity (T), and suspended sediment concentration (SSC), collected downstream of key sediment sources. The contribution of human-disturbed areas to SSYEV was quantified using a sediment budget and the Disturbance Ratio. SSC and SSYEV were significantly higher downstream of the quarry during base- and stormflows. The human-disturbed subwatershed accounted for 86% of SSYEV on average, and has caused a 3.6x increase over natural sediment loading. Specific SSY (tons/area) from the quarry was over 120x higher than natural forest, and the quarry, which covers 5% of the watershed area, contributed nearly 51% of total SSYEV. Similar to mountainous watersheds in semi-arid and temperate watersheds, SSYEV from both the undisturbed and disturbed watersheds had the highest correlation with event maximum discharge (Qmax, Pearson's R=0.89 for both watersheds) compared with event total precipitation, event total Q, and an erosivity index. Annual sediment yield estimates varied from 29-70 tons/yr (33-80 tons/km2/yr) from the undisturbed subwatershed, and 341-450 tons/yr (191-220 tons/km2 /yr) from the human-disturbed subwatershed, depending on the estimation method. Only 10% of the watershed is disturbed by humans but sediment yield has been increased significantly (3.6x). Identification of hotspots like the quarry will help sediment mitigation and coral restoration efforts.")
+abstract = document.add_paragraph("Anthropogenic watershed disturbance by deforestation, mining, agriculture, and urbanization often increases fluvial sediment yields, enhancing sediment stress on aquatic ecosystems near the outlets of impacted watersheds. Suspended sediment yields (SSY) from undisturbed and human-disturbed portions of a small (1.8 km2), steep, tropical watershed that drains to a sediment-stressed coral reef were measured during baseflow and storm events. Event-wise SSY (SSYEV) for "+str(len(Storms_DAM['Ssum'].dropna()))+" storms was calculated from data on precipitation (P), water discharge (Q), turbidity (T), and suspended sediment concentration (SSC), collected downstream of key sediment sources. The contribution of human-disturbed areas to SSYEV was quantified using a sediment budget and the Disturbance Ratio. SSC and SSYEV were significantly higher downstream of the quarry during storm- and non-storm periods. The human-disturbed subwatershed accounted for "+S_budget.loc['Total/Avg','% LOWER']+"% of SSYEV on average, and has caused a "+S_budget.loc['DR','TOTAL tons']+"x increase over natural sediment loading from Faga'alu watershed. Specific SSY (tons/area) from the quarry was "+S_budget_2_analysis.loc['DR for sSSY from disturbed areas','LOWER_QUARRY']+"x higher than natural forest, and the quarry, which covers 5% of the watershed area, contributed nearly "+S_budget_2.loc['Total/Avg','% LOWER_QUARRY']+"% of total SSYEV. Similar to mountainous watersheds in semi-arid and temperate watersheds, SSYEV from both the undisturbed and disturbed watersheds had the highest correlation with event maximum discharge (Qmax, Pearson's R=0.89 for both watersheds) compared with event total precipitation, event total Q, and an erosivity index. Annual sediment yield estimates varied from 29-70 tons/yr (33-80 tons/km2/yr) from the undisturbed subwatershed, and 341-450 tons/yr (191-220 tons/km2 /yr) from the human-disturbed subwatershed, depending on the estimation method. Only 10% of the watershed is disturbed by humans but sediment yield has been increased significantly (3.6x). Identification of hotspots like the quarry will help sediment mitigation and coral restoration efforts.")
 
 #### KEYWORDS
 document.add_heading('Keywords:',level=2)
@@ -607,7 +582,6 @@ QUARRY_DAM_mannwhit1_p, QUARRY_DAM_mannwhit2_p = "%.3f"%(QUARRY_DAM_mannwhit1[1]
 QUARRY_LBJ_mannwhit1_p, QUARRY_LBJ_mannwhit2_p = "%.3f"%(QUARRY_LBJ_mannwhit1[1]*2), "%.3f"%(QUARRY_LBJ_mannwhit2[1]*2)
 
 
-
 document.add_paragraph("Mean (Muu) and maximum SSC of water samples, collected during low flow and stormflow by grab and autosampler, were lowest at FG1 (Muu="+Mean_SSC_FG1+" mg/L, max="+Max_SSC_FG1+" mg/L), highest at FG2 (Muu="+Mean_SSC_FG2+" mg/L, max="+Max_SSC_FG2+"), and in between at FG3 (Muu="+Mean_SSC_FG3+" mg/L, max="+Max_SSC_FG3+" mg/L). At FG1, "+Percent_baseflow_FG1+"% of grab samples (n="+No_baseflow_samples('DAM')+") were collected during baseflow conditions (Q_FG1<"+"%.0f"%DAM_Stormflow_conditions+" L/sec), mean SSC: "+Mean_baseflow_SSC('DAM')+" mg/L (Figure 8a); "+Percent_stormflow_FG1+"% of grab samples (n="+No_storm_samples('DAM')+") were collected during stormflow conditions, mean SSC: "+Mean_stormflow_SSC('DAM')+" mg/L (Figure 8b). At FG2, "+Percent_baseflow_FG2+"% of grab samples (n="+No_baseflow_samples('DT')+") were collected during baseflow conditions (Q_FG1<"+"%.0f"%DAM_Stormflow_conditions+" L/sec), mean SSC: "+Mean_baseflow_SSC('DT')+" mg/L; "+Percent_stormflow_FG2+"% of grab samples (n="+No_storm_samples('DT')+") were collected during stormflow conditions, mean SSC: "+Mean_stormflow_SSC('DT')+" mg/L. At FG3, "+Percent_baseflow_FG3 +"% of samples (n="+No_baseflow_samples('LBJ')+") were collected during baseflow conditions (Q_FG3<"+"%.0f"%LBJ_Stormflow_conditions+" L/sec), mean SSC: "+Mean_baseflow_SSC('LBJ')+" mg/L; "+Percent_stormflow_FG3+"% of samples (n="+No_storm_samples('LBJ')+") were collected during stormflow conditions, mean SSC: "+Mean_stormflow_SSC('LBJ')+" mg/L. This pattern of SSC values suggests that little sediment is contributed from the forest upstream of FG1, then there is a large input of sediment between FG1 and FG2, and then SSC is diluted by addition of stormflow with lower SSC between FG2 and FG3.")
 
 ## SSC boxplots
@@ -644,49 +618,22 @@ document.add_paragraph("Given the close proximity of the quarry to the stream, S
 #### Comparing SSY from disturbed and undisturbed subwatersheds
 document.add_heading('Comparing SSYEV from disturbed and undisturbed subwatersheds',level=3)
 
-## Storm Sediment Table
-if 'S_Diff_table' in locals():
-    dataframe_to_table(df=S_Diff_table,table_num=S_Diff_table.table_num,caption="Sediment yield from UPPER and LOWER  subwatersheds in Faga'alu.",fontsize=9)
-document.add_paragraph('')
+## Storm Sediment Budget Table
 
-Percent_Upper_S_2 = S_Diff_table['% UPPER']['Total/Avg:']
-Percent_Lower_S = S_Diff_table['% LOWER']['Total/Avg:']
-S_Diff_table_percents = S_Diff_table[S_Diff_table['% UPPER']!='-']
-Percent_Upper_S_min, Percent_Upper_S_max =  "%0.1f"%S_Diff_table_percents['% UPPER'].astype(float).min(), "%.0f"%S_Diff_table_percents['% UPPER'].astype(float).max()
-Percent_Lower_S_min, Percent_Lower_S_max =  "%.0f"%S_Diff_table_percents['% LOWER'].astype(float).min(), "%.0f"%S_Diff_table_percents['% LOWER'].astype(float).max()
-
-Area_UPPER, Area_LOWER = landcover_table.ix[0]['Area km2'], landcover_table.ix[3]['Area km2']
-SSY_UPPER_2, sSSY_UPPER_2 = S_Diff_table['UPPER tons']['Total/Avg:'], S_Diff_table['UPPER tons']['Tons/km2'] 
-SSY_LOWER_2, sSSY_LOWER_2 = S_Diff_table['LOWER tons']['Total/Avg:'], S_Diff_table['LOWER tons']['Tons/km2']
-SSY_TOTAL_2, sSSY_TOTAL_2 = S_Diff_table['TOTAL tons']['Total/Avg:'], S_Diff_table['TOTAL tons']['Tons/km2']
-disturbed_area_LOWER = Area_LOWER * float(SSY_disturbed_table['LOWER']['fraction disturbed (%)'])/100
 
 document.add_paragraph("For the events with Q and SSC for both FG1 and FG3 (Table "+SSY_disturbed_table.table_num+"), SSYTOTAL was "+SSY_TOTAL_2+" tons ("+sSSY_TOTAL_2+" tons/km2), with "+SSY_UPPER_2+" tons ("+sSSY_UPPER_2+" tons/km2) from the UPPER subwatershed and "+SSY_LOWER_2+" tons ("+sSSY_LOWER_2+" tons/km2) from the LOWER subwatershed. The UPPER and LOWER subwatersheds are similar in size ("+"%0.2f"%Area_UPPER+" km2 and "+"%0.2f"%Area_LOWER+" km2) but SSYUPPER accounted for an average of just "+Percent_Upper_S_2+"% and SSYLOWER for "+Percent_Lower_S+"% of SSY at the watershed outlet (Table "+S_Diff_table.table_num+"). The DR estimated from sSSYUPPER and sSSYLOWER suggests sSSY has been increased by "+S_Diff_table['LOWER tons']['DR']+"x in the LOWER subwatershed, and "+S_Diff_table['TOTAL tons']['DR']+"x for the TOTAL watershed.")
 
 document.add_paragraph("Using the measured sSSY from the forested UPPER watershed (="+sSSY_UPPER_2+" tons/km2), SSY from the undisturbed forest areas in the LOWER watershed was "+SSY_disturbed_table['LOWER']['SSY from forested areas (tons)']+" tons, and SSY from the disturbed areas was "+SSY_disturbed_table['LOWER']['SSY from disturbed areas (tons)']+" tons. For the measured storms (Table "+SSY_disturbed_table.table_num+"), roughly "+SSY_disturbed_table['LOWER']['% SSY from disturbed areas']+"% of SSY from the LOWER subwatershed was from disturbed areas, despite the disturbed areas only accounting for "+SSY_disturbed_table['LOWER']['fraction disturbed (%)']+"% of the LOWER subwatershed area ("+"%0.3f"%disturbed_area_LOWER+" km2). Similarly, despite only "+SSY_disturbed_table['TOTAL']['fraction disturbed (%)']+"% of the TOTAL watershed being disturbed, SSY from disturbed areas accounted for "+SSY_disturbed_table['TOTAL']['% SSY from disturbed areas']+"% of the SSY from the TOTAL watershed. Estimated sSSY from disturbed areas in the LOWER subwatershed was "+"{:,g}".format(float(SSY_disturbed_table['LOWER']['sSSY from disturbed areas (tons/km2)']))+" tons/km2, suggesting human disturbance has increased sSSY by "+SSY_disturbed_table['LOWER']['DR for sSSY from disturbed areas']+"x over undisturbed, forest conditions.")
 
-if 'SSY_disturbed_table' in locals():
-    dataframe_to_table(df=SSY_disturbed_table,table_num=SSY_disturbed_table.table_num,caption="Sediment yield from disturbed portions of UPPER and LOWER subwatersheds in Faga'alu.",fontsize=9)
 
 ## Comparing QUARRY and VILLAGE separately
-Percent_UPPER_S_3 = S_Diff_table_quarry['% UPPER']['Total/Avg:']
-Percent_QUARRY_S = S_Diff_table_quarry['% LOWER_QUARRY']['Total/Avg:']
-Percent_VILLAGE_S = S_Diff_table_quarry['% LOWER_VILLAGE']['Total/Avg:']
-
-SSY_UPPER_3, sSSY_UPPER_3 = S_Diff_table_quarry['UPPER tons']['Total/Avg:'], S_Diff_table_quarry['UPPER tons']['Tons/km2'] 
-SSY_LOWER_QUARRY, sSSY_LOWER_QUARRY = S_Diff_table_quarry['LOWER_QUARRY tons']['Total/Avg:'], S_Diff_table_quarry['LOWER_QUARRY tons']['Tons/km2']
-SSY_LOWER_VILLAGE, sSSY_LOWER_VILLAGE = S_Diff_table_quarry['LOWER_VILLAGE tons']['Total/Avg:'], S_Diff_table_quarry['LOWER_VILLAGE tons']['Tons/km2']
-SSY_TOTAL_3, sSSY_TOTAL_3 = S_Diff_table_quarry['TOTAL tons']['Total/Avg:'], S_Diff_table_quarry['TOTAL tons']['Tons/km2']
 
 
-Area_UPPER, Area_LOWER_QUARRY, Area_LOWER_VILLAGE = landcover_table.ix[0]['Area km2'], landcover_table.ix[1]['Area km2'], landcover_table.ix[2]['Area km2']
-disturbed_area_LOWER_QUARRY = Area_LOWER_QUARRY * float(SSY_disturbed_table_quarry['LOWER_QUARRY']['fraction disturbed (%)'])/100
-disturbed_area_LOWER_VILLAGE = Area_LOWER_VILLAGE * float(SSY_disturbed_table_quarry['LOWER_VILLAGE']['fraction disturbed (%)'])/100
+
 
 document.add_paragraph("SSYEV data measured at FG2 was available for "+No_of_Storm_Intervals_QUA_S+" of the storms, so SSYEV from the LOWER subwatershed including the quarry (SSYLOWER_QUARRY) and the village areas below the quarry (SSYLOWER_VILLAGE) could be calculated (Table "+S_Diff_table_quarry.table_num+").")
 
-if 'S_Diff_table_quarry' in locals():
-    dataframe_to_table(df=S_Diff_table_quarry,table_num=S_Diff_table_quarry.table_num,caption="Sediment yield from UPPER, LOWER_QUARRY and LOWER_VILLAGE subwatersheds in Faga'alu.",fontsize=9)
+
 #document.add_paragraph("Storm on 2/3/12 has a potential outlier at DT at beginning of storm, which makes the SSYquarry huge! Storm at 2/5/12 doesn't have adequate SSC samples for quarry and its a multipeaked event so the SSY doesn't fall back to low levels like the LBJ and DAM T data suggest it should. Storm 3/6/13 looks like may have missed the second peak but the data looks comparable between sites. Storm 4/16/13 doesn't have alot of points but maybe they're adequate? Storm 4/23/13 looks good. Storm 4/30/13 has inadequate SSC data for all locations after the first peak; can maybe change the storm interval? Storm 6/5/13 has inadequate SSC data for all locations for the first peak, decent data for LBJ and DT for second peak but not for DAM; can maybe change the storm interval? Storm 2/14/14 looks good. Storm 2/20/14 looks good. Storm 2/21/14 looks good. Storm 2/27/14 looks kinda shitty. So good storms are: 3/6/13, 4/16/13? 4/23/13, 4/30/13?, 6/5/13?, 2/14/14, 2/20/14, 2/21/14") 
 
 document.add_paragraph("SSY for the "+No_of_Storm_Intervals_QUA_S+" storms at FG3 was "+SSY_TOTAL_3+" tons wtih an average of "+Percent_UPPER_S_3+"% from the UPPER subwatershed, "+Percent_QUARRY_S+"% from LOWER_QUARRY subwatershed, and "+Percent_VILLAGE_S+"% from the LOWER_VILLAGE subwatershed (Table "+S_Diff_table_quarry.table_num+"). sSSY from the UPPER, LOWER_QUARRY, and LOWER_VILLAGE subwatersheds, and the TOTAL watershed was "+sSSY_UPPER_3+", "+sSSY_LOWER_QUARRY+", "+sSSY_LOWER_VILLAGE+", and "+sSSY_TOTAL_3+" tons/km2, respectively. sSSY from LOWER_QUARRY and LOWER_VILLAGE was "+S_Diff_table_quarry['LOWER_QUARRY tons']['DR']+" and "+S_Diff_table_quarry['LOWER_VILLAGE tons']['DR']+" times higher, respectively, than sSSY from UPPER subwatershed, suggesting human disturbance has significantly increased SSY over natural levels, particularly at the quarry. sSSY from the TOTAL watershed was "+S_Diff_table_quarry['TOTAL tons']['DR']+" times higher than the UPPER subwatershed, similar to the larger range of storms in Table "+S_Diff_table.table_num+", where sSSY was "+S_Diff_table['TOTAL tons']['DR']+" times higher than forested conditions.")
@@ -726,63 +673,6 @@ document.add_paragraph("ANCOVA was used to compare regression coefficients (Beta
 
 ## Annual SSY estimates
 document.add_heading("Annual estimates of SSY and sSSY",level=3)
-
-def times(x,factor,round_to):
-    return int(int(round(int(factor*float(x))/float(round_to)))* float(round_to))
-
-## From Table 2
-P_measured_2 = S_Diff_table['Precip (mm)']['Total/Avg:']
-P_measured_2_perc_storm = (float(P_measured_2)/float(P_2014_storm))*100
-
-annual_SSY_UPPER_2 = "%.0f"%times(SSY_UPPER_2,2,10)#+"-"+"%.0f"%times(SSY_UPPER_2,3,10),
-annual_sSSY_UPPER_2 =  "%.0f"%times(sSSY_UPPER_2,2,10)#+"-"+"%.0f"%times(sSSY_UPPER_2,3,10)
-annual_SSY_LOWER_2 = "%.0f"%times(SSY_LOWER_2,3,10)#+"-"+"%.0f"%times(SSY_LOWER_2,3,10)
-annual_sSSY_LOWER_2 =  "%.0f"%times(sSSY_LOWER_2,2,10)#+"-"+"%.0f"%times(sSSY_LOWER_2,3,10)
-annual_SSY_TOTAL_2 = "%.0f"%times(SSY_TOTAL_2,3,10)#+"-"+"%.0f"%times(SSY_TOTAL_2,3,10)
-annual_sSSY_TOTAL_2 = "%.0f"%times(sSSY_TOTAL_2,2,10)#+"-"+"%.0f"%times(sSSY_TOTAL_2,3,10)
-
-## From Table 3
-P_measured_3 = S_Diff_table_quarry['Precip (mm)']['Total/Avg:']
-P_measured_3_perc_storm =  (float(P_measured_3)/float(P_2014_storm))*100
-
-annual_SSY_UPPER_3 = "%.0f"%times(SSY_UPPER_3,4,10)#+"-"+"%.0f"%times(SSY_UPPER_3,5,10),
-annual_sSSY_UPPER_3 = "%.0f"%times(sSSY_UPPER_3,4,10)#+"-"+"%.0f"%times(sSSY_UPPER_3,5,10)
-annual_SSY_LOWER_3 = "%.0f"%times(float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE),4,10)
-#+"-"+"%.0f"%times(float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE),5,10),
-annual_sSSY_LOWER_3 =  "%.0f"%times((float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE))/0.88,4,10)
-#+"-"+"%.0f"%times((float(SSY_LOWER_QUARRY)+float(SSY_LOWER_VILLAGE))/0.88,5,10)
-annual_SSY_LOWER_QUARRY_3 = "%.0f"%times(SSY_LOWER_QUARRY,4,10)#+"-"+"%.0f"%times(SSY_LOWER_QUARRY,5,10),
-annual_sSSY_LOWER_QUARRY_3 =  "%.0f"%times(sSSY_LOWER_QUARRY,4,10)#+"-"+"%.0f"%times(sSSY_LOWER_QUARRY,5,10)
-annual_SSY_LOWER_VILLAGE_3 = "%.0f"%times(SSY_LOWER_VILLAGE,4,10)#+"-"+"%.0f"%times(SSY_LOWER_VILLAGE,5,10),
-annual_sSSY_LOWER_VILLAGE_3 =  "%.0f"%times(sSSY_LOWER_VILLAGE,4,10)#+"-"+"%.0f"%times(sSSY_LOWER_VILLAGE,5,10)
-annual_SSY_TOTAL_3 = "%.0f"%times(SSY_TOTAL_3,4,10)#+"-"+"%.0f"%times(SSY_TOTAL_3,5,10),
-annual_sSSY_TOTAL_3 = "%.0f"%times(sSSY_TOTAL_3,4,10)#+"-"+"%.0f"%times(sSSY_TOTAL_3,5,10)
-LOWER_QUARRY_disturbed_fraction = SSY_disturbed_table_quarry['LOWER_QUARRY']['fraction disturbed (%)']
-sSSY_disturbed_LOWER_QUARRY_3 = "{:,}".format(float(SSY_disturbed_table_quarry['LOWER_QUARRY']['sSSY from disturbed areas (tons/km2)']))
-annual_sSSY_disturbed_LOWER_QUARRY_3 = "{:,g}".format(times(SSY_disturbed_table_quarry['LOWER_QUARRY']['sSSY from disturbed areas (tons/km2)'],4,100))#+"-"+"{:,g}".format(times(S_Diff_table_quarry['LOWER_QUARRY tons']['sSSY from disturbed areas (tons/km2)'],5,100))
-
-## For all storms
-P_FG1_all_storms = SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Psum'].sum()
-P_FG1_percent_storm = P_FG1_all_storms/float(P_2014_storm) * 100
-annual_SSY_UPPER_ALL = SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG1_percent_storm/100) * SedFluxStorms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum())
-annual_sSSY_UPPER_ALL = annual_SSY_UPPER_ALL/0.90
-
-P_FG3_all_storms = SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Psum'].sum()
-P_FG3_percent_storm = P_FG3_all_storms/float(P_2014_storm) * 100
-annual_SSY_TOTAL_ALL = SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG3_percent_storm/100) * SedFluxStorms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum())
-annual_sSSY_TOTAL_ALL = annual_SSY_TOTAL_ALL/1.78
-
-## From Qmax relationship
-no_storms_2014 = LBJ_StormIntervals[LBJ_StormIntervals['start']>dt.datetime(2014,1,1)]
-lbjstorms = SedFluxStorms_LBJ[['Ssum','Psum']].dropna()
-lbjstorms2014 = lbjstorms[lbjstorms.index>dt.datetime(2014,1,1)]
-damstorms = SedFluxStorms_DAM[['Ssum','Psum']].dropna()
-damstorms2014 = damstorms[damstorms.index>dt.datetime(2014,1,1)]
-SSY_Qmax_TOTAL = Annual_SSY_tables()[0].ix['TOTAL']['SSY Qmax (2014)']
-sSSY_Qmax_TOTAL = Annual_SSY_tables()[1].ix['TOTAL']['sSSY Qmax (2014)']
-SSY_Qmax_UPPER = Annual_SSY_tables()[0].ix['UPPER']['SSY Qmax (2014)']
-sSSY_Qmax_UPPER = Annual_SSY_tables()[1].ix['UPPER']['sSSY Qmax (2014)']
-
 
 if 'Annual_SSY_tables' in locals():
     dataframe_to_table(df=Annual_SSY_tables()[0],table_num=Annual_SSY_tables.table_num,caption="Annual SSY estimates")
