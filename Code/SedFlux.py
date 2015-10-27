@@ -3428,14 +3428,15 @@ def plot_storm_individually(storm,show=False,save=True,filename=''):
     savefig(save,filename)
     return
 # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
-#plot_storm_individually(All_Storms.loc[63],show=True,save=False,filename='') 
-    
-plt.ioff()
-for index, storm in All_Storms.iterrows():
-    file_name = figdir+'storm_figures/Storm '+str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
-    plot_storm_individually(storm,show=False,save=True,filename=file_name)
-    plt.close('all')
-plt.ion()
+#plot_storm_individually(All_Storms.loc[121],show=True,save=False,filename='') 
+
+## Plot and save all storms
+#plt.ioff()
+#for index, storm in All_Storms.iterrows():
+#    file_name = figdir+'storm_figures/Storm '+str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
+#    plot_storm_individually(storm,show=False,save=True,filename=file_name)
+#    plt.close('all')
+#plt.ion()
     
 #### Event Sediment Flux
 ### Summarize Time Series data into storm event data
@@ -4428,27 +4429,18 @@ def Qmax_predicted_LBJ_vs_measured_LBJ():
     ax.set_xlim(0,14000), ax.set_ylim(0,14000)
     ax.legend()
 
-    return 
-Qmax_predicted_LBJ_vs_measured_LBJ()
+    return Storms_LBJ_filled
+Storms_LBJ_Qmax_filled = Qmax_predicted_LBJ_vs_measured_LBJ()
 
 ## Combined storms with measured and predicted Qmax (from Qmax DAM) 
-Storms_LBJ_filled_Qmax['LBJ_Q_combined'] =  Storms_LBJ_filled_Qmax['LBJ_Q'].where(Storms_LBJ_filled_Qmax['LBJ_Q']>0, Storms_LBJ_filled_Qmax['LBJ_Q_filled'])
+Storms_LBJ_Qmax_filled['LBJ_Q_combined'] =  Storms_LBJ_Qmax_filled['LBJ_Q'].where(Storms_LBJ_Qmax_filled['LBJ_Q']>0, Storms_LBJ_Qmax_filled['LBJ_Q_filled'])
 
-SSY_Total_Qmax_filled_2014, sSSY_Total_Qmax_filled_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ_filled_Qmax['LBJ_Q_combined']/1000, start2014, dt.datetime(2014,12,31),1.78)
-
+SSY_Total_Qmax_filled_2014, sSSY_Total_Qmax_filled_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ_Qmax_filled['LBJ_Q_combined']/1000, start2014, dt.datetime(2014,12,31),1.78)
 
 ## From Qmax relationship
 no_storms_2014 = All_Storms[All_Storms['start']>dt.datetime(2014,1,1)]
 lbjstorms2014 = Storms_LBJ[Storms_LBJ.index > dt.datetime(2014,1,1)][['Ssum','Psum']].dropna()
 damstorms2014 = Storms_DAM[Storms_DAM.index > dt.datetime(2014,1,1)][['Ssum','Psum']].dropna()
-
-
-
-
-#SSY_Qmax_TOTAL = Annual_SSY_tables()[0].ix['TOTAL']['SSY Qmax (2014)']
-#sSSY_Qmax_TOTAL = Annual_SSY_tables()[1].ix['TOTAL']['sSSY Qmax (2014)']
-#SSY_Qmax_UPPER = Annual_SSY_tables()[0].ix['UPPER']['SSY Qmax (2014)']
-#sSSY_Qmax_UPPER = Annual_SSY_tables()[1].ix['UPPER']['sSSY Qmax (2014)']
 
 
 ## Storm precipitation for only annual period with continuous P and Q
@@ -4470,7 +4462,7 @@ disturbed_area_LOWER = S_budget_analysis['LOWER']['Fraction of subwatershed area
 # Max/Min for UPPER and LOWER
 S_budget_percents = S_budget[S_budget['% UPPER']!='-']
 Percent_Upper_S_min, Percent_Upper_S_max =  "%0.1f"%S_budget_percents['% UPPER'].astype(float).min(), "%.0f"%S_budget_percents['% UPPER'].astype(float).max()
-Percent_Lower_S_min, Percent_Lower_S_max =  "%.0f"%S_budget_table_percents['% LOWER'].astype(float).min(), "%.0f"%S_budget_table_percents['% LOWER'].astype(float).max()
+Percent_Lower_S_min, Percent_Lower_S_max =  "%.0f"%S_budget_percents['% LOWER'].astype(float).min(), "%.0f"%S_budget_percents['% LOWER'].astype(float).max()
 # Average for UPPER and LOWER
 Percent_Upper_S_2 = S_budget['% UPPER']['Total/Avg']
 Percent_Lower_S_2 = S_budget['% LOWER']['Total/Avg']
@@ -4655,6 +4647,11 @@ def est_Annual_SSY_table(subset='pre',browser=False):
     return est_Annual
     
 est_Annual = est_Annual_SSY_table(subset='pre', browser=True)
+
+#SSY_Qmax_TOTAL = est_Annual()[0].ix['TOTAL']['Qmax model, Events in 2014']
+#sSSY_Qmax_TOTAL = est_Annual()[1].ix['TOTAL.']['Qmax model, Events in 2014']
+#SSY_Qmax_UPPER = est_Annual()[0].ix['UPPER']['Qmax model, Events in 2014']
+#sSSY_Qmax_UPPER = est_Annual()[1].ix['UPPER.']['Qmax model, Events in 2014']
 
 
 plt.show()
