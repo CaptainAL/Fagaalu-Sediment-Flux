@@ -1546,8 +1546,8 @@ def loadSSC(SSCXL,sheet='ALL_MASTER',round_to_5=False,round_to_15=False):
     return SSC
 
 ## ALL SSC samples
-SSC= loadSSC(pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx'),'ALL_MASTER',round_to_15=True)
-SSC = SSC[SSC['SSC (mg/L)']>0] ## Filter out any negative values
+SSC= loadSSC(pd.ExcelFile(datadir+'SSC/SSC_grab_samples.xlsx'),'ALL_MASTER',round_to_15=False)
+SSC['SSC (mg/L)'] = SSC['SSC (mg/L)'].where(SSC['SSC (mg/L)']>0, 0) ## Filter out any negative values
 
 ## Precip Data over previous 24 hours for SSC samples
 precip_24hr = pd.DataFrame()
@@ -1561,26 +1561,37 @@ for ssc in SSC.iterrows():
 SSC['24hr_precip']=precip_24hr['24hr_precip']
 
 ## ALL SSC stormflow samples
-SSC_all_storm_samples = pd.DataFrame()
+SSC_all_storm = pd.DataFrame()
 for storm_index,storm in All_Storms.iterrows():
     #print storm[1]['start']
     start, end =storm['start'], storm['end']
-    SSC_during_storm = SSC[start:end]
-    SSC_all_storm_samples = SSC_all_storm_samples.append(SSC_during_storm)
+    SSC_during_storm = SSC[(SSC.index > start) & (SSC.index < end)]
+    SSC_all_storm = SSC_all_storm.append(SSC_during_storm)
+    
 ## ALL SSC baseflow samples
-SSC_all_baseflow_samples = SSC.drop(SSC_all_storm_samples.index) 
+SSC_all_baseflow = SSC.drop(SSC_all_storm.index) 
 
 ##ALL SSC samples pre-mitigation
-SSC_pre_mitigation = SSC[SSC.index<Mitigation]
-SSC_pre_mitigation_storm_samples = SSC_all_storm_samples[SSC_all_storm_samples.index<Mitigation]
-SSC_pre_mitigation_baseflow_samples = SSC_all_baseflow_samples[SSC_all_baseflow_samples.index<Mitigation]
+SSC_pre_mitigation_all = SSC[SSC.index < Mitigation]
+SSC_pre_mitigation_storm = SSC_all_storm[SSC_all_storm.index < Mitigation]
+SSC_pre_mitigation_baseflow = SSC_all_baseflow[SSC_all_baseflow.index < Mitigation]
+
 ##ALL SSC samples post-mitigation
-SSC_post_mitigation = SSC[SSC.index>Mitigation]
-SSC_post_mitigation_storm_samples = SSC_all_storm_samples[SSC_all_storm_samples.index>Mitigation]
-SSC_post_mitigation_baseflow_samples = SSC_all_baseflow_samples[SSC_all_baseflow_samples.index>Mitigation]
+SSC_post_mitigation_all = SSC[SSC.index > Mitigation]
+SSC_post_mitigation_storm = SSC_all_storm[SSC_all_storm.index > Mitigation]
+SSC_post_mitigation_baseflow = SSC_all_baseflow[SSC_all_baseflow.index > Mitigation]
 
 ## Put SSC subsets in a dictionary
-SSC_dict={'ALL':SSC,'ALL-storm':SSC_all_storm_samples,'Pre-ALL':SSC_pre_mitigation,'Pre-storm':SSC_pre_mitigation_storm_samples,'Pre-baseflow':SSC_pre_mitigation_baseflow_samples,'Post-ALL':SSC_post_mitigation,'Post-storm':SSC_post_mitigation_storm_samples,'Post-baseflow':SSC_post_mitigation_baseflow_samples }
+SSC_dict={'ALL':SSC, 
+'ALL-storm':SSC_all_storm,
+'ALL-baseflow':SSC_all_baseflow,
+'Pre-ALL':SSC_pre_mitigation,
+'Pre-storm':SSC_pre_mitigation_storm_samples,
+'Pre-baseflow':SSC_pre_mitigation_baseflow_samples,
+'Post-ALL':SSC_post_mitigation,
+'Post-storm':SSC_post_mitigation_storm_samples,
+'Post-baseflow':SSC_post_mitigation_baseflow_samples }
+
 #SSC_raw_time = loadSSC(SSCXL,'ALL_MASTER')
 #SSC_raw_time[SSC_raw_time['Location'].isin(['LBJ'])]['SSC (mg/L)'].plot(ls='None',marker='.',c='g')
 
@@ -2020,6 +2031,7 @@ def TS3000(XL,sheet='DAM-TS3K'):
 def YSI(XL,resample_interval,sheet='LBJ-YSI'):
     print 'loading : '+sheet+'...'
     YSI = XL.parse(sheet,header=4,parse_cols='A:H',parse_dates=[['Date','Time']],index_col=['Date_Time'])
+    ## take off the 'seconds' so they're on 5Min interval
     YSI=YSI.resample(resample_interval,closed='right')
     YSI['NTU raw']=YSI['NTU']
     return YSI
@@ -2056,23 +2068,33 @@ def correct_Turbidity(Turbidity_Correction_XL,location,Tdata):
         Correction = Correction.append(pd.DataFrame({'NTU':ntu},index=pd.date_range(t1,t2,freq='5Min')))
     Correction = Correction.reindex(pd.date_range(start2012,stop2014,freq='5Min'))
     Tdata['Manual_Correction'] = Correction['NTU']
-    Tdata['NTU_corrected_Manual'] = Tdata['NTU raw']+Tdata['Manual_Correction']
+    Tdata['NTU_corrected_Manual'] = Tdata['NTU raw'] + Tdata['Manual_Correction']
     Tdata['NTU']=Tdata['NTU_corrected_Manual'].where(Tdata['NTU_corrected_Manual']>=0,Tdata['NTU raw'])#.round(0)
     return Tdata
     
 Turbidity_Correction_XL = pd.ExcelFile(datadir+'T/TurbidityCorrection.xlsx')    
   
 ## Turbidimeter Data DAM
+## TS3000
 DAM_TS3K = TS3000(XL,'DAM-TS3K')
+## filter negative values
 DAM_TS3K = DAM_TS3K[DAM_TS3K>=0]
+
+## YSI at DAM
 DAM_YSI = YSI(XL,'5Min','DAM-YSI')
-DAM_YSI = DAM_YSI.resample('15Min',closed='right').shift(1)
+#DAM_YSI = DAM_YSI.resample('15Min',closed='right').shift(1)
+## Just take readings at '15Min' intervals
+DAM_YSI_15min = DAM_YSI[2:].asfreq('15Min')
+
+
+## round data
 for column in ['Temp','NTU raw','NTU']:
     DAM_YSI[column] = DAM_YSI[column].round(0)
 for column in ['SpCond','Battery']:
     DAM_YSI[column] = DAM_YSI[column].round(1)
 for column in ['TDS','Sal']:
     DAM_YSI[column] = DAM_YSI[column].round(3)
+    
 ## Correct negative NTU values
 DAM_YSI = correct_Turbidity(Turbidity_Correction_XL,'DAM-YSI',DAM_YSI)
 
@@ -2103,8 +2125,8 @@ def plot_YSI(df,SSC_at_location,end_time,show=True):
 #plot_YSI(DAM_YSI,SSC[SSC['Location']=='DAM'],dt.datetime(2015,1,10),show=True)
 
 ## Turbidimeter Data QUARRY
-QUARRYxl = pd.ExcelFile(datadir+'T/QUARRY-OBS.xlsx')
-QUARRY_OBS = QUARRYxl.parse('QUARRY-OBS',header=4,parse_cols='A:L',parse_dates=True,index_col=0)
+ 
+QUARRY_OBS = pd.ExcelFile(datadir+'T/QUARRY-OBS.xlsx').parse('QUARRY-OBS',header=4,parse_cols='A:L',parse_dates=True,index_col=0)
 QUARRY_OBS = OBS(XL,'QUARRY-OBS')
 QUARRY_OBS['NTU']=QUARRY_OBS['Turb_SS_Mean'].round(0)
 ## Filter out values that are over 4,000 (assumed to be errors)
@@ -2151,9 +2173,12 @@ LBJ_YSI.ix[dt.datetime(2012,4,1):dt.datetime(2012,5,7)] = np.nan ## clean data
 ## LBJ OBS
 # OBS with only Avg BS and SS at 15Min 
 LBJ_OBSa = OBS(XL,'LBJ-OBSa')
-LBJ_OBSa =pd.concat([LBJ_OBSa[dt.datetime(2013,3,11):dt.datetime(2013,4,1)],LBJ_OBSa[dt.datetime(2013,5,5):dt.datetime(2013,6,4)],LBJ_OBSa[dt.datetime(2013,6,7):]]) ## remove junk data
+## remove junk data
+LBJ_OBSa =pd.concat([LBJ_OBSa[dt.datetime(2013,3,11):dt.datetime(2013,4,1)],LBJ_OBSa[dt.datetime(2013,5,5):dt.datetime(2013,6,4)],LBJ_OBSa[dt.datetime(2013,6,7):]]) 
+## round to zero
 for column in LBJ_OBSa.columns:
     LBJ_OBSa[column] = LBJ_OBSa[column].round(0)
+    
 # OBS with BS and SS 100 times at 15Min
 LBJ_OBSb = OBS(XL,'LBJ-OBSb')
 LBJ_OBSb = pd.concat([LBJ_OBSb[:dt.datetime(2014,11,3,0)],LBJ_OBSb[dt.datetime(2014,11,5):]])
@@ -2317,8 +2342,7 @@ def T_SSC_ALL_LAB(show=False):
     plt.xlabel('Measured Turbidity (NTU)'), plt.ylabel('SSC mg/L')
     plt.xlim(-10,2000), plt.ylim(-10,2000)
     plt.legend(loc='best')
-    if show == True:
-        plt.show()
+    show_plot(show,fig)
     return
 #T_SSC_ALL(show=True)
 
@@ -2572,11 +2596,11 @@ def plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=False,log=False,
     
     ## LBJ and DAM YSI
     ## LBJ
-    lbj=T_SSC_rating(SSC,LBJ_YSI['NTU'],location='LBJ',T_interval='5Min',Intercept=False,log=False)
+    lbj=T_SSC_rating(SSC,LBJ_YSI['NTU'],location='LBJ',T_interval='15Min',Intercept=False,log=False)
     ysi.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',markersize=4,c='k',label='FG3')
     ysi.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='YSI_FG3 '+r'$r^2$'+"%.2f"%lbj[0].r2)
     ## DAM
-    dam=T_SSC_rating(SSC,DAM_YSI['NTU'],location='DAM',T_interval='15Min',Intercept=False,log=False)
+    dam=T_SSC_rating(SSC,DAM_YSI['NTU'],location='DAM',T_interval='5Min',Intercept=False,log=False)
     ysi.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='o',markersize=4,c='grey',label='FG1')
     ysi.plot(xy,xy*dam[0].beta[0],ls='--',c='grey',label='YSI_FG1 '+r'$r^2$'+"%.2f"%dam[0].r2)
     ysi.set_xlabel('Turb. (NTU)')
@@ -2616,7 +2640,7 @@ def plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=False,log=False,
     savefig(save,filename)
     return
 #plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=True,log=True,show=True,save=False,filename='',sub_plot_count=0)
-#plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=True,log=False,show=True,save=False,filename='',sub_plot_count=0)
+plot_all_T_SSC_ratings(Use_All_SSC=True,storm_samples_only=False,log=False,show=True,save=False,filename='',sub_plot_count=0)
 
 
 ### Choose OBS parameters based on above relationships (which is the best one?)
@@ -2657,13 +2681,7 @@ DAM_TS3K['T-SSC-RMSE'] = DAM_TS3K_rating_rmse
 print "%.1f"%DAM_TS3K_rating.rmse, "%.1f"%DAM_TS3K_rating_rmse 
 print calc_RMSE(T_SSC_DAM_TS3K)
 
-## DAM YSI
-T_SSC_DAM_YSI = T_SSC_rating(SSC_dict['Pre-storm'],DAM_YSI['NTU'],location='DAM',T_interval='15Min',log=False) ## Won't work until there are some overlapping grab samples
-DAM_YSI_rating= T_SSC_DAM_YSI[0]
-DAM_YSI_rating_rmse= T_SSC_DAM_YSI[2]
-DAM_YSI['T-SSC-RMSE']= DAM_YSI_rating_rmse
-print "%.1f"%DAM_YSI_rating.rmse, "%.1f"%DAM_YSI_rating_rmse
-print calc_RMSE(T_SSC_DAM_YSI)
+
 
 ## QUARRY
 T_SSC_QUARRY_OBS = T_SSC_rating(SSC_dict['ALL'],QUARRY_OBS['NTU'],location='R2',T_interval='15Min',log=False)
@@ -2704,6 +2722,16 @@ LBJ_OBS_rating_rmse = T_SSC_LBJ_OBS[2]
 LBJ_OBS['T-SSC-RMSE'] = LBJ_OBS_rating_rmse 
 print "%.1f"%LBJ_OBS_rating.rmse, "%.1f"%LBJ_OBS_rating_rmse 
 print calc_RMSE(T_SSC_LBJ_OBS)
+
+
+## DAM YSI
+T_SSC_DAM_YSI = T_SSC_rating(SSC_dict['Pre-storm'],DAM_YSI['NTU'],location='DAM',T_interval='15Min',log=False) ## Won't work until there are some overlapping grab samples
+T_SSC_DAM_YSI = T_SSC_LBJ_YSI 
+DAM_YSI_rating= T_SSC_DAM_YSI[0]
+DAM_YSI_rating_rmse= T_SSC_DAM_YSI[2]
+DAM_YSI['T-SSC-RMSE']= DAM_YSI_rating_rmse
+print "%.1f"%DAM_YSI_rating.rmse, "%.1f"%DAM_YSI_rating_rmse
+print calc_RMSE(T_SSC_DAM_YSI)
 
 ## Overall RMSE for LBJ-YSI rating and all DAM and LBJ samples
 ## make DataFrame of all measured NTU and SSC at LBJ and DAM
@@ -2942,7 +2970,7 @@ def Runoff_Coeff_by_Year(StormsLBJ,StormsDAM,show=False):
     stormsLBJ=StormsLBJ[['PsumVol','Qsum']]/1000
     stormsLBJ['Pmax']=StormsLBJ[['Pmax']]
     
-    site_lbj.scatter(stormsLBJ['PsumVol'][stormsLBJ.index<stop2012],stormsLBJ['Qsum'][stormsLBJ.index<stop2012], 
+    site_lbj.scatter(stormsLBJ['PsumVol'][stormsLBJ.index < stop2012],stormsLBJ['Qsum'][stormsLBJ.index<stop2012], 
                      edgecolors='g',marker='o',facecolors='none',s=scaleSeries(stormsLBJ['Pmax'][stormsLBJ.index<stop2012].dropna().values),label='2012')
                      
     site_lbj.scatter(stormsLBJ['PsumVol'][(stormsLBJ.index>start2013) & (stormsLBJ.index<stop2013)],stormsLBJ['Qsum'][(stormsLBJ.index>start2013) & (stormsLBJ.index<stop2013)],
@@ -3292,7 +3320,7 @@ def plot_storm_data(storm_data,storm_intervals=All_Storms,show=False):
         showstormintervals(ax,storm_intervals)
     show_plot(show)
     return
-#plot_storm_data(storm_data,All_Storms,show=True)
+plot_storm_data(storm_data,All_Storms,show=True)
 
 
 def plot_storm_individually(storm,show=False,save=True,filename=''):
@@ -4178,7 +4206,7 @@ def ANCOVA(ALLStorms, ind_var, pvalue=0.05):
 
 
 #### Sediment Rating Curves: on area-normalized SSY, Q and Qmax
-def plot_All_Storms_All_Models(subset='pre', ms=10, norm=False, log=False, show=False, save=False, filename=''):  
+def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=False, save=False, filename=''):  
     
     ## Normalize by area??
     if norm==True:
@@ -4187,6 +4215,7 @@ def plot_All_Storms_All_Models(subset='pre', ms=10, norm=False, log=False, show=
     else:
         ALLStorms = compile_storms_data(subset)
         ylabel,xlabelP,xlabelEI,xlabelQsum,xlabelQmax = 'SSY (Mg)','Precip (mm)','Erosivity Index',r'$(m^3)$',r'$(m^3/sec)$'
+        
     xy=None ## let the Fit functions plot their own lines
     
     ## ANCOVA's: Slope and Intercept significantly different between UPPER and TOTAL?
@@ -4201,6 +4230,7 @@ def plot_All_Storms_All_Models(subset='pre', ms=10, norm=False, log=False, show=
     fig, ((ps,ei),(qsums,qmaxs)) = plt.subplots(2,2,figsize=(8,6),sharex=False,sharey=True)
     
     ## P vs S at Upper, Total
+    xy = np.linspace(10**0, 10**3)
     #ALLStorms_upper = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','Supper']].dropna()
     #ALLStorms_total = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','Stotal']].dropna() 
     ALLStorms_upper = ALLStorms[['Pstorms','Supper']].dropna()
@@ -4209,16 +4239,17 @@ def plot_All_Storms_All_Models(subset='pre', ms=10, norm=False, log=False, show=
     ps.plot(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)
     PS_upper_power = powerfunction(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], xy,ps,linestyle='-',color='grey', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
+    PowerFit(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], xy, ps, linestyle='-',color='grey', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
     ## Total Watershed (=LBJ)
     PS_total_power = powerfunction(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'])
     PowerFit(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], xy,ps,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2+' '+PS_ANCOVA) 
     ## Format P vs S plot
     ps.set_xlabel('Total Event Precip (mm)'),ps.set_ylabel(ylabel)
-    ps.set_xlim(10**0,10**3),ps.set_ylim(10**-3.1,10**2.2)
+    ps.set_xlim(10**0,10**3),ps.set_ylim(10**-4,10**2.2)
     ps.legend(loc='lower right',fancybox=True) 
     
     ## EI vs S at Upper, Total  
+    xy = np.linspace(10**0, 10**3)
     ALLStorms_upper = ALLStorms[['EI','Supper']].dropna()
     ALLStorms_total = ALLStorms[['EI','Stotal']].dropna() 
     ei.plot(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
@@ -4231,10 +4262,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=10, norm=False, log=False, show=
     PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'], xy,ei,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2+' '+EI_ANCOVA) 
     ## format EI vs S plot
     ei.set_xlabel('Event Erosivity Index (MJmm ha-1 h-1)')#ei.set_ylabel(ylabel)
-    ei.set_xlim(10**1,10**3)#,ps.set_ylim(10**-3,10**2.2)
-    ei.legend(loc='lower left',fancybox=True) 
+    ei.set_xlim(10**0,10**3),ps.set_ylim(10**-4,10**2.2)
+    ei.legend(loc='upper left',fancybox=True) 
     
     ## Qsum vs S at Upper, Total 
+    xy = np.linspace(10**2, 10**6)
     ALLStorms_upper = ALLStorms[['Qsumupper','Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qsumtotal','Stotal']].dropna() 
     qsums.plot(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
@@ -4248,10 +4280,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=10, norm=False, log=False, show=
     ## Format Qsum vs S plot
     qsums.set_xlabel('Total Event Discharge '+xlabelQsum)
     qsums.set_ylabel(ylabel)#qsums.set_xlabel(xlabelQsum)
-    qsums.set_xlim(10**2.5,10**6)#, qsums.set_ylim(10**-3.1,10**2.2)
+    qsums.set_xlim(10**2.5,10**6), qsums.set_ylim(10**-4,10**2.2)
     qsums.legend(loc='lower right',fancybox=True) 
     
-    ## Qmax vs S at Upper, Total  
+    ## Qmax vs S at Upper, Total 
+    xy = np.linspace(10**-2, 10**1)
     ALLStorms_upper = ALLStorms[['Qmaxupper', 'Supper']].dropna()
     ALLStorms_total = ALLStorms[['Qmaxtotal', 'Stotal']].dropna() 
     qmaxs.plot(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
@@ -4265,7 +4298,7 @@ def plot_All_Storms_All_Models(subset='pre', ms=10, norm=False, log=False, show=
     ## Format Qmax vs S plot
     qmaxs.set_xlabel('Maximum Event Discharge '+xlabelQmax)
     #qmaxs.set_ylabel(ylabel)#qmaxs.set_xlabel(xlabelQmax)
-    qmaxs.set_xlim(10**-1.2,10**1)#, qmaxs.set_ylim(10**-3,10**2.2)
+    qmaxs.set_xlim(10**-1.5,10**1), qmaxs.set_ylim(10**-3.5,10**2.2)
     qmaxs.legend(loc='lower right',fancybox=True) 
     
     ## Click labels
@@ -4294,7 +4327,7 @@ PS_upper_power,PS_total_power,EI_upper_power,EI_total_power, \
 
 def All_Models_stats_table(subset='pre', browser=True):
     ## Get Models and ANCOVAS separately
-    models = plot_All_Storms_All_Models(subset,norm=True,log=True,show=False,filename='')[0]
+    models = plot_All_Storms_All_Models(subset,ms=4,norm=True,log=True,show=False,filename='')[0]
     ANCOVAs = models[1]
     
     ## Get model parameters
@@ -4337,7 +4370,7 @@ def All_Models_stats_table(subset='pre', browser=True):
         print (ro.r("table_out"))
     ## save to html from R
     ro.r("setwd("+"'"+tabledir+"'"+")")
-    filename = 'Storm_metric_models '+subset+'.html'
+    filename = 'All_Models_stats_'+subset+'.html'
     ro.r("sink("+"'"+filename+"'"+")")
     ro.r("print(table_out,type='html',useViewer=FALSE)")
     ro.r("sink()")
