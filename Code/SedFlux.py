@@ -1453,8 +1453,9 @@ def Separate_Storms_by_Baseflow(Q_data):
         hours = seconds / 3600
         eventduration = round(hours,2)
         ## Filter out short storms and storms with low Qmax
-        if event['qft'].count() >= minimum_length and event['qft'].max()>=100:
-            eventlist.append([start,end,eventduration])
+        if event['qft'].count() >= minimum_length:
+            if event['qft'].max()>=100:
+                eventlist.append([start,end,eventduration])
         
     StormEvents=pd.DataFrame(eventlist,columns=['start','end','duration (hrs)'])
     #drop_rows = Events[Events['duration (min)'] <= timedelta(minutes=120)] ## Filters events that are too short
@@ -2198,14 +2199,21 @@ LBJ_YSI.ix[dt.datetime(2012,4,1):dt.datetime(2012,5,7)] = np.nan ## clean data
 # OBS with only Avg BS and SS at 15Min 
 LBJ_OBSa = OBS(XL,'LBJ-OBSa')
 ## remove junk data
-LBJ_OBSa =pd.concat([LBJ_OBSa[dt.datetime(2013,3,11):dt.datetime(2013,4,1)],LBJ_OBSa[dt.datetime(2013,5,5):dt.datetime(2013,6,4)],LBJ_OBSa[dt.datetime(2013,6,7):]]) 
+# storm at 3/26/13 looks suspect, T should be higher than SSC
+LBJ_OBSa =pd.concat([LBJ_OBSa[dt.datetime(2013,3,11):dt.datetime(2013,4,1)], 
+                     LBJ_OBSa[dt.datetime(2013,5,5):dt.datetime(2013,5,31)], 
+                     LBJ_OBSa[dt.datetime(2013,6,24):dt.datetime(2013,7,11)]]) 
 ## round to zero
 for column in LBJ_OBSa.columns:
     LBJ_OBSa[column] = LBJ_OBSa[column].round(0)
     
 # OBS with BS and SS 100 times at 15Min
 LBJ_OBSb = OBS(XL,'LBJ-OBSb')
-LBJ_OBSb = pd.concat([LBJ_OBSb[:dt.datetime(2014,11,3,0)],LBJ_OBSb[dt.datetime(2014,11,5):]])
+LBJ_OBSb = pd.concat([LBJ_OBSb[:dt.datetime(2013,2,16,0)],
+                      LBJ_OBSb[dt.datetime(2013,2,17,0):dt.datetime(2014,7,8,0)],
+                      LBJ_OBSb[dt.datetime(2014,7,28,0):dt.datetime(2014,7,30,13,0)],
+                      LBJ_OBSb[dt.datetime(2014,9,15,0):dt.datetime(2014,11,3,0)],
+                      LBJ_OBSb[dt.datetime(2014,11,5):]])
 for column in LBJ_OBSb.columns: ##remove junk data
     #print column
     LBJ_OBSb[column] = LBJ_OBSb[column][LBJ_OBSb[column]<=4000]  
@@ -3365,7 +3373,6 @@ def plot_storm_data(storm_data,storm_intervals=All_Storms,show=False):
     storm_data['LBJ-Grab-SSC-mg/L'].plot(ax=SSC,color='r',marker='o',ls='None',markersize=6,label='VILLAGE')
     storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='y',marker='o',ls='None',markersize=6,label='QUARRY')
     storm_data['QUARRY-GrabR2-SSC-mg/L'].plot(ax=SSC,color='y',marker='s',ls='None',markersize=6,label='QUARRY')
-    QUARRY_grab_and_R2['SSC (mg/L)'].plot(ax=SSC, color='k',marker = '.',ls='None',markersize=6,label='QUARRY')
     storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='g',marker='o',ls='None',markersize=6,label='FOREST')
     
     ## Turbidity
@@ -3514,8 +3521,8 @@ def plot_storm_individually(storm_data,show=False,save=True,filename=''):
 # for individual storm pd.DataFrame(Intervals.loc[index#]).T 
 #plot_storm_individually(All_Storms.loc[121],show=True,save=False,filename='') 
 
-
-# Plot and save all storms
+#
+## Plot and save all storms
 plt.ioff()
 for index, storm in All_Storms.iterrows():
     print str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
@@ -3524,8 +3531,53 @@ for index, storm in All_Storms.iterrows():
     plot_storm_individually(storm_data[start:end],show=False,save=True,filename=file_name)
     plt.close('all')
 plt.ion()
-#    
+##    
+
+def plot_storm_hysteresis(storm_name, storm_data):
+    def drawArrow(A, B):
+        plt.arrow(A[0], A[1], B[0] - A[0], B[1] - A[1], head_width=3, length_includes_head=True)
     
+    if len(storm_data['LBJ-Grab-SSC-mg/L'].dropna()) >= 3 or len(storm_data['QUARRY-Grab-SSC-mg/L'].dropna()) >= 3 or len(storm_data['DAM-Grab-SSC-mg/L'].dropna()) >= 3:
+        fig, (ax1, ax2) = plt.subplots(2, figsize = (4,6))
+
+        ## HYSTERESIS PLOT
+        ## LBJ
+        LBJ_storm_data = storm_data[['LBJ-Q', 'LBJ-Grab-SSC-mg/L']].dropna()        
+        ax1.plot(LBJ_storm_data['LBJ-Q'],LBJ_storm_data['LBJ-Grab-SSC-mg/L'],marker='o',fillstyle='none',ls='-',c='k')
+        ## QUARRY
+        QUARRY_storm_data = storm_data[['QUARRY-Q', 'QUARRY-Grab-SSC-mg/L']].dropna()
+        ax1.plot(QUARRY_storm_data['QUARRY-Q'],QUARRY_storm_data['QUARRY-Grab-SSC-mg/L'],marker='s',fillstyle='none',ls='-',c='grey')     
+        ## DAM 
+        DAM_storm_data = storm_data[['DAM-Q', 'DAM-Grab-SSC-mg/L']].dropna()
+        ax1.plot(DAM_storm_data['DAM-Q'],DAM_storm_data['DAM-Grab-SSC-mg/L'],marker='v',fillstyle='none',ls='-',c='grey')
+        ax1.set_xlabel('Q L/sec'), ax1.set_ylabel('SSC mg/L')
+        
+        ## TIME SERIES PLOT
+        ax_SSC = ax2.twinx()
+        ## LBJ
+        ax2.plot(storm_data['LBJ-Q'],c='k',ls='-',marker=None,label='LBJ Q')
+        ax_SSC.plot(storm_data['LBJ-Grab-SSC-mg/L'],marker='o',ls='none',c='k',label='LBJ SSC')
+        ## QUARRY
+        ax2.plot(storm_data['QUARRY-Q'],c='grey',ls='--',marker=None,label='QUARRY Q')
+        ax_SSC.plot(storm_data['QUARRY-Grab-SSC-mg/L'],marker='s',ls='none',c='grey',label='QUARRY SSC')
+        ## DAM
+        ax2.plot(storm_data['DAM-Q'],c='grey',ls='-',marker=None,label='DAM Q')
+        ax_SSC.plot(storm_data['DAM-Grab-SSC-mg/L'],marker='v',ls='none',c='grey',label='DAM SSC')
+        ax2.set_ylabel('Q L/sec'), ax_SSC.set_ylabel('SSC mg/L')
+        
+        plt.suptitle('Storm '+storm_name)
+        #plt.tight_layout(pad=0.1)
+    return
+
+#for index, storm in All_Storms.iterrows():
+#    storm_name = str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
+#    print storm_name
+#    #file_name = figdir+'storm_figures/Storm '+str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
+#    start, end = storm['start']-dt.timedelta(minutes=30), storm['end']+dt.timedelta(minutes=30)
+#    plot_storm_hysteresis(storm_name, storm_data[start:end])#,show=False,save=True,filename=file_name)
+#    #plt.close('all')    
+
+
     
 #### Event Sediment Flux
 ### Summarize Time Series data into storm event data
