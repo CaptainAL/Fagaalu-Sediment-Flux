@@ -184,7 +184,8 @@ def power(x,a,b):
     return y
     
 def powerfunction(x,y,name='power rating',pvalue=0.01):
-    datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna().apply(np.log10) ## put x and y in a dataframe so you can drop ones that don't match up    
+    ## put x and y in a dataframe so you can drop ones that don't match up  
+    datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna().apply(np.log10)   
     datadf = datadf[datadf>=-10] ##verify data is valid (not inf)
     regression = pd.ols(y=datadf['y'],x=datadf['x'])
     if pearson_r(datadf['x'],datadf['y'])[1] < pvalue:
@@ -195,7 +196,9 @@ def powerfunction(x,y,name='power rating',pvalue=0.01):
         spearman = spearman_r(datadf['x'],datadf['y'])[0]
     else:
         spearman = np.nan
-    coeffdf = pd.DataFrame({'a':[10**regression.beta[1]],'b':[regression.beta[0]],'r2':[regression.r2],'rmse':[regression.rmse],'pearson':[pearson],'spearman':[spearman]},index=[name])
+    coeffdf = pd.DataFrame({'a':[10**regression.beta[1]],'b':[regression.beta[0]],
+    'r2':[regression.r2],'rmse':[regression.rmse],'pearson':[pearson],'spearman':[spearman]},
+index=[name])
     return coeffdf
 
 def PowerFit(x,y,xspace = 'none',ax=plt,**kwargs):
@@ -400,10 +403,12 @@ def LandCover_table(browser=True):
     # Format Table data                       
     for column in landcover_table.columns:
         try:
-            if column.startswith('%')==True or column.startswith('Cumulative %')==True:
+            if column.startswith('%')==True or column == 'Cumulative %':
+                #print '1'+ column
                 landcover_table.loc[:,column] = landcover_table.loc[:,column]*100.
                 landcover_table.loc[:,column] = landcover_table.loc[:,column].round(1)
             else:
+                #print '2' + column
                 landcover_table.loc[:,column] = landcover_table.loc[:,column].round(2)
         except:
             pass
@@ -422,7 +427,7 @@ def LandCover_table(browser=True):
     ## Send to R
     ro.globalenv['table_df_vals'] = table_df
     ## format #s
-    ro.r("table_df= apply(table_df_vals,2,function(x) as.character(format(x,digits=2)))")
+    ro.r("table_df= apply(table_df_vals, 2, function(x) as.character(format(x,digits=2)))")
     ro.r("rownames(table_df)<- rownames(table_df_vals) ")
     #print (ro.r('table_df'))
     ro.globalenv['table_caption'] = 'Table '+str(table_num)+'. '+caption
@@ -457,7 +462,7 @@ def LandCover_table(browser=True):
     ## output to file through pandoc
     #pypandoc.convert(htmlcode, 'markdown', format='markdown', outputfile= datadir+'landcover.html')
     return landcover_table
-landcover_table = LandCover_table(browser=False)
+landcover_table = LandCover_table(browser=True)
 
 ### LOAD FIELD DATA
 if 'XL' not in locals():
@@ -4258,7 +4263,7 @@ def NormalizeSSYbyCatchmentArea(ALLStorms):
 
 ### ANCOVA
 
-### duplicate TOTAL but name it upper: TEST for SAME data, should be pvalue=1
+## duplicate TOTAL but name it upper: TEST for SAME data, should be pvalue=1
 #ALLStorms_upper = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','EI','Qsumtotal','Qmaxtotal','Stotal']].dropna().apply(np.log10) 
 #ALLStorms_upper['subwatershed'] = 'upper'
 #ALLStorms_upper = ALLStorms_upper.rename(columns = {'Qsumtotal':'Qsum','Qmaxtotal':'Qmax','Stotal':'S'})
@@ -4460,7 +4465,7 @@ def All_Models_stats_table(subset='pre', browser=True):
     ## SAVE AS htmlTABLE with R
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(All_Models_stats)
-    caption = "Goodness-of-fit statistics for SSY<sub>EV</sub> &#45; storm metric relationships. Pearson and Spearman correlation coefficients signifcant at p<0.05."
+    caption = "Goodness-of-fit statistics for SSY<sub>EV</sub> &#45; storm metric relationships. Pearson and Spearman correlation coefficients signifcant at p<0.01."
     table_num= 6
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -4532,11 +4537,13 @@ def predict_SSY(model, data, start, stop, watershed_area, show=False):
 ## UPPER watershed
 SSY_Upper_Qmax_2012, sSSY_Upper_Qmax_2012 = predict_SSY(QmaxS_upper_power, Storms_DAM['Qmax']/1000, start2012, stop2012, 0.9)
 SSY_Upper_Qmax_2014, sSSY_Upper_Qmax_2014 = predict_SSY(QmaxS_upper_power, Storms_DAM['Qmax']/1000, start2014, dt.datetime(2014,12,31), 0.9)
+SSY_Upper_Psum_2014, sSSY_Upper_Psum_2014 = predict_SSY(PS_upper_power, Storms_DAM['Psum'], start2014, dt.datetime(2014,12,31), 0.9)
 
 ## TOTAL watershed
 ## with missing Qmax data at LBJ
-SSY_Total_Qmax_2012, sSSY_Qmax_Total_2012 = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, start2012, stop2012, 1.78)
-SSY_Total_Qmax_2014, sSSY_Qmax_Total_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, start2014, dt.datetime(2014,12,31), 1.78)
+SSY_Total_Qmax_2012, sSSY_Total_Qmax_2012 = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, start2012, stop2012, 1.78)
+SSY_Total_Qmax_2014, sSSY_Total_Qmax_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, start2014, dt.datetime(2014,12,31), 1.78)
+SSY_Total_Psum_2014, sSSY_Total_Psum_2014 = predict_SSY(PS_total_power, Storms_LBJ['Psum'], start2014, dt.datetime(2014,12,31), 1.78)
 
 ## Use DAM_Qmax vs LBJ_Qmax relationship to fill gaps in LBJ Qmax
 def Qmax_LBJ_DAM_regression(show=False):
@@ -4697,6 +4704,12 @@ def est_Annual_SSY_table(subset='pre',browser=False):
     
     ## Estimated annual SSY
     est_Annual_SSY = pd.DataFrame({
+    'Psum model, Events in 2014':[P_2014_storm,
+                    SSY_Upper_Psum_2014, 
+                    '-', 
+                    '-', 
+                    '-', 
+                    SSY_Total_Psum_2014],    
     'Qmax model, Events in 2014':[P_2014_storm,
                     SSY_Upper_Qmax_2014, 
                     '-', 
@@ -4726,6 +4739,11 @@ def est_Annual_SSY_table(subset='pre',browser=False):
 
     ## Estimated annual sSSY
     est_Annual_sSSY = pd.DataFrame({
+    'Psum model, Events in 2014':[sSSY_Upper_Psum_2014,
+                    '-', 
+                    '-', 
+                    '-', 
+                    sSSY_Total_Psum_2014],
     'Qmax model, Events in 2014':[sSSY_Upper_Qmax_2014,
                     '-', 
                     '-', 
@@ -4751,7 +4769,7 @@ def est_Annual_SSY_table(subset='pre',browser=False):
     ## Combine tables of SSY and sSSY
     est_Annual = est_Annual_SSY.append(est_Annual_sSSY)
 
-    est_Annual = est_Annual[['Qmax model, Events in 2014','Events in Table 2','Events in Table 4','All Measured Events']]
+    est_Annual = est_Annual[['Psum model, Events in 2014','Qmax model, Events in 2014','Events in Table 2','Events in Table 4','All Measured Events']]
     
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(est_Annual)
@@ -4767,9 +4785,9 @@ def est_Annual_SSY_table(subset='pre',browser=False):
     table_code_str = " \
     table_df, \
     caption=table_caption, \
-    header = c('Qmax model, Events in 2014','Events in Table 2','Events in Table 4','All Measured Events'), \
+    header = c('Psum model, Events in 2014', 'Qmax model, Events in 2014','Events in Table 2','Events in Table 4','All Measured Events'), \
     cgroup = c('','Equation 5'), \
-    n.cgroup = c(1,3), \
+    n.cgroup = c(2,3), \
     tspanner = c('Precipitation','Annual SSY (tons/year)','Annual sSSY (tons/km<sup>2</sup>/year)'), \
     n.tspanner = c(1,5,5), \
     rnames = c('mm (% of Ps<sub>ann</sub>)','UPPER','LOWER','&nbsp;&nbsp;LOWER_QUARRY','&nbsp;&nbsp;LOWER_VILLAGE','TOTAL', \
