@@ -1827,17 +1827,17 @@ def plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=False,save=
     SSC = SSC_dict[subset[0]]
     ## DAM Baseflow
     dam_base_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM'][['SSC (mg/L)','24hr_precip']])
-    dam_base_ssc['Q']=DAM['Q'].dropna()
+    dam_base_ssc['Q'] = DAM['Q'].resample('1Min').interpolate(method='time').dropna()
     dam_base_ssc = dam_base_ssc.dropna()
     dam_ssc_noP = dam_base_ssc[dam_base_ssc['24hr_precip']<=2]
     ## QUARRY baseflow
     quarry_base_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])][['SSC (mg/L)','24hr_precip']])
-    quarry_base_ssc['Q']=QUARRY['Q'].dropna()
+    quarry_base_ssc['Q']=QUARRY['Q'].resample('1Min').interpolate(method='time').dropna()
     quarry_base_ssc =quarry_base_ssc.dropna()
     quarry_ssc_noP = quarry_base_ssc[quarry_base_ssc['24hr_precip']<=2]
     ## LBJ baseflow
     lbj_base_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ'][['SSC (mg/L)','24hr_precip']])
-    lbj_base_ssc['Q']=LBJ['Q'].dropna()
+    lbj_base_ssc['Q']=LBJ['Q'].resample('1Min').interpolate(method='time').dropna()
     lbj_base_ssc=lbj_base_ssc.dropna()
     lbj_ssc_noP = lbj_base_ssc[lbj_base_ssc['24hr_precip']<=2]
     
@@ -1845,15 +1845,15 @@ def plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=False,save=
     SSC = SSC_dict[subset[1]]
     ## DAM Stormflow
     dam_storm_ssc = pd.DataFrame(SSC[SSC['Location']=='DAM'][['SSC (mg/L)','24hr_precip']])
-    dam_storm_ssc['Q']=DAM['Q'].dropna()
+    dam_storm_ssc['Q']=DAM['Q'].resample('1Min').interpolate(method='time').dropna()
     dam_storm_ssc = dam_storm_ssc.dropna()
     ## QUARRY Stormflow
     quarry_storm_ssc = pd.DataFrame(SSC[SSC['Location'].isin(['DT','R2'])][['SSC (mg/L)','24hr_precip']])
-    quarry_storm_ssc['Q']=QUARRY['Q'].dropna()
+    quarry_storm_ssc['Q']=QUARRY['Q'].resample('1Min').interpolate(method='time').dropna()
     quarry_storm_ssc =quarry_storm_ssc.dropna()
     ## LBJ Stormflow
     lbj_storm_ssc = pd.DataFrame(SSC[SSC['Location']=='LBJ'][['SSC (mg/L)','24hr_precip']])
-    lbj_storm_ssc['Q']=LBJ['Q'].dropna()
+    lbj_storm_ssc['Q']=LBJ['Q'].resample('1Min').interpolate(method='time').dropna()
     lbj_storm_ssc=lbj_storm_ssc.dropna()
     
     ### PLOT
@@ -1891,7 +1891,7 @@ def plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=False,save=
     savefig(save,filename)
     return
 ## Pre-mitigation
-#plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=True,log=True,save=False,filename=figdir+'')
+plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=True,log=True,save=False,filename=figdir+'')
 #plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=5,show=True,log=False,save=False,filename=figdir+'')
 ## Post-mitgation
 #plotQvsC(subset=['Post-baseflow','Post-storm'],ms=6,show=True,log=False,save=False,filename=figdir+'')
@@ -1908,42 +1908,42 @@ def InterpolateGrabSamples(Stormslist,SSC_Data,Q_data):
     ## Iterate over storms
     for storm_index,storm in Stormslist.iterrows():
         start, end = storm['start'], storm['end']
-        #print ''
-        #print 'Attempting to interpolate SSC grabs for storm: '+ str(start)+' - '+str(end)
+        print ''
+        print 'Attempting to interpolate SSC grabs for storm: '+ str(start)+' - '+str(end)
         try:
             storm_ssc_grab_data = SSC_Data[(SSC_Data.index >= start) & (SSC_Data.index <= end)] ### slice list of Data for event
         except KeyError:
-            #print 'Data Error'+str(start)+'; tried to get SSC grab sample data'
+            print 'Data Error'+str(start)+'; tried to get SSC grab sample data'
             pass
         ## Test for valid data
         if len(storm_ssc_grab_data.dropna())<3:
-            #print 'Not enough data for storm '+str(start)
+            print 'Not enough data for storm '+str(start)
             pass
         elif len(storm_ssc_grab_data.dropna())>=3:
+            print 'Storm has '+ str(len(storm_ssc_grab_data.dropna()))+ 'grab samples'
             ## See if there's an SSC sample within 30 minutes of the peak Q
             ## get time of Qmax and 30 before and after
             Qmax_SSCsample_window_min, Qmax_SSCsample_window_max = Q_data[start:end].idxmax() - dt.timedelta(minutes=30), Q_data[start:end].idxmax() + dt.timedelta(minutes=30)
+            print 'Qmax of storm: '+str(Q_data[start:end].idxmax())
             ## Slice SSC data and see if there's a sample
             if len(storm_ssc_grab_data[Qmax_SSCsample_window_min:Qmax_SSCsample_window_max].dropna()) > 0 :
-                
-                
                 count+=1
-                #print 'Interpolating SSC data for storm start: '+str(start)
+                print 'Interpolating SSC data for storm start: '+str(start)
                 ## If no SSC grab is available for the start of the storm, assume it's ==1 mg/L
                 try: # if the try loop breaks because there is no data (key  error), it goes to except and fills in the data
                     if np.isnan(storm_ssc_grab_data.ix[start]): ## R2 data will have NaN's (continuous data); other sites just have no index
-                        #print 'SSC==NaN; Filling in SSC = 1 mg/L for storm start: '+str(start)
+                        print 'SSC==NaN; Filling in SSC = 1 mg/L for storm start: '+str(start)
                         storm_ssc_grab_data.ix[start] = 1
                 except:
-                    #print 'No SSC Data; Filling in SSC = 1 mg/L for storm start: '+str(start)
+                    print 'No SSC Data; Filling in SSC = 1 mg/L for storm start: '+str(start)
                     storm_ssc_grab_data.ix[start] = 1  
                 ## Same for end of storm:    
                 try: # if the try loop breaks because there is no data (key  error), it goes to except and fills in the data
                     if np.isnan(storm_ssc_grab_data.ix[end]):
-                        #print 'SSC==NaN; Filling in SSC = 1 mg/L for storm start: '+str(end)
+                        print 'SSC==NaN; Filling in SSC = 1 mg/L for storm start: '+str(end)
                         storm_ssc_grab_data.ix[end] = 1 
                 except:
-                    #print 'No SSC Data; Filling in SSC = 1 mg/L for storm end: '+str(end)
+                    print 'No SSC Data; Filling in SSC = 1 mg/L for storm end: '+str(end)
                     storm_ssc_grab_data.ix[end] = 1 
                     
                 ## Take grab samples and resample to 15Min to interpolate and fill in values
@@ -1954,7 +1954,9 @@ def InterpolateGrabSamples(Stormslist,SSC_Data,Q_data):
                 ## Append storm to the rest of the storms
                 Interpolated_SSC_Storm_Events = Interpolated_SSC_Storm_Events.append(pd.DataFrame({'start':start,'end':end,'# of grab samples':len(storm_ssc_grab_data.dropna())},index=[count]))
                 Interpolated_SSC_Storm_Events_Data = Interpolated_SSC_Storm_Events_Data.append(Storm_SSC_data)
-                
+            elif len(storm_ssc_grab_data[Qmax_SSCsample_window_min:Qmax_SSCsample_window_max].dropna()) == 0:
+                print 'No SSC data close to peak Q of storm'
+                print storm_ssc_grab_data.dropna()
             else:
                 pass
             
@@ -3457,7 +3459,8 @@ def plot_storm_individually(storm_data,show=False,save=True,filename=''):
     QUARRY_Qmax, QUARRY_Qmean, QUARRY_Qsum = storm_data['QUARRY-Q'].max(),storm_data['QUARRY-Q'].mean(),storm_data['QUARRY-Q'].sum()
     storm_data['DAM-Q'].plot(ax=Q,color='grey',label='FG1')
     DAM_Qmax, DAM_Qmean, DAM_Qsum = storm_data['DAM-Q'].max(), storm_data['DAM-Q'].mean(), storm_data['DAM-Q'].sum()
-    Q.set_ylabel('Q L/sec')#, Q.set_ylim(-1,6000)
+    Q.set_ylabel('Q L/sec')
+        
     ## Turbidity T
     storm_data['LBJ-NTU'].plot(ax=T,color='k',label='LBJ-NTU')
     LBJ_NTUmax, LBJ_NTUmean = storm_data['LBJ-NTU'].max(), storm_data['LBJ-NTU'].mean()
@@ -3465,7 +3468,8 @@ def plot_storm_individually(storm_data,show=False,save=True,filename=''):
     #QUARRY_NTUmax, QUARRY_NTUmean = storm_data['QUARRY-NTU'].max(), storm_data['QUARRY-NTU'].mean()
     storm_data['DAM-NTU'].plot(ax=T,color='grey',label='DAM-NTU')
     DAM_NTUmax, DAM_NTUmean = storm_data['DAM-NTU'].max(), storm_data['DAM-NTU'].mean()
-    T.set_ylabel('T (NTU)')#,T.set_ylim(-1,2000)
+    T.set_ylabel('T (NTU)')
+        
     ## SSC from Turbidity T-SSC
     storm_data['LBJ-T-SSC-mg/L'].plot(ax=SSC,ls='-',color='k',label='VILLAGE')
     LBJ_SSCmax, LBJ_SSCmean = storm_data['LBJ-T-SSC-mg/L'].max(), storm_data['LBJ-T-SSC-mg/L'].mean()
@@ -3479,7 +3483,8 @@ def plot_storm_individually(storm_data,show=False,save=True,filename=''):
     storm_data['QUARRY-Grab-SSC-mg/L'].plot(ax=SSC,color='grey',marker='o',ls='None',markersize=4,label=None)
     storm_data['QUARRY-GrabR2-SSC-mg/L'].plot(ax=SSC,color='grey',marker='s',ls='None',markersize=4,label=None)
     storm_data['DAM-Grab-SSC-mg/L'].plot(ax=SSC,color='grey',marker='^',ls='None',markersize=4,label=None)
-    SSC.set_ylabel('SSC mg/L')#, SSC.set_ylim(-1,1500)
+    SSC.set_ylabel('SSC mg/L')
+
     ### SSC interpolated from grab samples GrabInt-SSC
     storm_data['LBJ-GrabInt-SSC-mg/L'].plot(ax=SSC,ls='--',color='k')#,label='VIL-int')
     LBJ_SSCgrabmax, LBJ_SSCgrabmean = storm_data['LBJ-GrabInt-SSC-mg/L'].max(), storm_data['LBJ-GrabInt-SSC-mg/L'].mean()
@@ -3494,12 +3499,14 @@ def plot_storm_individually(storm_data,show=False,save=True,filename=''):
     QUARRY_Smax, QUARRY_Smean, QUARRY_Ssum = storm_data['QUARRY-SedFlux-tons/sec'].max(), storm_data['QUARRY-SedFlux-tons/sec'].mean(), storm_data['QUARRY-SedFlux-tons/sec'].sum()
     storm_data['DAM-SedFlux-kg/sec'].plot(ax=SED,ls='-',color='grey',label='FG1')
     DAM_Smax, DAM_Smean, DAM_Ssum = storm_data['DAM-SedFlux-tons/sec'].max(), storm_data['DAM-SedFlux-tons/sec'].mean(), storm_data['DAM-SedFlux-tons/sec'].sum()
-    SED.set_ylabel('SSY kg/sec')#, SED.set_ylim(-.1,4000)
+    SED.set_ylabel('SSY kg/sec')
+
     ## Cumulative Sediment Load
     storm_data['LBJ-Sed-cumsum'].plot(ax=SEDcum,color='k',ls='-',label='FG3')
     storm_data['QUARRY-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-.',label='FG2')    
     storm_data['DAM-Sed-cumsum'].plot(ax=SEDcum,color='grey',ls='-',label='FG1') 
     SEDcum.set_ylabel('Cumulative SSY\ntons'),SEDcum.yaxis.set_ticks_position('right')
+        
     for axis in fig.axes:
         max_yticks = 4
         yloc = plt.MaxNLocator(max_yticks)
@@ -3508,7 +3515,7 @@ def plot_storm_individually(storm_data,show=False,save=True,filename=''):
     ## Legends
     #P.legend(loc='best'), 
     Q.legend(loc='best',ncol=2)#, T.legend(loc='best',ncol=3)          
-    #SED.legend(loc='best',ncol=3)#,SSC.legend(loc='best',ncol=5)
+    #SED.legend(loc='best',ncol=3),SSC.legend(loc='best',ncol=5)
     #Shade Storms
     shade_storms=False
     if shade_storms==True:
@@ -3536,7 +3543,7 @@ for index, storm in All_Storms.iterrows():
     plot_storm_individually(storm_data[start:end],show=False,save=True,filename=file_name)
     plt.close('all')
 plt.ion()
-##    
+###    
 
 def plot_storm_hysteresis(storm_name, storm_data):
     def drawArrow(A, B):
@@ -4027,14 +4034,14 @@ def S_budget_2_table(subset='pre',manual_edit=True,browser=True):
     # SSY
     S_budget_2 = S_budget_2.append(pd.DataFrame({'Storm#':'Total/Avg','Storm Start':"%.0f"%len(S_budget_2),
     'Precip (mm)':"%.0f"%S_budget_2['Precip (mm)'].sum(),
-    'UPPER tons':"%.0f"%SSY_UPPER,'LOWER_QUARRY tons':"%.0f"%SSY_LOWER_QUARRY,'LOWER_VILLAGE tons':"%.0f"%SSY_LOWER_VILLAGE,'LOWER tons':"%.0f"%SSY_LOWER,'TOTAL tons':"%.0f"%SSY_TOTAL,
+    'UPPER tons':"%.1f"%SSY_UPPER,'LOWER_QUARRY tons':"%.1f"%SSY_LOWER_QUARRY,'LOWER_VILLAGE tons':"%.1f"%SSY_LOWER_VILLAGE,'LOWER tons':"%.1f"%SSY_LOWER,'TOTAL tons':"%.1f"%SSY_TOTAL,
     '% UPPER':"%.0f"%Percent_UPPER,'% LOWER_QUARRY':"%.0f"%Percent_LOWER_QUARRY,'% LOWER_VILLAGE':"%.0f"%Percent_LOWER_VILLAGE,'% LOWER':"%.0f"%Percent_LOWER},
     index=['Total/Avg']))
     
     # sSSY
     S_budget_2 = S_budget_2.append(pd.DataFrame({'Storm#':'Tons/km2','Storm Start':'',
     'Precip (mm)':'',
-    'UPPER tons':"%.0f"%sSSY_UPPER,'LOWER_QUARRY tons':"%.0f"%sSSY_LOWER_QUARRY,'LOWER_VILLAGE tons':"%.0f"%sSSY_LOWER_VILLAGE,'LOWER tons':"%.0f"%sSSY_LOWER,'TOTAL tons':"%.0f"%sSSY_TOTAL,
+    'UPPER tons':"%.1f"%sSSY_UPPER,'LOWER_QUARRY tons':"%.1f"%sSSY_LOWER_QUARRY,'LOWER_VILLAGE tons':"%.1f"%sSSY_LOWER_VILLAGE,'LOWER tons':"%.1f"%sSSY_LOWER,'TOTAL tons':"%.1f"%sSSY_TOTAL,
     '% UPPER':'-','% LOWER_QUARRY':'-','% LOWER_VILLAGE':'-','% LOWER':'-'}, 
     index=['Tons/km2']))
     
@@ -4274,7 +4281,7 @@ def NormalizeSSYbyCatchmentArea(ALLStorms):
 #R2 = [[1,0,0],[0,1,0]]
 #m2 = model_lm2.f_test(R2)
 
-def ANCOVA(ALLStorms, ind_var, pvalue=0.05):
+def ANCOVA(ALLStorms, ind_var, pvalue=0.01):
     ## Upper subwatershed
     ALLStorms_upper = ALLStorms[ALLStorms['Pstorms']>1][['Pstorms','EI','Qsumupper','Qmaxupper','Supper']].dropna().apply(np.log10) 
     ALLStorms_upper['subwatershed'] = 'upper'
@@ -4438,7 +4445,7 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     return (PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power), (PS_ANCOVA, EI_ANCOVA, QsumS_ANCOVA, QmaxS_ANCOVA)
 
 ## Plot all models and save them 
-All_Storms_All_Models = plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=True,show=True,save=False,filename='')
+All_Storms_All_Models = plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
 ## Models
 PS_upper_power,PS_total_power,EI_upper_power,EI_total_power, \
     QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power = All_Storms_All_Models [0]
