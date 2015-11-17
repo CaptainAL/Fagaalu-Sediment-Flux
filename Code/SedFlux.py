@@ -3534,16 +3534,17 @@ def plot_storm_individually(storm_data,show=False,save=True,filename=''):
 #plot_storm_individually(All_Storms.loc[121],show=True,save=False,filename='') 
 
 #
-## Plot and save all storms
-plt.ioff()
-for index, storm in All_Storms.iterrows():
-    print str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
-    file_name = figdir+'storm_figures/Storm '+str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
-    start, end = storm['start']-dt.timedelta(minutes=30), storm['end']+dt.timedelta(minutes=30)
-    plot_storm_individually(storm_data[start:end],show=False,save=True,filename=file_name)
-    plt.close('all')
-plt.ion()
-###    
+def Plot_and_save_all_storms():
+    plt.ioff()
+    for index, storm in All_Storms.iterrows():
+        print str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
+        file_name = figdir+'storm_figures/Storm '+str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
+        start, end = storm['start']-dt.timedelta(minutes=30), storm['end']+dt.timedelta(minutes=30)
+        plot_storm_individually(storm_data[start:end],show=False,save=True,filename=file_name)
+        plt.close('all')
+    plt.ion()
+    return
+#Plot_and_save_all_storms()  
 
 def plot_storm_hysteresis(storm_name, storm_data):
     def drawArrow(A, B):
@@ -4636,7 +4637,7 @@ P_measured_2 = S_budget['Precip (mm)']['Total/Avg']
 P_measured_2_perc_storm = (float(P_measured_2)/float(P_2014_storm))*100
 ## Estimate annual SSY ans sSSY
 ## calculate the multiplication factor???
-table2_storm_precip_factor = 2
+table2_storm_precip_factor = (float(P_2014_storm)/float(P_measured_2))
 annual_SSY_UPPER_2 =  "%.0f"%times(SSY_UPPER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_UPPER_2,3,10),
 annual_sSSY_UPPER_2 = "%.0f"%times(sSSY_UPPER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_UPPER_2,3,10)
 annual_SSY_LOWER_2 =  "%.0f"%times(SSY_LOWER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_2,3,10)
@@ -4673,7 +4674,7 @@ P_measured_4 = S_budget_2['Precip (mm)']['Total/Avg']
 P_measured_4_perc_storm =  (float(P_measured_4)/float(P_2014_storm))*100
 ## Estimate annual SSY ans sSSY
 ## calculate the multiplication factor???
-table4_storm_precip_factor = 4
+table4_storm_precip_factor = (float(P_2014_storm)/float(P_measured_4))
 annual_SSY_UPPER_4 =        "%.0f"%times(SSY_UPPER_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_UPPER_3,5,10),
 annual_sSSY_UPPER_4 =       "%.0f"%times(sSSY_UPPER_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_UPPER_3,5,10)
 annual_SSY_LOWER_QUARRY_4 = "%.0f"%times(SSY_LOWER_QUARRY, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_QUARRY,5,10),
