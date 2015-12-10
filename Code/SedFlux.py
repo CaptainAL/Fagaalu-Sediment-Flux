@@ -87,7 +87,7 @@ def logaxes(log=False,fig=figure):
     return
 def savefig(save=True,filename=''):
     if save==True:
-        #plt.savefig(filename+'.pdf') ## for publication
+        plt.savefig(filename+'.pdf') ## for publication
         plt.savefig(filename+'.png') ## for manuscript
     return
 def pltdefault():
@@ -398,7 +398,7 @@ Mitigation = dt.datetime(2014,10,1,0,0)
 def LandCover_table(browser=True):
     
     ## Read in Excel sheet of data, indexed by subwatershed
-    landcover_table = pd.ExcelFile(datadir+'/LandCover/Watershed_Stats.xlsx').parse('Fagaalu_Revised', index_col = 'Subwatershed (pourpoint)')
+    landcover_table = pd.ExcelFile(datadir+'LandCover/Fagaalu_Watershed_Stats.xlsx').parse('Fagaalu_Revised', index_col = 'Subwatershed (pourpoint)')
     landcover_table = landcover_table[['Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
     # Format Table data                       
     for column in landcover_table.columns:
@@ -1255,7 +1255,7 @@ def plotQratingLBJ(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     show_plot(show,fig)
     savefig(save,filename)
     return
-#plotQratingLBJ(ms=6,show=True,log=False,save=False,filename=figdir+'')
+plotQratingLBJ(ms=6,show=True,log=False,save=True,filename=figdir+'LBJ stage Q rating')
 #plotQratingLBJ(ms=6,show=True,log=True,save=False,filename=figdir+'')
 
 ### Compare Discharg Ratings from different methods
@@ -1311,7 +1311,7 @@ def plotQratingDAM(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     show_plot(show,fig)
     savefig(save,filename)
     return
-#plotQratingDAM(ms=6,show=True,log=False,save=False,filename=figdir+'')
+plotQratingDAM(ms=6,show=True,log=False,save=True,filename=figdir+'DAM stage Q rating')
 #plotQratingDAM(ms=6,show=True,log=True,save=False,filename=figdir+'')
 
 #### CALCULATE DISCHARGE
@@ -4547,11 +4547,14 @@ SSY_Upper_Qmax_2012, sSSY_Upper_Qmax_2012 = predict_SSY(QmaxS_upper_power, Storm
 SSY_Upper_Qmax_2014, sSSY_Upper_Qmax_2014 = predict_SSY(QmaxS_upper_power, Storms_DAM['Qmax']/1000, start2014, dt.datetime(2014,12,31), 0.9)
 SSY_Upper_Psum_2014, sSSY_Upper_Psum_2014 = predict_SSY(PS_upper_power, Storms_DAM['Psum'], start2014, dt.datetime(2014,12,31), 0.9)
 
+
 ## TOTAL watershed
 ## with missing Qmax data at LBJ
 SSY_Total_Qmax_2012, sSSY_Total_Qmax_2012 = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, start2012, stop2012, 1.78)
 SSY_Total_Qmax_2014, sSSY_Total_Qmax_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, start2014, dt.datetime(2014,12,31), 1.78)
 SSY_Total_Psum_2014, sSSY_Total_Psum_2014 = predict_SSY(PS_total_power, Storms_LBJ['Psum'], start2014, dt.datetime(2014,12,31), 1.78)
+
+
 
 ## Use DAM_Qmax vs LBJ_Qmax relationship to fill gaps in LBJ Qmax
 def Qmax_LBJ_DAM_regression(show=False):
@@ -4598,10 +4601,18 @@ Storms_LBJ_Qmax_filled['LBJ_Q_combined'] =  Storms_LBJ_Qmax_filled['LBJ_Q'].wher
 
 SSY_Total_Qmax_filled_2014, sSSY_Total_Qmax_filled_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ_Qmax_filled['LBJ_Q_combined']/1000, start2014, dt.datetime(2014,12,31),1.78)
 
+## LOWER subwatershed
+SSY_Lower_Qmax_2014 = float(SSY_Total_Qmax_filled_2014) - float(SSY_Upper_Qmax_2014)
+sSSY_Lower_Qmax_2014 = float(SSY_Lower_Qmax_2014) / 0.88
+                                                
+SSY_Lower_Psum_2014 = float(SSY_Total_Psum_2014) - float(SSY_Upper_Psum_2014)
+sSSY_Lower_Psum_2014 = float(sSSY_Lower_Qmax_2014) / 0.88
+
+
 ## From Qmax relationship
-no_storms_2014 = All_Storms[All_Storms['start']>dt.datetime(2014,1,1)]
-lbjstorms2014 = Storms_LBJ[Storms_LBJ.index > dt.datetime(2014,1,1)][['Ssum','Psum']].dropna()
-damstorms2014 = Storms_DAM[Storms_DAM.index > dt.datetime(2014,1,1)][['Ssum','Psum']].dropna()
+no_storms_2014 = All_Storms[(All_Storms['start']>dt.datetime(2014,1,1)) & (All_Storms['start']<dt.datetime(2015,1,1))]
+lbjstorms2014 = Storms_LBJ[(Storms_LBJ.index > dt.datetime(2014,1,1)) & (Storms_LBJ.index < dt.datetime(2015,1,1))][['Ssum','Psum']].dropna()
+damstorms2014 = Storms_DAM[(Storms_DAM.index > dt.datetime(2014,1,1)) & (Storms_DAM.index < dt.datetime(2015,1,1))][['Ssum','Psum']].dropna()
 
 
 ## Storm precipitation for only annual period with continuous P and Q
@@ -4638,8 +4649,8 @@ P_measured_2_perc_storm = (float(P_measured_2)/float(P_2014_storm))*100
 ## Estimate annual SSY ans sSSY
 ## calculate the multiplication factor???
 table2_storm_precip_factor = (float(P_2014_storm)/float(P_measured_2))
-annual_SSY_UPPER_2 =  "%.0f"%times(SSY_UPPER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_UPPER_2,3,10),
-annual_sSSY_UPPER_2 = "%.0f"%times(sSSY_UPPER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_UPPER_2,3,10)
+annual_SSY_UPPER_2 =  "%.0f"%times(SSY_UPPER_2, table2_storm_precip_factor, 1)#+"-"+"%.0f"%times(SSY_UPPER_2,3,10),
+annual_sSSY_UPPER_2 = "%.0f"%times(sSSY_UPPER_2, table2_storm_precip_factor, 1)#+"-"+"%.0f"%times(sSSY_UPPER_2,3,10)
 annual_SSY_LOWER_2 =  "%.0f"%times(SSY_LOWER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_2,3,10)
 annual_sSSY_LOWER_2 = "%.0f"%times(sSSY_LOWER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_LOWER_2,3,10)
 annual_SSY_TOTAL_2 =  "%.0f"%times(SSY_TOTAL_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_TOTAL_2,3,10)
@@ -4706,6 +4717,8 @@ P_FG3_percent_storm = P_FG3_all_storms/float(P_2014_storm) * 100
 annual_SSY_TOTAL_ALL = Storms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG3_percent_storm/100) * Storms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum())
 annual_sSSY_TOTAL_ALL = annual_SSY_TOTAL_ALL/1.78
 
+annual_SSY_LOWER_ALL =  float(annual_SSY_TOTAL_ALL) - float(annual_SSY_UPPER_ALL)
+annual_sSSY_LOWER_ALL = float(annual_SSY_LOWER_ALL) / 0.88
 
 
 def est_Annual_SSY_table(subset='pre',browser=False):
@@ -4714,13 +4727,13 @@ def est_Annual_SSY_table(subset='pre',browser=False):
     est_Annual_SSY = pd.DataFrame({
     'Psum model, Events in 2014':[P_2014_storm,
                     SSY_Upper_Psum_2014, 
-                    '-', 
+                    "%.0f"%SSY_Lower_Psum_2014, 
                     '-', 
                     '-', 
                     SSY_Total_Psum_2014],    
     'Qmax model, Events in 2014':[P_2014_storm,
                     SSY_Upper_Qmax_2014, 
-                    '-', 
+                    "%.0f"%SSY_Lower_Qmax_2014, 
                     '-', 
                     '-', 
                     SSY_Total_Qmax_filled_2014],
@@ -4738,7 +4751,7 @@ def est_Annual_SSY_table(subset='pre',browser=False):
                    annual_SSY_TOTAL_4],
     'All Measured Events':["%.0f"%P_FG1_all_storms+' ('+"%.0f"%P_FG1_percent_storm+'%)',
                    "%.0f"%annual_SSY_UPPER_ALL,
-                   '-',
+                   "%.0f"%annual_SSY_LOWER_ALL,
                    '-',
                    '-',
                    "%.0f"%annual_SSY_TOTAL_ALL]},
@@ -4748,12 +4761,12 @@ def est_Annual_SSY_table(subset='pre',browser=False):
     ## Estimated annual sSSY
     est_Annual_sSSY = pd.DataFrame({
     'Psum model, Events in 2014':[sSSY_Upper_Psum_2014,
-                    '-', 
+                    "%.0f"%sSSY_Lower_Psum_2014, 
                     '-', 
                     '-', 
                     sSSY_Total_Psum_2014],
     'Qmax model, Events in 2014':[sSSY_Upper_Qmax_2014,
-                    '-', 
+                    "%.0f"%sSSY_Lower_Qmax_2014, 
                     '-', 
                     '-', 
                     sSSY_Total_Qmax_filled_2014],
@@ -4768,7 +4781,7 @@ def est_Annual_SSY_table(subset='pre',browser=False):
                     annual_sSSY_LOWER_VILLAGE_4, 
                     annual_sSSY_TOTAL_4],
     'All Measured Events':["%.0f"%annual_sSSY_UPPER_ALL,
-                    '-',
+                    "%.0f"%annual_sSSY_LOWER_ALL,
                     '-',
                     '-',
                     "%.0f"%annual_sSSY_TOTAL_ALL]},

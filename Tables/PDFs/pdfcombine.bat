@@ -1,0 +1,1 @@
+"C:\Program Files\gs\gs9.14\bin\gswin64c.exe" -sDEVICE=pdfwrite -dNOPAUSE -dBATCH -dSAFER -sOutputFile="alltables.pdf" Table1_landcover.pdf Table2_S_budget_pre.pdf Table3_S_budget_analysis_pre.pdf Table4_S_budget_2_pre.pdf Table5_S_budget_2_analysis_pre.pdf Table6_All_Models_stats_pre.pdf Table7_Est_Annual_SSY_pre.pdf Table8_Lit_values_for_SSY.pdf Appendix_Table1_Q_budget_pre.pdf

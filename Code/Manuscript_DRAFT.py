@@ -218,10 +218,12 @@ SSY_annual_eq.eq_num = eq_count()
 
 
 ############################################################################################################################################
-#### Appendix
+#### Appendices
 table_count,figure_count,equation_count=0, 0, 0
-### Storm Water Discharge Table
-Q_budget_table.table_num =str(tab_count())
+
+## Appendix 1: Dams in Faga'alu Watershed
+
+## Appendix 2: Stream gaging in Faga'alu Watershed
 
 ## Cross-Sections
 #LBJ
@@ -232,7 +234,10 @@ Mannings_Q_from_CrossSection(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.
 DAM_Cross_Section = {'filename':figdir+'Q/DAM_Cross_Section','fig_num':'A1.'+str(fig_count())}
 Mannings_Q_from_CrossSection(datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx','DAM_m',Slope=0.016,Manning_n='Jarrett',k=.04/.07,stage_start=.46,show=False,save=True,filename=DAM_Cross_Section['filename'])
 
-## Synthetic Rating Curves
+## Appendix 3: Water Discharge During Storm Events Table
+Q_budget_table.table_num =str(tab_count())
+
+## Appendix 4: T-SSC Rating Curves
 Synthetic_Rating_Curve = {'filename':figdir+'T/Synthetic Rating Curves Fagaalu','fig_num':'A3.'+str(fig_count())} ## define file name to find the png file from other script
 #Synthetic_Rating_Curves_Fagaalu(param='SS_Mean',show=False,save=True,filename=Synthetic_Rating_Curve['filename'])## generate figure from separate script and save to file
 
@@ -378,7 +383,7 @@ document.add_paragraph("Precipitation (P) was measured at three locations in Fag
 ### Water Discharge
 document.add_heading('Water Discharge',level=4) 
 ## Duvert 2010 used a PT at a bridge in Potrerillos
-document.add_paragraph("Stream gaging sites were chosen to take advantage of an existing control structure (FG1) and a stabilized stream cross section (FG3) (Duvert et al, 2010). At FG1 and FG3, Q was calculated from 15 minute interval stream stage measurements, using a stage-Q rating curve calibrated to manual Q measurements made under baseflow and stormflow conditions. Q was measured in the field by the area-velocity method (AV) using a Marsh-McBirney flowmeter to measure flow velocity and channel surveys measure cross-sectional area (Harrelson et al., 1994; Turnipseed and Sauer, 2010). The highest recorded stage was much higher than the highest stage with measured Q, so the stage-Q rating at FG3 was extrapolated using Manning's equation, calibrating Manning's n (0.067) to the Q measurements. At FG1, the flow control structure is a masonry ogee spillway crest of a defunct stream capture. Since the highest recorded stage (120 cm) was higher than the highest stage with measured Q (17 cm), and the flow structure did not meet the assumptions for using Manning's equation to predict flow, the HEC-RAS model was used (Brunner 2010). ")
+document.add_paragraph("Stream gaging sites were chosen to take advantage of an existing control structure (FG1) and a stabilized stream cross section (FG3) (Duvert et al, 2010). At FG1 and FG3, Q was calculated from 15 minute interval stream stage measurements, using a stage-Q rating curve calibrated to manual Q measurements made under baseflow and stormflow conditions. Q was measured in the field by the area-velocity method (AV) using a Marsh-McBirney flowmeter to measure flow velocity and channel surveys measure cross-sectional area (Harrelson et al., 1994; Turnipseed and Sauer, 2010). The highest recorded stage was much higher than the highest stage with measured Q, so the stage-Q rating at FG3 was extrapolated using Manning's equation, calibrating Manning's n (0.067) to the Q measurements. At FG1, the flow control structure is a masonry ogee spillway crest of a defunct stream capture. Since the highest recorded stage (120 cm) was higher than the highest stage with measured Q (17 cm), and the flow structure did not meet the assumptions for using Manning's equation to predict flow, the HEC-RAS model was used (Brunner 2010). See Appendix 1 for a full description of discharge measurements and rating curves. ")
 
 document.add_paragraph("A suitable site for stream gaging was not present at the outlet of the LOWER_QUARRY subwatershed (FG2), so water discharge at FG2 was calculated as the product of the specific water discharge from FG1 (m"u"\u00B3""/0.9 km"u"\u00B2"") and the watershed area draining to FG2 (1.17 km"u"\u00B2""). This assumes that specific water discharge from the subwatershed above FG2 is similar to above FG1. Discharge may be higher from the quarry surface, which represents 5.7% of the LOWER_QUARRY subwatershed, so Q, and thus SSY from the quarry are a conservative, lower bound estimate. The quarry surface is continually being disturbed, sometimes with large pits excavated and refilled in the course of weeks, as well as intentional water control structures implemented over time. Given the changes in the contributing area of the quarry, estimates of water yield from the quarry were uncertain, so we assumed a uniform specific discharge for the whole LOWER_QUARRY subwatershed.")
 
@@ -501,6 +506,8 @@ document.add_heading('Suspended Sediment Concentration',level=4)
 def No_All_samples(location):
     No_samples = len(SSC_dict['Pre-ALL'][SSC_dict['Pre-ALL']['Location'].isin([location])])
     return No_samples
+
+all_DAM_DT_LBJ_SSC = len(SSC_dict['Pre-ALL'][SSC_dict['Pre-ALL']['Location'].isin(['DAM','DT','R2','LBJ'])])
     
 ## Mean and Max SSC  numbers
 def Mean_and_Max_SSC(ssc,location):
@@ -561,7 +568,7 @@ QUARRY_DAM_mannwhit1_p, QUARRY_DAM_mannwhit2_p = "%.3f"%(QUARRY_DAM_mannwhit1[1]
 QUARRY_LBJ_mannwhit1_p, QUARRY_LBJ_mannwhit2_p = "%.3f"%(QUARRY_LBJ_mannwhit1[1]*2), "%.3f"%(QUARRY_LBJ_mannwhit2[1]*2)
 
 ## SSC boxplots
-document.add_paragraph("From January 6, 2012, to October 1, 2014, "+str(len(SSC_dict['Pre-ALL']))+" water samples were collected at FG1 (n="+"%.0f"%No_All_samples('DAM')+"), FG2 (n="+"%.0f"%No_All_samples('DT')+" grab samples, n="+"%.0f"%No_All_samples('R2')+" from the Autosampler), and FG3 (n="+"%.0f"%No_All_samples('LBJ')+"). Mean ("u"\u03BC"") and maximum SSC of water samples, collected during non-stormflow and stormflow periods by grab and autosampler, were lowest at FG1 ("u"\u03BC""="+Mean_SSC_FG1+" mg/L, max="+Max_SSC_FG1+" mg/L), highest at FG2 ("u"\u03BC""="+Mean_SSC_FG2+" mg/L, max="+Max_SSC_FG2+" mg/L), and in between at FG3 ("u"\u03BC""="+Mean_SSC_FG3+" mg/L, max="+Max_SSC_FG3+" mg/L). At FG1, 24% of grab samples (n="+No_nonstormflow_samples('DAM')+") were collected during non-stormflow, "u"\u03BC""="+Mean_nonstormflow_SSC('DAM')+" mg/L (Figure "+SSC_Boxplots['fig_num']+"a); 76% of grab samples (n="+No_storm_samples('DAM')+") were collected during stormflow, "u"\u03BC""= "+Mean_stormflow_SSC('DAM')+" mg/L (Figure 8b). At FG2, 23% of grab samples (n="+No_nonstormflow_samples('DT')+") were collected during non-stormflow, "u"\u03BC""= "+Mean_nonstormflow_SSC('DT')+" mg/L; 77% of grab samples (n="+No_storm_samples('DT')+") were collected during stormflow, "u"\u03BC""= "+Mean_stormflow_SSC('DT')+" mg/L. At FG3, 25% of samples (n="+No_nonstormflow_samples('LBJ')+") were collected during non-stormflow, "u"\u03BC""= "+Mean_nonstormflow_SSC('LBJ')+" mg/L; 75% of samples (n="+No_storm_samples('LBJ')+") were collected during stormflow, "u"\u03BC""= "+Mean_stormflow_SSC('LBJ')+" mg/L. This pattern of SSC values suggests that little sediment is contributed from the forest upstream of FG1, followed by a large input of sediment between FG1 and FG2, and then SSC is diluted by addition of stormflow with lower SSC between FG2 and FG3.")
+document.add_paragraph("From January 6, 2012, to October 1, 2014, "+str(all_DAM_DT_LBJ_SSC)+" water samples were collected at FG1 (n="+"%.0f"%No_All_samples('DAM')+"), FG2 (n="+"%.0f"%No_All_samples('DT')+" grab samples, n="+"%.0f"%No_All_samples('R2')+" from the Autosampler), and FG3 (n="+"%.0f"%No_All_samples('LBJ')+"). Mean ("u"\u03BC"") and maximum SSC of water samples, collected during non-stormflow and stormflow periods by grab and autosampler, were lowest at FG1 ("u"\u03BC""="+Mean_SSC_FG1+" mg/L, max="+Max_SSC_FG1+" mg/L), highest at FG2 ("u"\u03BC""="+Mean_SSC_FG2+" mg/L, max="+Max_SSC_FG2+" mg/L), and in between at FG3 ("u"\u03BC""="+Mean_SSC_FG3+" mg/L, max="+Max_SSC_FG3+" mg/L). At FG1, 24% of grab samples (n="+No_nonstormflow_samples('DAM')+") were collected during non-stormflow, "u"\u03BC""="+Mean_nonstormflow_SSC('DAM')+" mg/L (Figure "+SSC_Boxplots['fig_num']+"a); 76% of grab samples (n="+No_storm_samples('DAM')+") were collected during stormflow, "u"\u03BC""= "+Mean_stormflow_SSC('DAM')+" mg/L (Figure 8b). At FG2, 23% of grab samples (n="+No_nonstormflow_samples('DT')+") were collected during non-stormflow, "u"\u03BC""= "+Mean_nonstormflow_SSC('DT')+" mg/L; 77% of grab samples (n="+No_storm_samples('DT')+") were collected during stormflow, "u"\u03BC""= "+Mean_stormflow_SSC('DT')+" mg/L. At FG3, 25% of samples (n="+No_nonstormflow_samples('LBJ')+") were collected during non-stormflow, "u"\u03BC""= "+Mean_nonstormflow_SSC('LBJ')+" mg/L; 75% of samples (n="+No_storm_samples('LBJ')+") were collected during stormflow, "u"\u03BC""= "+Mean_stormflow_SSC('LBJ')+" mg/L. This pattern of SSC values suggests that little sediment is contributed from the forest upstream of FG1, followed by a large input of sediment between FG1 and FG2, and then SSC is diluted by addition of stormflow with lower SSC between FG2 and FG3.")
 
 ## Mean SSC statistical tests
 
@@ -747,19 +754,7 @@ document.add_heading('References', level=2)
 
 #### Appendix 1
 document.add_page_break()
-document.add_heading('APPENDIX 1. Channel cross sections',level=2)
-
-if 'LBJ_Cross_Section' in locals():
-    document.add_picture(LBJ_Cross_Section['filename']+'.png',width=Inches(6))
-    add_figure_caption(LBJ_Cross_Section['fig_num'],"Stream cross-section at FG3")
-
-if 'DAM_Cross_Section' in locals():  
-    document.add_picture(DAM_Cross_Section['filename']+'.png',width=Inches(6))
-    add_figure_caption(DAM_Cross_Section['fig_num'],"Stream cross-section at FG1")
-    
-#### Appendix 2
-document.add_page_break()
-document.add_heading("APPENDIX 2. Dams in Faga'alu watershed",level=2)
+document.add_heading("APPENDIX 1. Dams in Faga'alu watershed",level=2)
 
 ## Fagaalu Reservoir Infrastructure
 document.add_paragraph("Faga'alu stream was dammed at 4 locations above the village: 1) Matafao Dam (elevation 244 m) near the base of Mt. Matafao, draining 0.20 km"u"\u00B2"", 2) Vaitanoa Dam at Virgin Falls (elevation 140 m), draining an additional 0.44 km"u"\u00B2"", 3) a small unnamed dam below Vaitanoa Dam at elevation 100m, and 4) Lower Faga'alu Dam (elevation 48 m), immediately upstream of a large waterfall 30 m upstream of the quarry, draining an additional 0.26 km"u"\u00B2"" (Tonkin & Taylor International Ltd. 1989). A 2012 aerial LiDAR survey (Photo Science, Inc.) indicates the drainage area at the Lower Faga'alu Dam is 0.90 km"u"\u00B2"". A small stream capture/reservoir (~35 m"u"\u00B3"") is also present on a side tributary that joins Faga'alu stream on the south bank, opposite the quarry. It is connected to a ~6 cm diameter pipe but it is unknown when or by whom it was built, its initial capacity, or if it is still conveying water. During all site visits water was overtopping this small structure through the spillway crest, suggesting it is fed by a perennial stream.")
@@ -769,6 +764,35 @@ document.add_paragraph("Matafao Dam was constructed in 1917 for water supply to 
 document.add_paragraph("The Vaitanoa (Virgin Falls) Dam, was built in 1964 to provide drinking water but the pipe was not completed as of 10/19/89, and a stockpile of some 40 (8 ft length) 8 in. diameter asbestos-cement pipes was found on the streambanks. Local quarry staff recall the pipes were removed from the site some time in the 1990's. The Vaitanoa Reservoir had a design volume of 4.5 million gallons (17,000m"u"\u00B3""), but is assumed to be full of sediment since the drainage valves were never opened and the reservoir was overtopping the spillway as of 10/18/89 (Tonkin & Taylor International Ltd. 1989). A low masonry weir was also constructed downstream of the Vaitanoa Dam, but not connected to any piping.") 
 
 document.add_paragraph("The Lower Faga'alu Dam was constructed in 1966/67 just above the Samoa Maritime, Ltd. Quarry, as a source of water for the LBJ Medical Centre. It is unknown when this dam went out of use but in 1989 the 8 in. conveyance pipe was badly leaking and presumed out of service. The 8 in. pipe disappears below the floor of the Samoa Maritime quarry and it is unknown if it is still conveying water or has plugged with sediment. The derelict filtration plant at the entrance to the quarry was disconnected prior to 1989 (Tonkin & Taylor International Ltd. 1989). The original capacity was 0.03 million gallons (114 m"u"\u00B3"") but is now full of coarse sediment up to the spillway crest. No reports were found indicating this structure was ever emptied of sediment.") 
+
+#### Appendix 2
+document.add_page_break()
+document.add_heading("APPENDIX 2. Stream gaging in Faga'alu watershed", level=2)
+
+document.add_paragraph("Stream gaging sites were chosen to take advantage of an existing control structure at FG1 (Figure "+DAM_Cross_Section['fig_num']+") and a stabilized stream cross section at FG3 (Figure "+LBJ_Cross_Section['fig_num']+")(Duvert et al, 2010). At FG1 and FG3, Q was calculated from 15 minute interval stream stage measurements, using a stage-Q rating curve calibrated to manual Q measurements made under baseflow and stormflow conditions (Figures "+LBJ_StageDischarge['fig_num']+" and "+DAM_StageDischarge['fig_num']+"). Stream stage was measured with non-vented pressure transducers (PT) (Solinst Levelogger or Onset HOBO Water Level Logger) installed in stilling wells at FG1 and FG3. Barometric pressure data collected at Wx were used to calculate stage from the pressure data recorded by the PT. Data gaps in barometric pressure from Wx were filled by data from stations at Pago Pago Harbor (NSTP6) and NOAA Climate Observatory at Tula (TULA) (Figure "+Study_Area_map['fig_num']+"). Priority was given to the station closest to the watershed with valid barometric pressure data. Barometric data were highly correlated and the data source made little (<1cm) difference in the resulting water level. Q was measured in the field by the area-velocity method (AV) using a Marsh-McBirney flowmeter to measure flow velocity and channel surveys measure cross-sectional area (Harrelson et al., 1994; Turnipseed and Sauer, 2010).")
+
+if 'DAM_Cross_Section' in locals():  
+    document.add_picture(DAM_Cross_Section['filename']+'.png',width=Inches(6))
+    add_figure_caption(DAM_Cross_Section['fig_num'],"Stream cross-section at FG1")
+    
+if 'LBJ_Cross_Section' in locals():
+    document.add_picture(LBJ_Cross_Section['filename']+'.png',width=Inches(6))
+    add_figure_caption(LBJ_Cross_Section['fig_num'],"Stream cross-section at FG3")
+    
+document.add_paragraph("AV-Q measurements could not be made at high stages at FG1 and FG3 for safety reasons, so stage-Q relationships were constructed to estimate a continuous record of Q. At FG3, the channel is rectangular with stabilized rip-rap on the banks and bed (Appendix Figure A1.1). Recorded stage varied from 4 to 147 cm. AV-Q measurements (n= 14) were made from 30 to 1,558.0 L/sec, covering a range of stages from 6 to 39 cm. The highest recorded stage was much higher than the highest stage with measured Q so the rating could not be extrapolated by a power law. Stream conditions at FG3 fit the assumption for Manning's equation, so the stage-Q rating at FG3 was created using Manning's equation, calibrating Manning's n (0.067) to the Q measurements (Figure 3).")
+
+## LBJ stage-discharge rating
+if 'LBJ_StageDischarge' in locals():
+   document.add_picture(LBJ_StageDischarge['filename']+'.png',width=Inches(6))
+   add_figure_caption(LBJ_StageDischarge['fig_num'],"Stage-Discharge relationships for stream gaging site at FG3 for (a) the full range of observed stage and (b) the range of stages with AV measurements of Q. RMSE was "+"%.0f"%Manning_AV_rmse(LBJ_Man_reduced,LBJstageDischarge)[0]+" L/sec, or "+"%.0f"%Manning_AV_rmse(LBJ_Man_reduced,LBJstageDischarge)[2]+"% of observed Q.")
+
+document.add_paragraph("At FG1, the flow control structure is a masonry ogee spillway crest of a defunct stream capture. The structure is a rectangular channel 43 cm deep that transitions abruptly to gently sloping banks, causing an abrupt change in the stage-Q relationship (Appendix Figure "+DAM_Cross_Section['fig_num']+"). At FG1, recorded stage height ranged from "+"%.0f"%DAM['stage(cm)'].min()+" to "+"%.0f"%DAM['stage(cm)'].max()+" cm, while area-velocity Q measurements (n= "+"%.0f"%len(DAMstageDischarge)+") covered stages from "+"%.0f"%DAMstageDischarge['stage(cm)'].min()+" to "+"%.0f"%DAMstageDischarge['stage(cm)'].max()+" cm. Since the highest recorded stage ("+"%.0f"%DAM['stage(cm)'].max()+" cm) was higher than the highest stage with measured Q ("+"%.0f"%DAMstageDischarge['stage(cm)'].max()+" cm), and there was a distinct change in channel geometry above 43 cm the rating could not be extrapolated by a power law. The flow structure did not meet the assumptions for using Manning's equation to predict flow so the HEC-RAS model was used (Brunner 2010). The surveyed geometry of the upstream channel and flow structure at FG1 were input to HEC-RAS, and the HEC-RAS model was calibrated to the Q measurements (Figure "+DAM_StageDischarge['fig_num']+"). While a power function fit Q measurements better than HEC-RAS for low flow, HEC-RAS fit better for Q above the storm threshold used in analyses of SSY (Figure "+DAM_StageDischarge['fig_num']+").")
+
+## DAM stage-discharge rating
+if 'DAM_StageDischarge' in locals():
+    document.add_picture(DAM_StageDischarge['filename']+'.png',width=Inches(6))
+    add_figure_caption(DAM_StageDischarge['fig_num'],"Stage-Discharge relationships for stream gaging site at FG1 for (a) the full range of observed stage and (b) the range of stages with AV measurements of Q. RMSE was "+"%.0f"%HEC_AV_rmse(DAM_HECstageDischarge,DAMstageDischarge)[0]+" L/sec, or "+"%.0f"%HEC_AV_rmse(DAM_HECstageDischarge,DAMstageDischarge)[2]+"% of observed Q. "+'"Channel Top"'+" refers to the point where the rectangular channel transitions to a sloped bank and cross-sectional area increases much more rapidly with stage. A power-law relationship is also displayed to illustrate the potential error that could result if inappropriate methods are used.")    
+
 
 #### Appendix 3
 document.add_page_break()
