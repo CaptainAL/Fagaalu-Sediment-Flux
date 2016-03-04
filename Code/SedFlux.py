@@ -22,6 +22,7 @@ from scipy import stats
 import pandas.stats.moments as m
 from scipy.stats import pearsonr as pearson_r
 from scipy.stats import spearmanr as spearman_r
+from scipy.stats import chisquare as chisquare
 
 import statsmodels.formula.api as smf
 import statsmodels.stats.api
@@ -36,7 +37,6 @@ ro.r('x=c()')
 ro.r('x[1]="lets talk to R"')
 print(ro.r('x'))
 
-import pypandoc
 
 #### Plotting Tools
 import matplotlib.pyplot as plt
@@ -90,6 +90,7 @@ def savefig(save=True,filename=''):
         plt.savefig(filename+'.pdf') ## for publication
         plt.savefig(filename+'.png') ## for manuscript
     return
+    
 def pltdefault():
     global figdir
     plt.rcdefaults()
@@ -179,15 +180,18 @@ def scaleSeries(series,new_scale=[100,10]):
     NewSeriesValues = (((series - series.min()) * NewRange) / OldRange) + new_scale[1]
     return NewSeriesValues          
     
-def power(x,a,b):
-    y = a*(x**b)
+def power(x,a,b,BCF=1):
+    y = a*(x**b)*BCF
     return y
     
-def powerfunction(x,y,name='power rating',pvalue=0.01):
+
+def powerfunction(x,y,name='power rating',pvalue=0.01,correct_bias=False):
     ## put x and y in a dataframe so you can drop ones that don't match up  
     datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna().apply(np.log10)   
     datadf = datadf[datadf>=-10] ##verify data is valid (not inf)
+    
     regression = pd.ols(y=datadf['y'],x=datadf['x'])
+    
     if pearson_r(datadf['x'],datadf['y'])[1] < pvalue:
         pearson = pearson_r(datadf['x'],datadf['y'])[0]
     else: 
@@ -196,22 +200,38 @@ def powerfunction(x,y,name='power rating',pvalue=0.01):
         spearman = spearman_r(datadf['x'],datadf['y'])[0]
     else:
         spearman = np.nan
-    coeffdf = pd.DataFrame({'a':[10**regression.beta[1]],'b':[regression.beta[0]],
-    'r2':[regression.r2],'rmse':[regression.rmse],'pearson':[pearson],'spearman':[spearman]},
+        
+    ## Correct for log-transform bias (Ferguson, 1986)
+    BCF=1 ## if no correction, BCF = 1
+    ktest_pval=np.nan
+    if correct_bias == True:
+        ## Kolmogorov-Smirnov test for normality of residuals
+        ktest_pval = scipy.stats.kstest(regression.resid,"norm")[1]
+        if ktest_pval <= pvalue:
+            #Duan smearing correction: BIAS CORRECTION FACTOR (BCF)
+            BCF = sum(10**regression.resid.values)/len(regression.resid)
+    
+    a = 10**regression.beta[1]
+    b = regression.beta[0]
+    
+    coeffdf = pd.DataFrame({'a':[a],'b':[b],
+    'r2':[regression.r2],'rmse':[regression.rmse],'pearson':[pearson],'spearman':[spearman],'pvalue':[pvalue],'ktest_pval':[ktest_pval],'BCF':[BCF]},
 index=[name])
     return coeffdf
+    
+#powerfunction(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'],correct_bias=False)
 
-def PowerFit(x,y,xspace = 'none',ax=plt,**kwargs):
+def PowerFit(x,y, xspace = 'none', ax=plt, correct_bias=False, **kwargs):
     ## Develop power function for x and y
-    powfunc = powerfunction(x,y) ## x and y should be Series
-    a, b = powfunc['a'].values, powfunc['b'].values
-    #print a,b
+    powfunc = powerfunction(x, y, correct_bias = correct_bias) ## x and y should be Series
+    a, b, BCF = powfunc['a'].values, powfunc['b'].values, powfunc['BCF'].values
+    #print a,b,BCF
     if xspace == 'none':
         xvals = np.linspace(x.min()-10,x.max()*1.2)
         #print 'No xspace, calculating xvals: '+'%.0f'%x.min()+'-'+'%.0f'%x.max()+'*1.5= '+'%.0f'%(x.max()*1.5)
     else:
         xvals=xspace
-    ypred = a*(xvals**b)
+    ypred = a*(xvals**b)*BCF
     ax.plot(xvals,ypred,**kwargs)
     return powfunc
 
@@ -465,12 +485,12 @@ def LandCover_table(browser=True):
 landcover_table = LandCover_table(browser=True)
 
 ### LOAD FIELD DATA
-if 'XL' not in locals():
-    print 'opening MASTER_DATA excel file...'+dt.datetime.now().strftime('%H:%M:%S')
-    XL = pd.ExcelFile(datadir+'MASTER_DATA_FAGAALU.xlsx')
-if 'XL' in locals():
-    print 'MASTER_DATA opened: '+dt.datetime.now().strftime('%H:%M:%S')    
-    
+#if 'XL' not in locals():
+#    print 'opening MASTER_DATA excel file...'+dt.datetime.now().strftime('%H:%M:%S')
+#    XL = pd.ExcelFile(datadir+'MASTER_DATA_FAGAALU.xlsx')
+#if 'XL' in locals():
+#    print 'MASTER_DATA opened: '+dt.datetime.now().strftime('%H:%M:%S')    
+#    
 #### Import PRECIP Data
 #from precip_data import raingauge#, AddTimu1, AddTimu1Hourly, AddTimu1Daily, AddTimu1Monthly
 def raingauge(XL,sheet='',shift=0):
@@ -482,39 +502,39 @@ def raingauge(XL,sheet='',shift=0):
     gauge.columns=['Events']
     return gauge    
 
-if 'Precip' not in locals():
-    ## Timu-Fagaalu 1 (by the Quarry)
-    ## 2012-2013 Data
-    Precip = raingauge(XL,'Timu-Fagaalu1-2013',180) ## (path,sheet,shift) no header needed
-    Precip = Precip.truncate(dt.datetime(2012,1,21,0,0)) ### The Timu1 rain gauge had a wire loose and didn't record data until after 1/20/2012 when I fixed it
-    Precip= Precip.reindex(pd.date_range(dt.datetime(2012,1,6,17,51),dt.datetime(2013,12,31,23,59),freq='1Min'))
-    ## 2014 Data
-    Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2014',0)) ## (path,sheet,shift) no header needed
-    ## 2015 Data
-    #Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2015',0)) ## (path,sheet,shift) no header needed
-    Precip.columns=['Timu1']
-    Precip['Timu1-15']=Precip['Timu1'].resample('15Min',how='sum')
-    Precip['Timu1-30']=Precip['Timu1'].resample('30Min',how='sum')
-    # Hourly
-    Precip['Timu1hourly']= Precip['Timu1'].resample('H',how='sum')
-    Precip['Timu1hourly'].dropna().to_csv(datadir+'OUTPUT/Timu1hourly.csv',header=['Timu1hourly'])
-    # Daily
-    Precip['Timu1daily'] = Precip['Timu1'].resample('D',how='sum')
-    Precip['Timu1daily'].dropna().to_csv(datadir+'OUTPUT/Timu1daily.csv',header=['Timu1daily'])
-    # Monthly
-    Precip['Timu1monthly'] = Precip['Timu1'].resample('MS',how='sum') ## Monthly Precip
-    Precip['Timu1monthly'].dropna().to_csv(datadir+'OUTPUT/Timu1monthly.csv',header=['Timu1monthly'])
-    ## Timu-Fagaalu2 (up on Blunt's Point Ridge; only deployed for 2 months in 2012)
-    Precip['Timu2-30']=raingauge(XL,'Timu-Fagaalu2',180).resample('30Min',how='sum')
-    # Hourly
-    Precip['Timu2hourly']= Precip['Timu2-30'].resample('H',how='sum')
-    Precip['Timu2hourly'].dropna().to_csv(datadir+'OUTPUT/Timu2hourly.csv',header=['Timu2hourly'])
-    # Daily
-    Precip['Timu2daily'] = Precip['Timu2-30'].resample('D',how='sum')
-    Precip['Timu2daily'].dropna().to_csv(datadir+'OUTPUT/Timu2daily.csv',header=['Timu2daily'])
-    # Monthly
-    Precip['Timu2monthly'] = Precip['Timu2-30'].resample('MS',how='sum') ## Monthly Precip
-    Precip['Timu2monthly'].dropna().to_csv(datadir+'OUTPUT/Timu2monthly.csv',header=['Timu2monthly'])
+#if 'Precip' not in locals():
+#    ## Timu-Fagaalu 1 (by the Quarry)
+#    ## 2012-2013 Data
+#    Precip = raingauge(XL,'Timu-Fagaalu1-2013',180) ## (path,sheet,shift) no header needed
+#    Precip = Precip.truncate(dt.datetime(2012,1,21,0,0)) ### The Timu1 rain gauge had a wire loose and didn't record data until after 1/20/2012 when I fixed it
+#    Precip= Precip.reindex(pd.date_range(dt.datetime(2012,1,6,17,51),dt.datetime(2013,12,31,23,59),freq='1Min'))
+#    ## 2014 Data
+#    Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2014',0)) ## (path,sheet,shift) no header needed
+#    ## 2015 Data
+#    #Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2015',0)) ## (path,sheet,shift) no header needed
+#    Precip.columns=['Timu1']
+#    Precip['Timu1-15']=Precip['Timu1'].resample('15Min',how='sum')
+#    Precip['Timu1-30']=Precip['Timu1'].resample('30Min',how='sum')
+#    # Hourly
+#    Precip['Timu1hourly']= Precip['Timu1'].resample('H',how='sum')
+#    Precip['Timu1hourly'].dropna().to_csv(datadir+'OUTPUT/Timu1hourly.csv',header=['Timu1hourly'])
+#    # Daily
+#    Precip['Timu1daily'] = Precip['Timu1'].resample('D',how='sum')
+#    Precip['Timu1daily'].dropna().to_csv(datadir+'OUTPUT/Timu1daily.csv',header=['Timu1daily'])
+#    # Monthly
+#    Precip['Timu1monthly'] = Precip['Timu1'].resample('MS',how='sum') ## Monthly Precip
+#    Precip['Timu1monthly'].dropna().to_csv(datadir+'OUTPUT/Timu1monthly.csv',header=['Timu1monthly'])
+#    ## Timu-Fagaalu2 (up on Blunt's Point Ridge; only deployed for 2 months in 2012)
+#    Precip['Timu2-30']=raingauge(XL,'Timu-Fagaalu2',180).resample('30Min',how='sum')
+#    # Hourly
+#    Precip['Timu2hourly']= Precip['Timu2-30'].resample('H',how='sum')
+#    Precip['Timu2hourly'].dropna().to_csv(datadir+'OUTPUT/Timu2hourly.csv',header=['Timu2hourly'])
+#    # Daily
+#    Precip['Timu2daily'] = Precip['Timu2-30'].resample('D',how='sum')
+#    Precip['Timu2daily'].dropna().to_csv(datadir+'OUTPUT/Timu2daily.csv',header=['Timu2daily'])
+#    # Monthly
+#    Precip['Timu2monthly'] = Precip['Timu2-30'].resample('MS',how='sum') ## Monthly Precip
+#    Precip['Timu2monthly'].dropna().to_csv(datadir+'OUTPUT/Timu2monthly.csv',header=['Timu2monthly'])
 
 
 #### Import WX STATION Data
@@ -527,28 +547,28 @@ def WeatherStation(XL,sheet=''):
     Wx.columns=['TempOut', 'HiTemp', 'LowTemp', 'OutHum', 'DewPt', 'WindSpeed', 'WindDir', 'WindRun', 'HiSpeed', 'HiDir', 'WindChill', 'HeatIndex', 'THWIndex', 'Bar', 'Rain', 'RainRate', 'HeatD-D', 'CoolD-D', 'InTemp', 'InHum', 'InDew', 'InHeat', 'InEMC', 'InAirDensity', 'WindSamp', 'WindTx', 'ISSRecept', 'Arc.Int.']
     return Wx
     
-if 'FP' not in locals():
-    print 'Opening Weather Station data...'
-    FPa = WeatherStation(XL,'FP-30min')
-    Bar15Min=FPa['Bar'].resample('15Min',fill_method='pad',limit=2) ## fill the 30min Barometric intervals to 15minute, but not Precip!
-    FPa = FPa.resample('15Min')
-    FPa['Bar']=Bar15Min
-    FPb = WeatherStation(XL,'FP-15min')
-    FP = FPa.append(FPb)
-
-Precip['FPrain']=FP['Rain'] ## mm?
-Precip['FPrain']
-Precip['FPrain-30']=Precip['FPrain'].resample('30Min',how=sum)
-Precip['FPhourly'] = Precip['FPrain'].resample('H',how='sum') ## label=left?? 
-Precip['FPdaily'] = Precip['FPrain'].resample('D',how='sum')
-Precip['FPmonthly'] = Precip['FPrain'].resample('MS',how='sum')
-
-Precip['FPhourly'].dropna().to_csv(datadir+'OUTPUT/FPhourly.csv',header=['FPhourly'])
-Precip['FPdaily'].dropna().to_csv(datadir+'OUTPUT/FPdaily.csv',header=['FPdaily'])
-Precip['FPmonthly'].dropna().to_csv(datadir+'OUTPUT/FPmonthly.csv',header=['FPmonthly'])
-
-## Filled Precipitation record, priority = Timu1, fill with FPrain
-PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,6,17,51):dt.datetime(2012,1,6,23,59)], Precip['FPrain'][dt.datetime(2012,1,7,0,0):dt.datetime(2012,1,20,23,59)], Precip['Timu1-15'][dt.datetime(2012,1,21,0,0):dt.datetime(2013,2,8,0,0)], Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12,0,0)], Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24,0,0)], Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1,0,0)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,1,8,0,0)], Precip['Timu1-15'][dt.datetime(2014,1,14,0,0):dt.datetime(2014,12,31,23,59)] ]),columns=['Precip']).dropna()
+#if 'FP' not in locals():
+#    print 'Opening Weather Station data...'
+#    FPa = WeatherStation(XL,'FP-30min')
+#    Bar15Min=FPa['Bar'].resample('15Min',fill_method='pad',limit=2) ## fill the 30min Barometric intervals to 15minute, but not Precip!
+#    FPa = FPa.resample('15Min')
+#    FPa['Bar']=Bar15Min
+#    FPb = WeatherStation(XL,'FP-15min')
+#    FP = FPa.append(FPb)
+#
+#Precip['FPrain']=FP['Rain'] ## mm?
+#Precip['FPrain']
+#Precip['FPrain-30']=Precip['FPrain'].resample('30Min',how=sum)
+#Precip['FPhourly'] = Precip['FPrain'].resample('H',how='sum') ## label=left?? 
+#Precip['FPdaily'] = Precip['FPrain'].resample('D',how='sum')
+#Precip['FPmonthly'] = Precip['FPrain'].resample('MS',how='sum')
+#
+#Precip['FPhourly'].dropna().to_csv(datadir+'OUTPUT/FPhourly.csv',header=['FPhourly'])
+#Precip['FPdaily'].dropna().to_csv(datadir+'OUTPUT/FPdaily.csv',header=['FPdaily'])
+#Precip['FPmonthly'].dropna().to_csv(datadir+'OUTPUT/FPmonthly.csv',header=['FPmonthly'])
+#
+### Filled Precipitation record, priority = Timu1, fill with FPrain
+#PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,6,17,51):dt.datetime(2012,1,6,23,59)], Precip['FPrain'][dt.datetime(2012,1,7,0,0):dt.datetime(2012,1,20,23,59)], Precip['Timu1-15'][dt.datetime(2012,1,21,0,0):dt.datetime(2013,2,8,0,0)], Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12,0,0)], Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24,0,0)], Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1,0,0)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,1,8,0,0)], Precip['Timu1-15'][dt.datetime(2014,1,14,0,0):dt.datetime(2014,12,31,23,59)] ]),columns=['Precip']).dropna()
 
 #PrecipFilled = PrecipFilled.reindex(pd.date_range(dt.datetime(2012,1,7),dt.datetime(2014,12,31),freq='15Min'))
 
@@ -573,12 +593,12 @@ def ndbc(datafile = datadir+'BARO/NSTP6/NSTP6-2012-14.xlsx'):
     print 'NDBC loaded'
     return ndbc_data
 
-NDBCbaro = ndbc(datafile = datadir+'BARO/NSTP6/NSTP6-2012-14.xlsx')
-NDBCbaro = NDBCbaro['hPa'].resample('15Min')
-NDBCbaro = NDBCbaro.interpolate(method='linear',limit=4)
-NDBCbaro.columns=['NDBCbaro']
-NDBCbaro=NDBCbaro.shift(-44) ## UTC to Samoa local  =11 hours =44x15min
-NDBCbaro = NDBCbaro-.022
+#NDBCbaro = ndbc(datafile = datadir+'BARO/NSTP6/NSTP6-2012-14.xlsx')
+#NDBCbaro = NDBCbaro['hPa'].resample('15Min')
+#NDBCbaro = NDBCbaro.interpolate(method='linear',limit=4)
+#NDBCbaro.columns=['NDBCbaro']
+#NDBCbaro=NDBCbaro.shift(-44) ## UTC to Samoa local  =11 hours =44x15min
+#NDBCbaro = NDBCbaro-.022
 
 ## Barologger at  LBJ
 def barologger(XL,sheet=''):
@@ -590,19 +610,19 @@ def barologger(XL,sheet=''):
     Baro=Baro.resample('15Min',how='mean')
     return Baro
     
-BaroLogger = barologger(XL,'Fagaalu1-Barologger')
+#BaroLogger = barologger(XL,'Fagaalu1-Barologger')
  
-## Build data frame of barometric data: Make column 'baropress' with best available data
- ## Fill priority = FP,NDBC,TAFUNA,TULA (TAFUNA and TULA have been deprecated, reside in other scripts)
-allbaro = pd.DataFrame(NDBCbaro/10).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
-allbaro['FPbaro']=FP['Bar']/10
-allbaro['NDBCbaro']=NDBCbaro/10
-allbaro['BaroLogger']=BaroLogger
-
-## create a new column and fill with FP or Barologger
-allbaro['Baropress']=allbaro['FPbaro'].where(allbaro['FPbaro']>0,allbaro['BaroLogger']) 
-## create a new column and fill with FP or NDBC
-allbaro['Baropress']=allbaro['Baropress'].where(allbaro['Baropress']>0,allbaro['NDBCbaro']) 
+### Build data frame of barometric data: Make column 'baropress' with best available data
+# ## Fill priority = FP,NDBC,TAFUNA,TULA (TAFUNA and TULA have been deprecated, reside in other scripts)
+#allbaro = pd.DataFrame(NDBCbaro/10).reindex(pd.date_range(start2012,stop2014,freq='15Min'))
+#allbaro['FPbaro']=FP['Bar']/10
+#allbaro['NDBCbaro']=NDBCbaro/10
+#allbaro['BaroLogger']=BaroLogger
+#
+### create a new column and fill with FP or Barologger
+#allbaro['Baropress']=allbaro['FPbaro'].where(allbaro['FPbaro']>0,allbaro['BaroLogger']) 
+### create a new column and fill with FP or NDBC
+#allbaro['Baropress']=allbaro['Baropress'].where(allbaro['Baropress']>0,allbaro['NDBCbaro']) 
 
 
 #### Import PT Data
@@ -638,15 +658,15 @@ def PT_Levelogger(allbaro,PTname,XL,sheet,tshift=0,zshift=0): # tshift in hours,
     
 ## PT1 LBJ
 # tshift in 15Min(or whatever the timestep is), zshift in cm
-PT1aa = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1aa',tshift=12) #12 x 15min = 3hours (It says it was at GMT-8 instead of GMT-11 but the logger time was set to local anyway)
-PT1ab = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ab',tshift=12) #12 x 15min = 3hours (It says it was at GMT-8 instead of GMT-11 but the logger time was set to local anyway)
-PT1ba = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ba',tshift=4)
-PT1bb = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1bb',tshift=4)
-PT1bc = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1bc',tshift=4)
-PT1ca = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ca').truncate(after= dt.datetime(2014,9,23))
-PT1cb = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1cb')
-
-PT1 = pd.concat([PT1aa,PT1ab,PT1ba,PT1bb,PT1bc,PT1ca,PT1cb])
+#PT1aa = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1aa',tshift=12) #12 x 15min = 3hours (It says it was at GMT-8 instead of GMT-11 but the logger time was set to local anyway)
+#PT1ab = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ab',tshift=12) #12 x 15min = 3hours (It says it was at GMT-8 instead of GMT-11 but the logger time was set to local anyway)
+#PT1ba = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ba',tshift=4)
+#PT1bb = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1bb',tshift=4)
+#PT1bc = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1bc',tshift=4)
+#PT1ca = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1ca').truncate(after= dt.datetime(2014,9,23))
+#PT1cb = PT_Hobo(allbaro,'PT1 LBJ bridge',XL,'PT-Fagaalu1cb')
+#
+#PT1 = pd.concat([PT1aa,PT1ab,PT1ba,PT1bb,PT1bc,PT1ca,PT1cb])
 
 #rawPT1XL = pd.ExcelFile(datadir+'PT-Fagaalu1-raw.xlsx') 
 #rawPT1=pd.DataFrame()
@@ -657,11 +677,11 @@ PT1 = pd.concat([PT1aa,PT1ab,PT1ba,PT1bb,PT1bc,PT1ca,PT1cb])
 #    rawPT1 = rawPT1.append(sheet)
 
 ## PT2 QUARRY
-# tshift in 15Min(or whatever the timestep is), zshift in cm
+## tshift in 15Min(or whatever the timestep is), zshift in cm
 PT2 = PT_Levelogger(allbaro,'PT2 Drive Thru',XL,'PT-Fagaalu2',0,-22)
 
 ## PT3 DAM
-# tshift in 15Min(or whatever the timestep is), zshift in cm
+## tshift in 15Min(or whatever the timestep is), zshift in cm
 PT3aa = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3aa',12)
 PT3ab = PT_Hobo(allbaro,'PT3a Dam',XL,'PT-Fagaalu3ab',12)
 PT3b = PT_Levelogger(allbaro,'PT3b Dam',XL,'PT-Fagaalu3b',0)
@@ -1032,25 +1052,25 @@ def Mannings_Q_from_stage_data(Cross_section_file,sheetname,stage_data,Slope,Man
     DF = pd.DataFrame({'stage(m)':stage_data.values,'area(m2)':areas,'wp(m)':wp,'r':r,'Man_n':Man_n,'vel(m/s)':v,'Q(m3/s)':q},index=stage_data.index)
     return DF
     
-## Read LBJ_Man Discharge from .csv, or calculate new if needed
-if 'LBJ_Man' not in locals():
-    try:
-        print 'Loading Mannings Q for DAM from CSV'
-        LBJ_Man_reduced = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
-        LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
-    except:
-        print 'Calculate Mannings Q for LBJ and saving to CSV'
-        LBJ_S, LBJ_n, LBJ_k = 0.016, 'Jarrett', .06/.08
-        LBJ_S, LBJ_n, LBJ_k = 0.016, .067, 1
-        LBJ_stage_reduced = Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
-        LBJ_Man_reduced = Mannings_Q_from_stage_data(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_data=LBJ_stage_reduced)
-        LBJ_Man_reduced.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
-        LBJ_stage= Fagaalu_stage_data['LBJ']+5
-        LBJ_Man= Mannings_Q_from_stage_data(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_data=LBJ_stage)
-        LBJ_Man.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
-        pass
-    
-## Read DAM_Man Discharge from .csv, or calculate new if needed
+### Read LBJ_Man Discharge from .csv, or calculate new if needed
+#if 'LBJ_Man' not in locals():
+#    try:
+#        print 'Loading Mannings Q for DAM from CSV'
+#        LBJ_Man_reduced = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
+#        LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
+#    except:
+#        print 'Calculate Mannings Q for LBJ and saving to CSV'
+#        LBJ_S, LBJ_n, LBJ_k = 0.016, 'Jarrett', .06/.08
+#        LBJ_S, LBJ_n, LBJ_k = 0.016, .067, 1
+#        LBJ_stage_reduced = Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
+#        LBJ_Man_reduced = Mannings_Q_from_stage_data(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_data=LBJ_stage_reduced)
+#        LBJ_Man_reduced.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
+#        LBJ_stage= Fagaalu_stage_data['LBJ']+5
+#        LBJ_Man= Mannings_Q_from_stage_data(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',Slope=LBJ_S,Manning_n=LBJ_n,k=LBJ_k,stage_data=LBJ_stage)
+#        LBJ_Man.to_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
+#        pass
+#    
+### Read DAM_Man Discharge from .csv, or calculate new if needed
 if 'DAM_Man' not in locals():
     try:
         print 'Loading Mannings Q for DAM from CSV'
@@ -1076,19 +1096,19 @@ Slope = 0.0161 # m/m
 LBJ_n=0.067 # Mountain stream rocky bed and rivers with variable sections and veg along banks (Dunne 1978)
 
 #DataFrame with Q from AV measurements, Q from measured A with Manning-predicted V, stage, and Q from Manning's and assumed rectangular channel
-LBJstageDischarge = Stage_Q_AV_RatingCurve(datadir+'Q/Flow_Files/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=LBJ_n,trapezoid=True).dropna() 
-LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flowmeter 
-LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
+#LBJstageDischarge = Stage_Q_AV_RatingCurve(datadir+'Q/Flow_Files/','LBJ',Fagaalu_stage_data,slope=Slope,Mannings_n=LBJ_n,trapezoid=True).dropna() 
+#LBJstageDischarge = LBJstageDischarge.truncate(before=datetime.datetime(2012,3,20)) # throw out measurements when I didn't know how to use the flowmeter 
+#LBJstageDischargeLog = LBJstageDischarge.apply(np.log10) #log-transformed version
 
 ## LBJ: Discharge Ratings
 ## Linear
-LBJ_AV= pd.ols(y=LBJstageDischarge['Q-AV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) 
+#LBJ_AV= pd.ols(y=LBJstageDischarge['Q-AV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True) 
 ## Power
-LBJ_AVLog= pd.ols(y=LBJstageDischargeLog['Q-AV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) #linear fit to log-transformed stage and Q
+#LBJ_AVLog= pd.ols(y=LBJstageDischargeLog['Q-AV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True) #linear fit to log-transformed stage and Q
 ## Linear with Mannings and measured Area
-LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True)
+#LBJ_AManningV = pd.ols(y=LBJstageDischarge['Q-AManningV(L/sec)'],x=LBJstageDischarge['stage(cm)'],intercept=True)
 ## Power with Mannings and measured Area
-LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
+#LBJ_AManningVLog = pd.ols(y=LBJstageDischargeLog['Q-AManningV(L/sec)'],x=LBJstageDischargeLog['stage(cm)'],intercept=True)
 
 #### DAM Stage-Discharge
 
@@ -1098,13 +1118,13 @@ DAM_n = 'Jarrett'
 DAM_k = 1
 ## DataFrame of Stage and Discharge calc. from AV measurements with time index
 DAMstageDischarge = Stage_Q_AV_RatingCurve(datadir+'Q/Flow_Files/','Dam',Fagaalu_stage_data,slope=Slope,Mannings_n=DAM_n).dropna() 
-#DAMstageDischarge = DAMstageDischarge[10:]# throw out measurements when I didn't know how to use the flowmeter
+DAMstageDischarge = DAMstageDischarge[10:]# throw out measurements when I didn't know how to use the flowmeter
 DAMstageDischargeLog=DAMstageDischarge.apply(np.log10) #log-transformed version
 
 ## DAM: Discharge Ratings
-## Linear
+# Linear
 DAM_AV = pd.ols(y=DAMstageDischarge['Q-AV(L/sec)'],x=DAMstageDischarge['stage(cm)'],intercept=True) 
-## Power
+# Power
 DAM_AVLog = pd.ols(y=DAMstageDischargeLog['Q-AV(L/sec)'],x=DAMstageDischargeLog['stage(cm)'],intercept=True) 
 
 ### HEC-RAS Model of the DAM structure: Documents/HEC/FagaaluDam.prj
@@ -1120,6 +1140,7 @@ def HEC_piecewise(PTdata):
     Func3=PTdata[PTdata>45]*HEC_a3 + HEC_b3
     AllValues = Func1.append([Func2,Func3])
     return AllValues
+    
 DAM_HECstageDischarge= pd.DataFrame(data=range(0,150),columns=['stage(cm)'])
 DAM_HECstageDischarge['Q_HEC(L/sec)'] = HEC_piecewise(DAM_HECstageDischarge['stage(cm)'])
 
@@ -1147,7 +1168,7 @@ def Manning_AV_r2(ManningsQ_Series,AV_Series):
     ss_res = y_res.sum()
     r2 = 1-(ss_res/ss_tot)
     return  r2
-LBJ_Man_r2 = Manning_AV_r2(LBJ_Man_reduced,LBJstageDischarge)
+#LBJ_Man_r2 = Manning_AV_r2(LBJ_Man_reduced,LBJstageDischarge)
 DAM_Man_r2 = Manning_AV_r2(DAM_Man_reduced,DAMstageDischarge)
 
 def Manning_AV_rmse(Man_Series,AV_Series):
@@ -1166,7 +1187,7 @@ def Manning_AV_rmse(Man_Series,AV_Series):
     mean_observed = AV_Q.mean()
     rmse_percent = y_rmse/mean_observed *100.
     return int(y_rmse),int(mean_observed),int(rmse_percent)
-LBJ_Man_rmse = Manning_AV_rmse(LBJ_Man_reduced,LBJstageDischarge)[2]
+#LBJ_Man_rmse = Manning_AV_rmse(LBJ_Man_reduced,LBJstageDischarge)[2]
     
     
 def HEC_AV_r2(HEC_Series,AV_Series):
@@ -1311,20 +1332,20 @@ def plotQratingDAM(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     show_plot(show,fig)
     savefig(save,filename)
     return
-plotQratingDAM(ms=6,show=True,log=False,save=True,filename=figdir+'DAM stage Q rating')
+#plotQratingDAM(ms=6,show=True,log=False,save=True,filename=figdir+'DAM stage Q rating')
 #plotQratingDAM(ms=6,show=True,log=True,save=False,filename=figdir+'')
 
 #### CALCULATE DISCHARGE
 ## Calculate Q for LBJ
 ## Stage
-LBJ = DataFrame(PT1,columns=['stage(cm)']) ## Build DataFrame with all stage records for location (cm)
-## Mannings
-LBJ['Q-Mannings'] = LBJ_Man['Q(m3/s)']*1000
-## Power Models
-a,b = 10**LBJ_AVLog.beta[1], LBJ_AVLog.beta[0]# beta[1] is the intercept = log10(a), so a = 10**beta[1] # beta[0] is the slope = b
-LBJ['Q-AVLog'] = a * (LBJ['stage(cm)']**b)
-a,b = 10**LBJ_AManningVLog.beta[1], LBJ_AManningVLog.beta[0]
-LBJ['Q-AManningVLog'] = a*(LBJ['stage(cm)']**b)
+#LBJ = DataFrame(PT1,columns=['stage(cm)']) ## Build DataFrame with all stage records for location (cm)
+### Mannings
+#LBJ['Q-Mannings'] = LBJ_Man['Q(m3/s)']*1000
+### Power Models
+#a,b = 10**LBJ_AVLog.beta[1], LBJ_AVLog.beta[0]# beta[1] is the intercept = log10(a), so a = 10**beta[1] # beta[0] is the slope = b
+#LBJ['Q-AVLog'] = a * (LBJ['stage(cm)']**b)
+#a,b = 10**LBJ_AManningVLog.beta[1], LBJ_AManningVLog.beta[0]
+#LBJ['Q-AManningVLog'] = a*(LBJ['stage(cm)']**b)
 
 ## Calculate Q for DAM
 ## Stage
@@ -2722,7 +2743,8 @@ def plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=False,log=False,
             SSC = SSC_dict['Pre-storm']
         elif storm_samples_only==False:
             SSC = SSC_dict['Pre-ALL']  
-    fig, (ysi,obs) = plt.subplots(1,2,sharex=True, sharey=True, figsize=(6.5,3.25))#,sharex=True,sharey=True)
+            
+    fig, ((ysi,ysi_zoom),(obs,obs_zoom)) = plt.subplots(2,2,figsize=(6.5,6.5))#,sharex=True,sharey=True)
             
     max_y, max_x = 3800, 3800
     xy = np.linspace(1,max_y)
@@ -2732,18 +2754,31 @@ def plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=False,log=False,
     lbj = T_SSC_LBJ_YSI
     ysi.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',markersize=4,c='k',label='FG3')
     ysi.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='YSI_FG3 '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    
+    ysi_zoom.plot(lbj[1]['T-NTU'],lbj[1]['SSC (mg/L)'],ls='none',marker='o',fillstyle='none',markersize=4,c='k',label='FG3')
+    ysi_zoom.plot(xy,xy*lbj[0].beta[0],ls='-',c='k',label='YSI_FG3 '+r'$r^2$'+"%.2f"%lbj[0].r2)
+    
     ## DAM
     dam = T_SSC_DAM_YSI
     ysi.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='o',markersize=4,c='grey',label='FG1')
     ysi.plot(xy,xy*dam[0].beta[0],ls='--',c='grey',label='YSI_FG1 '+r'$r^2$'+"%.2f"%dam[0].r2)
-    ysi.set_xlabel('Turb. (NTU)')
-    ysi.set_ylabel('SSC (mg/L)')
+    
+    ysi_zoom.plot(dam[1]['T-NTU'],dam[1]['SSC (mg/L)'],ls='none',marker='o',markersize=4,c='grey',label='FG1')
+    ysi_zoom.plot(xy,xy*dam[0].beta[0],ls='--',c='grey',label='YSI_FG1 '+r'$r^2$'+"%.2f"%dam[0].r2)
+    
+    ysi.set_xlabel('Turb. (NTU)'), ysi_zoom.set_xlabel('Turb. (NTU)')
+    ysi.set_ylabel('SSC (mg/L)')#, ysi_zoom.set_ylabel('SSC (mg/L)')
     ysi.legend(ncol=1,fontsize=8,columnspacing=0.1,loc='lower right')
+    
+    
     ## LBJ OBSa
     ## SS Avg
     ss_average = T_SSC_LBJ_OBSa
     obs.plot(xy,xy*ss_average[0].beta[0],ls='-',c='k',label='OBSa '+r'$r^2$'+"%.2f"%ss_average[0].r2)  
     obs.plot(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'],c='k',label='FG3 OBSa',ls='none',marker='o',markersize=4)
+    
+    obs_zoom.plot(xy,xy*ss_average[0].beta[0],ls='-',c='k',label='OBSa '+r'$r^2$'+"%.2f"%ss_average[0].r2)  
+    obs_zoom.plot(ss_average[1]['T-NTU'],ss_average[1]['SSC (mg/L)'],c='k',label='FG3 OBSa',ls='none',marker='o',markersize=4)
     
     ## LBJ OBSb
     ## SS Mean
@@ -2751,9 +2786,12 @@ def plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=False,log=False,
     obs.plot(xy,xy*ss_mean[0].beta[0],ls='-',c='grey',label='OBSb '+r'$r^2$'+"%.2f"%ss_mean[0].r2) 
     obs.plot(ss_mean[1]['T-NTU'],ss_mean[1]['SSC (mg/L)'],c='k',marker='o',ls='none',fillstyle='none',markersize=4,label='FG3 OBSb')
     
+    obs_zoom.plot(xy,xy*ss_mean[0].beta[0],ls='-',c='grey',label='OBSb '+r'$r^2$'+"%.2f"%ss_mean[0].r2) 
+    obs_zoom.plot(ss_mean[1]['T-NTU'],ss_mean[1]['SSC (mg/L)'],c='k',marker='o',ls='none',fillstyle='none',markersize=4,label='FG3 OBSb')
     
-    obs.set_xlabel('Turb. (SS)')
-    obs.yaxis.tick_right()
+    obs.set_xlabel('Turb. (SS)'), obs_zoom.set_xlabel('Turb. (SS)')
+    #obs.yaxis.tick_right()
+    obs.set_ylabel('SSC (mg/L)')#, obs_zoom.set_ylabel('SSC (mg/L)')
     obs.legend(ncol=1,fontsize=8,columnspacing=0.1,loc='lower right')
     
     for ax in fig.axes:
@@ -2766,7 +2804,10 @@ def plot_all_T_SSC_ratings(Use_All_SSC=False,storm_samples_only=False,log=False,
         
     letter_subplots(fig,x=0.1,y=0.95,vertical='top',horizontal='right',Color='k',font_size=10,font_weight='bold')
     plt.tight_layout(pad=0.1)
-        
+    
+    ysi_zoom.set_xlim(0,500), ysi_zoom.set_ylim(0,500)
+    obs_zoom.set_xlim(0,500), obs_zoom.set_ylim(0,500)
+    
     show_plot(show)
     savefig(save,filename)
     return
@@ -2833,7 +2874,7 @@ def NTUratingstable_html(caption,table_num,filename,save=False,show=False):
 
 # YSI
 LBJ['YSI-NTU']=LBJ_YSI['NTU']
-LBJ['YSI-SSC']=LBJ_YSI_rating.beta[0] * LBJ['YSI-NTU']
+LBJ['YSI-SSC']=DAM_YSI_rating.beta[0] * LBJ['YSI-NTU']
 LBJ['YSI-SSC-RMSE'] = LBJ_YSI['T-SSC-RMSE']
 # OBSa
 ## resample to 15min to match Q records
@@ -2968,6 +3009,7 @@ Pstorms_LBJ['EI'] = LBJ_Stormdf['EI']
 Qstorms_LBJ= Sum_Storms(All_Storms,LBJq['Q']) 
 Qstorms_LBJ.columns=['Qstart','Qend','Qcount','Qsum','Qmax']
 Qstorms_LBJ['Qmax']=Qstorms_LBJ['Qmax']/900 ## Have to divide by 900 to get instantaneous 
+
 
 ## QUARRY P and Q
 Pstorms_QUARRY = Sum_Storms(All_Storms,PrecipFilled['Precip']) 
@@ -3125,19 +3167,19 @@ def Q_budget_table(subset='pre',browser=True):
     caption=table_caption, \
     css.cell = 'padding-left: .5em; padding-right: .2em;' \
     "
-    if subset=='pre':
-        ## Add deployment dates
-        table_code_str = table_code_str + ", \
-        tspanner=c('Deployment start 1/6/2012', \
-        'Deployment end 8/11/2012 <br> Deployment start 2/10/13', \
-        'Deployment end 9/28/2013 <br>Deployment start 2/10/14', \
-        ''), \
-        n.tspanner = c(51, 105-51, 169-105,1) "
-    elif subset=='post':
-        ## Just the line above the total row
-        table_code_str = table_code_str + ", \
-        tspanner=c('',''), \
-        n.tspanner = c(nrow(table_df)-1,1)"
+#    if subset=='pre':
+#        ## Add deployment dates
+#        table_code_str = table_code_str + ", \
+#        tspanner=c('Deployment start 1/6/2012', \
+#        'Deployment end 8/11/2012 <br> Deployment start 2/10/13', \
+#        'Deployment end 9/28/2013 <br>Deployment start 2/10/14', \
+#        ''), \
+#        n.tspanner = c(51, 105-51, 169-105,1) "
+#    elif subset=='post':
+#        ## Just the line above the total row
+#        table_code_str = table_code_str + ", \
+#        tspanner=c('',''), \
+#        n.tspanner = c(nrow(table_df)-1,1)"
         
     ## run htmlTable
     ro.r("table_out <- htmlTable("+table_code_str+")")
@@ -3231,7 +3273,7 @@ def timeseries_SSY_Data(title,storm_intervals=All_Storms,show=False):
     plt.tight_layout(pad=0.1)
     show_plot(show)
     return
-#timeseries_SSY_Data('All_Storms',All_Storms,show=True)
+timeseries_SSY_Data('All_Storms',All_Storms,show=True)
 
 
 
@@ -3723,10 +3765,8 @@ def S_budget_table(subset='pre',browser=True):
     S_budget['% LOWER'] = storms_data['Slower'] / storms_data['Stotal'] * 100
     S_budget.loc[:,'% LOWER'] = S_budget['% LOWER'].dropna().apply(int)
     ## SSY data source and PE
-    S_budget['UPPER SSY data source'] = storms_data['SSY_data_source_upper']
-    S_budget['TOTAL SSY data source'] = storms_data['SSY_data_source_total']
-    # just pick one
-    S_budget['SSY data source'] = storms_data['SSY_data_source_total']
+    S_budget['SSY data source UPPER'] = storms_data['SSY_data_source_upper']
+    S_budget['SSY data source TOTAL'] = storms_data['SSY_data_source_total']
     # Harmel 2006 Probable Error (PE)
     S_budget['UPPER PE %'] = storms_data['Supper_PE'].dropna().apply(int)
     S_budget['TOTAL PE %'] = storms_data['Stotal_PE'].dropna().apply(int)
@@ -3768,7 +3808,8 @@ def S_budget_table(subset='pre',browser=True):
     '% LOWER':"%.0f"%Percent_Lower,
     'UPPER PE %':"%.0f"%S_budget['UPPER PE %'].mean(),
     'TOTAL PE %':"%.0f"%S_budget['TOTAL PE %'].mean(),
-    'SSY data source':'-'},
+    'SSY data source UPPER':'-',
+    'SSY data source TOTAL':'-'},
     index=['Total/Avg']))
     
     ## add sSSY summary stats to bottom of table
@@ -3781,7 +3822,8 @@ def S_budget_table(subset='pre',browser=True):
     '% LOWER':'-',
     'UPPER PE %':'-',
     'TOTAL PE %':'-',
-    'SSY data source':'-',}, 
+    'SSY data source UPPER':'-',
+    'SSY data source TOTAL':'-'}, 
     index=['Tons/km2']))
     
     ## add Disturbance Ratio (sSSY:sSSY_UPPER) stats to bottom of table
@@ -3794,13 +3836,14 @@ def S_budget_table(subset='pre',browser=True):
     '% UPPER':'-',
     'UPPER PE %':'-',
     'TOTAL PE %':'-',
-    'SSY data source':'-'},
+    'SSY data source UPPER':'-',
+    'SSY data source TOTAL':'-'},
     index=['DR']))
  
     ## Order columns
     S_budget = S_budget[['Storm#','Storm Start','Precip (mm)',
     'UPPER tons','LOWER tons','TOTAL tons','% UPPER','% LOWER','UPPER PE %','TOTAL PE %',
-    'SSY data source']]
+    'SSY data source UPPER','SSY data source TOTAL']]
     
     ## SAVE AS htmlTABLE with R
     ## Want the table indexed by the Storm #
@@ -3824,8 +3867,8 @@ def S_budget_table(subset='pre',browser=True):
     align='ccccccccccc', \
     caption=table_caption, \
     cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV</sub>TOTAL','PE<sup>a</sup>','SSC'), \
-    n.cgroup = c(1,1,3,2,2,1), \
-    header= c('Start','mm','UPPER<sup>b</sup.','LOWER<sup>c</sup.','TOTAL<sup>d</sup>','UPPER','LOWER','UPPER','TOTAL','Data Source'), \
+    n.cgroup = c(1,1,3,2,2,2), \
+    header= c('Start','mm','UPPER<sup>b</sup.','LOWER<sup>c</sup.','TOTAL<sup>d</sup>','UPPER','LOWER','UPPER','TOTAL','Data Source UPPER','Data Source TOTAL'), \
     tfoot='a. PE is cumulative probable error (Eq 6) as a percentage of the mean observed SSY.<br> \
     b. Measured SSY<sub>EV</sub> at FG1. <br> \
     c. SSY<sub>EV</sub> at FG3 &#45; SSY<sub>EV</sub> at FG1. <br> \
@@ -4332,7 +4375,7 @@ def ANCOVA(ALLStorms, ind_var, pvalue=0.01):
 
 
 #### Sediment Rating Curves: on area-normalized SSY, Q and Qmax
-def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=False, save=False, filename=''):  
+def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, correct_bias=False, show=False, save=False, filename=''):  
     
     ## Normalize by area??
     if norm==True:
@@ -4364,11 +4407,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     ps.plot(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
     ps.plot(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)
-    PS_upper_power = powerfunction(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], xy, ps, linestyle='-',color='grey', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
+    PS_upper_power = powerfunction(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], xy, ps, correct_bias=correct_bias, linestyle='-',color='grey', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
     ## Total Watershed (=LBJ)
-    PS_total_power = powerfunction(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], xy,ps,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2+' '+PS_ANCOVA) 
+    PS_total_power = powerfunction(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], xy,ps, correct_bias=correct_bias,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2+' '+PS_ANCOVA) 
     ## Format P vs S plot
     ps.set_xlabel('Total Event Precip (mm)'),ps.set_ylabel(ylabel)
     ps.set_xlim(10**0,10**3),ps.set_ylim(10**-4,10**2.2)
@@ -4381,11 +4424,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     ei.plot(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
     ei.plot(ALLStorms_total['EI'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)
-    EI_upper_power = powerfunction(ALLStorms_upper['EI'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], xy,ei,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
+    EI_upper_power = powerfunction(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], xy,ei, correct_bias=correct_bias,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
     ## Total Watershed (=LBJ)       
-    EI_total_power = powerfunction(ALLStorms_total['EI'], ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'], xy,ei,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2+' '+EI_ANCOVA) 
+    EI_total_power = powerfunction(ALLStorms_total['EI'], ALLStorms_total['Stotal'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'], xy,ei, correct_bias=correct_bias,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2+' '+EI_ANCOVA) 
     ## format EI vs S plot
     ei.set_xlabel('Event Erosivity Index (MJmm ha-1 h-1)')#ei.set_ylabel(ylabel)
     ei.set_xlim(10**0,10**3),ps.set_ylim(10**-4,10**2.2)
@@ -4398,11 +4441,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     qsums.plot(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
     qsums.plot(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)    
-    QsumS_upper_power = powerfunction(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], xy,qsums,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
+    QsumS_upper_power = powerfunction(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], xy,qsums, correct_bias=correct_bias,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
     ## Total Watershed (=LBJ)
-    QsumS_total_power = powerfunction(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'], xy,qsums,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2+' '+QsumS_ANCOVA) 
+    QsumS_total_power = powerfunction(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'], xy,qsums, correct_bias=correct_bias,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2+' '+QsumS_ANCOVA) 
     ## Format Qsum vs S plot
     qsums.set_xlabel('Total Event Discharge '+xlabelQsum)
     qsums.set_ylabel(ylabel)#qsums.set_xlabel(xlabelQsum)
@@ -4416,11 +4459,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     qmaxs.plot(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
     qmaxs.plot(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)       
-    QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], xy,qmaxs,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
+    QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], xy,qmaxs, correct_bias=correct_bias,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
     ## Total Watershed (=LBJ)
-    QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'], xy,qmaxs,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2+' '+QmaxS_ANCOVA)
+    QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'], xy,qmaxs, correct_bias=correct_bias,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2+' '+QmaxS_ANCOVA)
     ## Format Qmax vs S plot
     qmaxs.set_xlabel('Maximum Event Discharge '+xlabelQmax)
     #qmaxs.set_ylabel(ylabel)#qmaxs.set_xlabel(xlabelQmax)
@@ -4446,34 +4489,49 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     return (PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power), (PS_ANCOVA, EI_ANCOVA, QsumS_ANCOVA, QmaxS_ANCOVA)
 
 ## Plot all models and save them 
-All_Storms_All_Models = plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
+All_Storms_All_Models = plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=True, correct_bias=True,show=True,save=False,filename='')
+
+
+#### Bias correction
+##
+## Not log-log
+#plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=False, correct_bias=False,show=True,save=False,filename='')
+#plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=False, correct_bias=True,show=True,save=False,filename='')
+
+## Log-Log
+#plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=True, correct_bias=False, show=True, save=False, filename='')
+#plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=True, correct_bias=True, show=True, save=False, filename='')
+
+#plot_All_Storms_All_Models(subset='post',ms=4,norm=True,log=True,correct_bias=True, show=True,save=False,filename='')
+
+
 ## Models
 PS_upper_power,PS_total_power,EI_upper_power,EI_total_power, \
     QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power = All_Storms_All_Models [0]
 
-def All_Models_stats_table(subset='pre', browser=True):
+def All_Models_stats_table(subset='pre', correct_bias=False, browser=True):
     ## Get Models and ANCOVAS separately
-    models = plot_All_Storms_All_Models(subset,ms=4,norm=True,log=True,show=False,filename='')[0]
+    models = plot_All_Storms_All_Models(subset,ms=4,norm=True,log=True, correct_bias=correct_bias, show=False,filename='')[0]
     ANCOVAs = models[1]
     
     ## Get model parameters
-    pearsons = ["%.2f"%rating.pearson[0] for rating in models]
+    BCFs = ["%.2f"%rating.BCF[0] for rating in models]
     spearmans = ["%.2f"%rating.spearman[0] for rating in models]
     r2s = ["%.2f"%rating.r2[0] for rating in models]
     rmses = ["%.2f"%10**rating.rmse[0] for rating in models]
     alphas= ["%.3f"%rating.a[0] for rating in models]
     betas  = ["%.2f"%rating.b[0] for rating in models]
     
-    All_Models_stats = pd.DataFrame({'Pearson':pearsons,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses,'alpha':alphas,'Beta':betas},
+    All_Models_stats = pd.DataFrame({'BCF':BCFs,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses,'alpha':alphas,'Beta':betas},
     index =['Psum_upper','Psum_total','EI_upper','EI_total',
     'Qsum_upper','Qsum_total','Qmax_upper','Qmax_total']).replace('nan','-')
     
-    All_Models_stats = All_Models_stats[['Pearson','Spearman','r2','RMSE(tons)','alpha','Beta']]
+    All_Models_stats = All_Models_stats[['Spearman','r2','RMSE(tons)','alpha','Beta','BCF']]
     
     ## SAVE AS htmlTABLE with R
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(All_Models_stats)
-    caption = "Goodness-of-fit statistics for SSY<sub>EV</sub> &#45; storm metric relationships. Pearson and Spearman correlation coefficients signifcant at p<0.01."
+    caption = "Goodness-of-fit statistics for SSY<sub>EV</sub> &#45; storm metric relationships. Spearman correlation coefficients signifcant at p<0.01."
     table_num= 6
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -4487,7 +4545,7 @@ def All_Models_stats_table(subset='pre', browser=True):
     align='lcccccc', \
     caption=table_caption, \
     rowlabel='Model', \
-    header= c('Pearson','Spearman','r<sup>2</sup>','RMSE(tons)','Intercept(&#945;)','Slope(&#946;)')\
+    header= c('Spearman','r<sup>2</sup>','RMSE(tons)','Intercept(&#945;)','Slope(&#946;)','BCF')\
     "
     ## run htmlTable
     ro.r("table_out <- htmlTable("+table_code_str+")")
@@ -4503,17 +4561,17 @@ def All_Models_stats_table(subset='pre', browser=True):
 
     return All_Models_stats
     
-All_Models_stats = All_Models_stats_table(subset='pre', browser=True)
+All_Models_stats = All_Models_stats_table(subset='pre', correct_bias=True, browser=True)
     
 
 #### Predict Annual SSY from SSY-Qmqx model
 def predict_SSY(model, data, start, stop, watershed_area, show=False):
     ## Model parameters
-    a,b = model.iloc[0][['a','b']]
+    a,b,BCF = model.iloc[0][['a','b','BCF']]
     ## Get data between start and stop times
     data = data[(data.index > start) & (data.index < stop)]
     ## run model **AREA-NORMALIZED
-    SSY_EV_predicted = a * (( data / watershed_area) **b) ## model: ssy/km2 = a Qmax/km2 **b
+    SSY_EV_predicted = a * (( data / watershed_area) **b) * BCF ## model: ssy/km2 = a Qmax/km2 **b * BiasCorrectionFactor
     if show == True:
         ## Plot input data and SSYEV predicted (AREA NORMALIZED)
         fig, ax1 = plt.subplots(1,figsize=(5,4))
@@ -4600,6 +4658,20 @@ Storms_LBJ_Qmax_filled = Qmax_predicted_LBJ_vs_measured_LBJ()
 Storms_LBJ_Qmax_filled['LBJ_Q_combined'] =  Storms_LBJ_Qmax_filled['LBJ_Q'].where(Storms_LBJ_Qmax_filled['LBJ_Q']>0, Storms_LBJ_Qmax_filled['LBJ_Q_filled'])
 
 SSY_Total_Qmax_filled_2014, sSSY_Total_Qmax_filled_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ_Qmax_filled['LBJ_Q_combined']/1000, start2014, dt.datetime(2014,12,31),1.78)
+
+
+SSY_Total_Qmax_filled_SedPods = pd.DataFrame()
+
+
+#SedPod_Storms = All_Storms[(All_Storms['start'] > study_start) & (All_Storms['end'] < study_end)]
+#SedPod_Storms.to_csv('C:/Users/Alex/Documents/GitHub/Fagaalu-Sedimentation/Data/SedPod_deployment Storms.csv')
+#
+#SedPod_Storms[['Q_total','Q_peak','SSYEV_meas','SSYEV_pred']] = pd.Series(), pd.Series(), pd.Series(), pd.Series()
+#for storm in SedPod_Storms.iterrows():
+#    print storm[1]
+#    SedPod_Storms.loc[storm[0],'Q_total'] = LBJ['Q'][storm[1]['start']:storm[1]['end']].sum()
+#    
+#    
 
 ## LOWER subwatershed
 SSY_Lower_Qmax_2014 = float(SSY_Total_Qmax_filled_2014) - float(SSY_Upper_Qmax_2014)
