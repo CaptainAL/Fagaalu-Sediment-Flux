@@ -97,12 +97,12 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,k=1,stage_start=.01,stage_end=None
         ax1.plot(df['Dist'],df['y1'],'-o',c='k')
         ax1.fill_between(df['Dist'], df['y1'], stage,where = df['y1']<=stage,alpha=.5, interpolate=True)
         
-        ax1.annotate('stage: '+'%.2f'%stage+'m',xy=(0,1.5+.45))
-        ax1.annotate('Mannings n: '+'%.3f'%n,xy=(0,1.5+.03))
-        ax1.annotate('Area: '+'%.3f'%Area+'m2',xy=(0,1.5+.25))
-        ax1.annotate('WP: '+'%.2f'%WP+'m',xy=(df['Dist'].mean(),1.5+.03))
-        ax1.annotate('Manning V: '+'%.2f'%ManningV+'m/s ',xy=(df['Dist'].mean(),1.5+.25))
-        ax1.annotate('Manning Q: '+'%.3f'%ManningQ+'m3/s',xy=(df['Dist'].mean(),1.5+.45))
+        ax1.annotate('stage: '+'%.2f'%stage+' m',xy=(1,1.5+.55))
+        ax1.annotate('Mannings n: '+'%.3f'%n,xy=(1,1.4+.01))
+        ax1.annotate('Area: '+'%.3f'%Area+' m'+r'$^2$',xy=(1,1.5+.20))
+        ax1.annotate('WP: '+'%.2f'%WP+' m',xy=(df['Dist'].mean(),1.4+.00))
+        ax1.annotate('Manning V: '+'%.2f'%ManningV+' m/s ',xy=(df['Dist'].mean(),1.5+.20))
+        ax1.annotate('Manning Q: '+'%.3f'%ManningQ+' m'+r'$^3$'+'/s',xy=(df['Dist'].mean(),1.5+.55))
         plt.axes().set_aspect('equal')
         plt.xlim(-1,df['Dist'].max()+1),plt.ylim(-1,2 + 1.)
     
@@ -123,13 +123,13 @@ def Mannings(XSfile,sheetname,Slope,Manning_n,k=1,stage_start=.01,stage_end=None
 ## LBJ
 #max_LBJ = Fagaalu_stage_data['LBJ'].max()/100 #cm to m
 #min_LBJ = Fagaalu_stage_data['LBJ'].min()/100 #cm to m
-XSfile, sheetname, slope, Manning_n = datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx', 'LBJ_m', .016, 'Jarrett'
-Man_stages, df = Mannings(XSfile,sheetname,Slope=0.016,Manning_n='Jarrett',k=.06/.08,stage_start=1.4,show=False,save=False,filename='')
+#XSfile, sheetname, slope, Manning_n = datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx', 'LBJ_m', .016, .071
+#Man_stages, df = Mannings(XSfile,sheetname,Slope=0.016,Manning_n=Manning_n,k=.06/.08,stage_start=1.4,show=True,save=False,filename='')
 ## DAM
 #max_DAM = Fagaalu_stage_data['Dam'].max()/100 #cm to m
 #min_DAM = Fagaalu_stage_data['Dam'].min()/100 #cm to m
-XSfile, sheetname, slope, Manning_n = datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx', 'DAM_m', .03, 'Jarrett'
-Man_stages, df = Mannings(XSfile,sheetname,Slope=0.016,Manning_n='Jarrett',k=.04/.07,stage_start=.46,show=True,save=False,filename='')
+XSfile, sheetname, slope, Manning_n = datadir+'Q/Cross_Section_Surveys/DAM_cross_section.xlsx', 'DAM_m', .03, .064
+Man_stages, df = Mannings(XSfile,sheetname,Slope=0.016,Manning_n='Jarrett',k=.04/.07,stage_start=1.2,show=True,save=False,filename='')
 
 def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):    
     ## Open and parse file; drop NA  
@@ -186,8 +186,8 @@ def Mannings_Series(XSfile,sheetname,stage_series,Slope,Manning_n,k=1):
         
     DF = pd.DataFrame({'stage':stages,'area':areas,'wp':wp,'r':r,'Man_n':Man_n,'vel':v,'Q':q},index=stage_series.index)
     return DF
-LBJ_stage_reduced =Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
-Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',stage_series=LBJ_stage_reduced,Slope=0.016,Manning_n='Jarrett',k=1)
+#LBJ_stage_reduced =Fagaalu_stage_data['LBJ'].dropna().round(0).drop_duplicates().order()
+#Man = Mannings_Series(datadir+'Q/Cross_Section_Surveys/LBJ_cross_section.xlsx','LBJ_m',stage_series=LBJ_stage_reduced,Slope=0.016,Manning_n='Jarrett',k=1)
     
 def Man_plot(Man_Series,location=''):
     

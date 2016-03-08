@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 ## Statistical Analysis
+import scipy
 from scipy import stats
 import pandas.stats.moments as m
 from scipy.stats import pearsonr as pearson_r
@@ -207,9 +208,8 @@ def powerfunction(x,y,name='power rating',pvalue=0.01,correct_bias=False):
     if correct_bias == True:
         ## Kolmogorov-Smirnov test for normality of residuals
         ktest_pval = scipy.stats.kstest(regression.resid,"norm")[1]
-        if ktest_pval <= pvalue:
-            #Duan smearing correction: BIAS CORRECTION FACTOR (BCF)
-            BCF = sum(10**regression.resid.values)/len(regression.resid)
+        #Duan smearing correction: BIAS CORRECTION FACTOR (BCF)
+        BCF = sum(10**regression.resid.values)/len(regression.resid)
     
     a = 10**regression.beta[1]
     b = regression.beta[0]
@@ -418,7 +418,7 @@ Mitigation = dt.datetime(2014,10,1,0,0)
 def LandCover_table(browser=True):
     
     ## Read in Excel sheet of data, indexed by subwatershed
-    landcover_table = pd.ExcelFile(datadir+'LandCover/Fagaalu_Watershed_Stats.xlsx').parse('Fagaalu_Revised', index_col = 'Subwatershed (pourpoint)')
+    landcover_table = pd.ExcelFile(datadir+'LandCover/Fagaalu_Watershed_Stats.xlsx').parse('Fagaalu_Revised', index_col = 'Subwatershed (outlet)')
     landcover_table = landcover_table[['Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
     # Format Table data                       
     for column in landcover_table.columns:
@@ -434,7 +434,7 @@ def LandCover_table(browser=True):
             pass
         
     ## Select the subwatersheds you want
-    landcover_table = landcover_table[landcover_table.index.isin(['UPPER (FG1)','LOWER_QUARRY (FG2)','LOWER_VILLAGE (FG3)','LOWER (FG3)','TOTAL (FG3)','Fagaalu Stream'])==True]
+    landcover_table = landcover_table[landcover_table.index.isin(['Upper (FG1)','Lower_Quarry (FG2)','Lower_Village (FG3)','Lower (FG3)','Total (FG3)','Fagaalu Stream'])==True]
     ## Rename the table columns
     landcover_table.columns=['km2 ','% ',' km2',' %','Bare (B)','High Intensity Developed (HI)',
                              'Developed Open Space (DOS)','Grassland (agriculture) (GA)','Forest (F)','Scrub/ Shrub (S)',
@@ -462,7 +462,8 @@ def LandCover_table(browser=True):
     caption=table_caption, \
     cgroup = c('Cumulative Area','Subwatershed Area','Land cover as % subwatershed area <sup>a</sup>'), \
     n.cgroup = c(2,2,8), \
-    tfoot='a. B=Bare, HI=High Intensity Developed, DOS=Developed Open Space, GA=Grassland (agriculture), F=Forest, S=Scrub/Shrub, Disturbed=B+HI+DOS+GA,  Undisturbed=F+S', \
+    tfoot='a. B=Bare, HI=High Intensity Developed, DOS=Developed Open Space, GA=Grassland (agriculture), F=Forest, S=Scrub/Shrub, Disturbed=B+HI+DOS+GA,  Undisturbed=F+S <br> \
+    b. Disturbed area for Upper was from natural landslide. Undisturbed is 100% from rounding up.', \
     css.cell = 'padding-left: .5em; padding-right: .2em;'  \
     "
     ## run htmlTable
@@ -980,10 +981,10 @@ def Mannings_Q_from_CrossSection(Cross_section_file,sheetname,Slope,Manning_n,k=
         
         ax1.annotate('stage: '+'%.2f'%stage+'m',xy=(0,1.5+.45))
         ax1.annotate('Mannings n: '+'%.3f'%n,xy=(0,1.5+.03))
-        ax1.annotate('Area: '+'%.3f'%Area+'m2',xy=(0,1.5+.25))
+        ax1.annotate('Area: '+'%.3f'%Area+'m'+r'$r^2$',xy=(0,1.5+.25))
         ax1.annotate('WP: '+'%.2f'%WP+'m',xy=(df['Dist'].mean(),1.5+.03))
         ax1.annotate('Manning V: '+'%.2f'%ManningV+'m/s ',xy=(df['Dist'].mean(),1.5+.25))
-        ax1.annotate('Manning Q: '+'%.3f'%ManningQ+'m3/s',xy=(df['Dist'].mean(),1.5+.45))
+        ax1.annotate('Manning Q: '+'%.3f'%ManningQ+'m'+r'$r^2$'+'/s',xy=(df['Dist'].mean(),1.5+.45))
         plt.axes().set_aspect('equal')
         plt.xlim(-1,df['Dist'].max()+1),plt.ylim(-1,2 + 1.)
     
@@ -2874,7 +2875,7 @@ def NTUratingstable_html(caption,table_num,filename,save=False,show=False):
 
 # YSI
 LBJ['YSI-NTU']=LBJ_YSI['NTU']
-LBJ['YSI-SSC']=DAM_YSI_rating.beta[0] * LBJ['YSI-NTU']
+LBJ['YSI-SSC']=LBJ_YSI_rating.beta[0] * LBJ['YSI-NTU']
 LBJ['YSI-SSC-RMSE'] = LBJ_YSI['T-SSC-RMSE']
 # OBSa
 ## resample to 15min to match Q records
@@ -3159,7 +3160,7 @@ def Q_budget_table(subset='pre',browser=True):
     ## Create table in R
     table_code_str = " \
     table_df, \
-    header = c('Storm Start','Precip mm','UPPER', 'LOWER', 'TOTAL', 'UPPER', 'LOWER'), \
+    header = c('Storm Start','Precip mm','Upper', 'Lower', 'Total', 'Upper', 'Lower'), \
     cgroup = c('','Discharge m<sup>3</sup>', 'Percentage'), \
     n.cgroup = c(2,3,2), \
     rowlabel = 'Storm#', \
@@ -3852,7 +3853,7 @@ def S_budget_table(subset='pre',browser=True):
     S_budget_reindexed = S_budget_reindexed.drop('Storm#',1)
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(S_budget_reindexed)
-    caption="Event-wise suspended sediment yield (SSY<sub>EV</sub>) from subwatersheds in Faga'alu for events with simultaneous data from FG1 and FG3. Storm numbers correspond with the storms presented in Table A3.1."
+    caption="Event-wise suspended sediment yield (SSY<sub>EV</sub>) from subwatersheds in Faga'alu for events with simultaneous data from FG1 and FG3. Storm numbers correspond with the storms presented in Appendix C Table 1."
     table_num=2
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -3866,13 +3867,13 @@ def S_budget_table(subset='pre',browser=True):
     rowlabel='Storm#',\
     align='ccccccccccc', \
     caption=table_caption, \
-    cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV</sub>TOTAL','PE<sup>a</sup>','SSC'), \
+    cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV_TOTAL</sub>','PE<sup>a</sup>','SSC'), \
     n.cgroup = c(1,1,3,2,2,2), \
-    header= c('Start','mm','UPPER<sup>b</sup.','LOWER<sup>c</sup.','TOTAL<sup>d</sup>','UPPER','LOWER','UPPER','TOTAL','Data Source UPPER','Data Source TOTAL'), \
-    tfoot='a. PE is cumulative probable error (Eq 6) as a percentage of the mean observed SSY.<br> \
+    header= c('Start','mm','Upper<sup>b</sup.','Lower<sup>c</sup.','Total<sup>d</sup>','Upper','Lower','Upper','Total','Data Source Upper','Data Source Total'), \
+    tfoot='a. PE is cumulative probable error (Eq 4) as a percentage of the mean observed SSY<sub>EV</sub>.<br> \
     b. Measured SSY<sub>EV</sub> at FG1. <br> \
     c. SSY<sub>EV</sub> at FG3 &#45; SSY<sub>EV</sub> at FG1. <br> \
-    d. SSY<sub>EV</sub> at FG3.', \
+    d. Measured SSY<sub>EV</sub> at FG3.', \
     tspanner=c('',''), \
     n.tspanner = c(nrow(table_df)-3,3)\
     "
@@ -3901,9 +3902,9 @@ def S_budget_analysis_table(subset='pre', browser=True):
     ## Retrieve Land cover data from Table 1
     lc_table = LandCover_table(browser=False)
     # Fraction Disturbed = % Disturbed in Land cover table
-    frac_disturbed_UPPER = lc_table.ix['UPPER (FG1)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_LOWER = lc_table.ix['LOWER (FG3)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_TOTAL = lc_table.ix['TOTAL (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_UPPER = lc_table.ix['Upper (FG1)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_LOWER = lc_table.ix['Lower (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_TOTAL = lc_table.ix['Total (FG3)']['Disturbed B+HI+DOS+GA']
     ## append Disturbed fraction %
     SSY_dist = SSY_dist.append(pd.DataFrame({' ':'Fraction of subwatershed area disturbed', 
     'UPPER':"%.1f"%frac_disturbed_UPPER, 'LOWER':"%.1f"%frac_disturbed_LOWER,'TOTAL':"%.1f"%frac_disturbed_TOTAL},
@@ -3978,7 +3979,7 @@ def S_budget_analysis_table(subset='pre', browser=True):
     ## SAVE AS htmlTABLE with R
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(SSY_dist)
-    caption = "Total Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of UPPER and LOWER subwatersheds for the storm events in Table 2."
+    caption = "Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of Upper and Lower subwatersheds for the storm events in Table 2."
     table_num=3
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -3991,11 +3992,11 @@ def S_budget_analysis_table(subset='pre', browser=True):
     table_df, \
     align='lccc', \
     caption=table_caption, \
-    header= c('UPPER<sup>a</sup>','LOWER','TOTAL'), \
+    header= c('Upper<sup>a</sup>','Lower','Total'), \
     rnames = c('Fraction of subwatershed area disturbed (%)','SSY (tons)','&nbsp;&nbsp;Forested areas','&nbsp;&nbsp;Disturbed areas','&nbsp;&nbsp;% from disturbed areas', \
     'sSSY, disturbed areas (tons/km<sup>2</sup>)','DR for sSSY from disturbed areas<sup>b</sup>'), \
-    tfoot='a. Disturbed areas in UPPER are bare areas from landslides.<br> \
-    b. Calculated as (sSSY from disturbed areas)/sSSY from UPPER ("+str(SSY_UPPER)+" tons/km<sup>2</sup>)' \
+    tfoot='a. Disturbed areas in Upper are bare areas from landslides.<br> \
+    b. Calculated as (sSSY from disturbed areas)/sSSY from Upper ("+str(SSY_UPPER)+" tons/km<sup>2</sup>)' \
     "
     ## run htmlTable
     ro.r("table_out <- htmlTable("+table_code_str+")")
@@ -4107,7 +4108,7 @@ def S_budget_2_table(subset='pre',manual_edit=True,browser=True):
     S_budget_2_reindexed  = S_budget_2_reindexed .drop('Storm#',1)
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(S_budget_2_reindexed )
-    caption="Event-wise suspended sediment yield (SSYEV) from subwatersheds in Faga'alu for events with simultaneous data from FG1, FG2, and FG3. Storm numbers correspond with the storms presented in Table 2 and Appendix Table A3.1."
+    caption="Event-wise suspended sediment yield (SSY<sub>EV</sub>) from subwatersheds in Faga'alu for events with simultaneous data from FG1, FG2, and FG3. Storm numbers correspond with the storms presented in Table 2 and Appendix C Table 1."
     table_num=4
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -4121,10 +4122,10 @@ def S_budget_2_table(subset='pre',manual_edit=True,browser=True):
     rowlabel='Storm#',\
     align='cccccccccc', \
     caption=table_caption, \
-    cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV</sub>TOTAL'), \
+    cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV_TOTAL</sub>'), \
     n.cgroup = c(1,1,5,4), \
-    header= c('Start','mm','UPPER<sup>a</sup.','LOWER_QUARRY<sup>b</sup.','LOWER_VILLAGE<sup>c</sup.','LOWER<sup>d</sup.','TOTAL<sup>e</sup>', \
-    'UPPER','LOWER_QUARRY','LOWER_VILLAGE','LOWER'), \
+    header= c('Start','mm','Upper<sup>a</sup.','Lower_Quarry<sup>b</sup.','Lower_Village<sup>c</sup.','Lower<sup>d</sup.','Total<sup>e</sup>', \
+    'Upper','Lower_Quarry','Lower_Village','Lower'), \
     tfoot='a. Measured SSY<sub>EV</sub> at FG1.<br> \
     b. SSY<sub>EV</sub> at FG2 &#45; SSY<sub>EV</sub> at FG1. <br> \
     c. SSY<sub>EV</sub> at FG3 &#45; SSY<sub>EV</sub> at FG2. <br> \
@@ -4160,11 +4161,11 @@ def S_budget_2_analysis_table(subset='pre', manual_edit=False, browser=True):
     ## Retrieve Land cover data from Table 1
     lc_table = LandCover_table(browser=False)
     # Fraction Disturbed = % Disturbed in Land cover table
-    frac_disturbed_UPPER = lc_table.ix['UPPER (FG1)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_LOWER_QUARRY = lc_table.ix['LOWER_QUARRY (FG2)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_LOWER_VILLAGE = lc_table.ix['LOWER_VILLAGE (FG3)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_LOWER = lc_table.ix['LOWER (FG3)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_TOTAL = lc_table.ix['TOTAL (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_UPPER = lc_table.ix['Upper (FG1)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_LOWER_QUARRY = lc_table.ix['Lower_Quarry (FG2)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_LOWER_VILLAGE = lc_table.ix['Lower_Village (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_LOWER = lc_table.ix['Lower (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_TOTAL = lc_table.ix['Total (FG3)']['Disturbed B+HI+DOS+GA']
     ## append Disturbed fraction %
     SSY_dist_2 = SSY_dist_2.append(pd.DataFrame({' ':'Fraction of subwatershed area disturbed', 
     'UPPER':"%.1f"%frac_disturbed_UPPER, 'TOTAL':"%.1f"%frac_disturbed_TOTAL,
@@ -4257,7 +4258,7 @@ def S_budget_2_analysis_table(subset='pre', manual_edit=False, browser=True):
     ## SAVE AS htmlTABLE with R
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(SSY_dist_2)
-    caption = "Total Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of UPPER and LOWER subwatersheds for the storm events in Table 4."
+    caption = "Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of Upper, Lower_Quarry, and Lower_Village subwatersheds for the storm events in Table 4."
     table_num=5
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -4270,7 +4271,7 @@ def S_budget_2_analysis_table(subset='pre', manual_edit=False, browser=True):
     table_df, \
     align='lccc', \
     caption=table_caption, \
-    header= c('UPPER','LOWER_QUARRY','LOWER_VILLAGE','LOWER','TOTAL'), \
+    header= c('Upper','Lower_Quarry','Lower_Village','Lower','Total'), \
     rnames = c('Fraction of subwatershed area disturbed (%)','SSY (tons)','&nbsp;&nbsp;Forested areas','&nbsp;&nbsp;Disturbed areas','&nbsp;&nbsp;% from disturbed areas', \
     'sSSY, disturbed areas (tons/km<sup>2</sup>)','DR for sSSY from disturbed areas') \
     "
@@ -4531,7 +4532,7 @@ def All_Models_stats_table(subset='pre', correct_bias=False, browser=True):
     ## SAVE AS htmlTABLE with R
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(All_Models_stats)
-    caption = "Goodness-of-fit statistics for SSY<sub>EV</sub> &#45; storm metric relationships. Spearman correlation coefficients signifcant at p<0.01."
+    caption = "Goodness-of-fit statistics for storm metric&#45;SSY<sub>EV</sub> relationships. Spearman correlation coefficients signifcant at p<0.01."
     table_num= 6
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -4699,7 +4700,7 @@ def times(x,factor,round_to):
 ## From Table 2: S_budget for UPPER, LOWER, and TOTAL
 
 # Subwatershed area
-Area_UPPER, Area_LOWER = landcover_table.ix['UPPER (FG1)'][' km2'], landcover_table.ix['LOWER (FG3)'][' km2']
+Area_UPPER, Area_LOWER = landcover_table.ix['Upper (FG1)'][' km2'], landcover_table.ix['Lower (FG3)'][' km2']
 disturbed_area_LOWER = S_budget_analysis['LOWER']['Fraction of subwatershed area disturbed']
 
 # % Contributions
@@ -4731,7 +4732,7 @@ annual_sSSY_TOTAL_2 = "%.0f"%times(sSSY_TOTAL_2, table2_storm_precip_factor, 10)
 
 
 ## From Table 4: S_budget for UPPER, LOWER_QUARRY, LOWER_VILLAGE, LOWER, and TOTAL
-Area_UPPER, Area_LOWER_QUARRY, Area_LOWER_VILLAGE = landcover_table.ix['UPPER (FG1)'][' km2'], landcover_table.ix['LOWER_QUARRY (FG2)'][' km2'], landcover_table.ix['LOWER_VILLAGE (FG3)'][' km2']
+Area_UPPER, Area_LOWER_QUARRY, Area_LOWER_VILLAGE = landcover_table.ix['Upper (FG1)'][' km2'], landcover_table.ix['Lower_Quarry (FG2)'][' km2'], landcover_table.ix['Lower_Village (FG3)'][' km2']
 percent_disturbed_area_LOWER_QUARRY =S_budget_2_analysis['LOWER_QUARRY']['Fraction of subwatershed area disturbed']
 percent_disturbed_area_LOWER_VILLAGE = S_budget_2_analysis['LOWER_VILLAGE']['Fraction of subwatershed area disturbed']
 
@@ -4879,12 +4880,12 @@ def est_Annual_SSY_table(subset='pre',browser=False):
     table_df, \
     caption=table_caption, \
     header = c('Psum model, Events in 2014', 'Qmax model, Events in 2014','Events in Table 2','Events in Table 4','All Measured Events'), \
-    cgroup = c('','Equation 5'), \
+    cgroup = c('','Equation 6'), \
     n.cgroup = c(2,3), \
     tspanner = c('Precipitation','Annual SSY (tons/year)','Annual sSSY (tons/km<sup>2</sup>/year)'), \
     n.tspanner = c(1,5,5), \
-    rnames = c('mm (% of Ps<sub>ann</sub>)','UPPER','LOWER','&nbsp;&nbsp;LOWER_QUARRY','&nbsp;&nbsp;LOWER_VILLAGE','TOTAL', \
-    'UPPER','LOWER','&nbsp;&nbsp;LOWER_QUARRY','&nbsp;&nbsp;LOWER_VILLAGE','TOTAL')\
+    rnames = c('mm (% of Ps<sub>ann</sub>)','Upper','Lower','&nbsp;&nbsp;Lower_Quarry','&nbsp;&nbsp;Lower_Village','Total', \
+    'Upper','Lower','&nbsp;&nbsp;Lower_Quarry','&nbsp;&nbsp;Lower_Village','Total')\
     "
     ## unused footer:  tfoot='a. Ps<sub>meas</sub>/Ps<sub>ann</sub> for storms in Table 2 was 0.49.<br> \ b. Ps<sub>meas</sub>/Ps<sub>ann</sub> for storms in Table 3 was 0.24. <br> \ c. Ps<sub>meas</sub>/Ps<sub>ann</sub> for all storms during the study period was 1.22.' 
     
