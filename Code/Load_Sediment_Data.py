@@ -766,8 +766,8 @@ def Mannings_Q_from_stage_data(Cross_section_file,sheetname,stage_data,Slope,Man
 if 'LBJ_Man' not in locals():
     try:
         print 'Loading Mannings Q for DAM from CSV'
-        LBJ_Man_reduced = pd.DataFrame.from_csv(watershed_datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
-        LBJ_Man = pd.DataFrame.from_csv(watershed_datadir+'Q/Manning_Q_files/LBJ_Man.csv')
+        LBJ_Man_reduced = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Q from Mannings_reduced.csv')
+        LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Q from Mannings.csv')
     except:
         print 'Calculate Mannings Q for LBJ and saving to CSV'
         LBJ_S, LBJ_n, LBJ_k = 0.016, 'Jarrett', .06/.08

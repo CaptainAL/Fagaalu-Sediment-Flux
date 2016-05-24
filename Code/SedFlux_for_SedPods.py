@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 ## Statistical Analysis
+import scipy
 from scipy import stats
 import pandas.stats.moments as m
 from scipy.stats import pearsonr as pearson_r
@@ -64,6 +65,7 @@ pd.set_option('display.max_columns', 13)
 git=True
 if git==True: ## Git repository
     maindir = 'C:/Users/Alex/Documents/GitHub/Fagaalu-Sediment-Flux/' 
+    sedpods_datadir = 'C:/Users/Alex/Documents/GitHub/Fagaalu-Sedimentation/'
     datadir=maindir+'Data/'
     dataoutputdir = datadir+'Output/'
     GISdir = maindir+'Data/GIS/'
@@ -184,11 +186,13 @@ def power(x,a,b):
     y = a*(x**b)
     return y
     
-def powerfunction(x,y,name='power rating',pvalue=0.01):
+def powerfunction(x,y,name='power rating',pvalue=0.01,correct_bias=False):
     ## put x and y in a dataframe so you can drop ones that don't match up  
     datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna().apply(np.log10)   
     datadf = datadf[datadf>=-10] ##verify data is valid (not inf)
+    
     regression = pd.ols(y=datadf['y'],x=datadf['x'])
+    
     if pearson_r(datadf['x'],datadf['y'])[1] < pvalue:
         pearson = pearson_r(datadf['x'],datadf['y'])[0]
     else: 
@@ -197,29 +201,40 @@ def powerfunction(x,y,name='power rating',pvalue=0.01):
         spearman = spearman_r(datadf['x'],datadf['y'])[0]
     else:
         spearman = np.nan
-    #Chi-square test for normality of residuals
-    chi_square_stat = chisquare(histogram(datadf['x'])[0])[0]
-    chi_square_p = chisquare(histogram(datadf['x'])[0])[1]
+        
+    ## Correct for log-transform bias (Ferguson, 1986)
+    BCF=1 ## if no correction, BCF = 1
+    ktest_pval=np.nan
+    if correct_bias == True:
+        ## Kolmogorov-Smirnov test for normality of residuals
+        ktest_pval = scipy.stats.kstest(regression.resid,"norm")[1]
+        #Duan smearing correction: BIAS CORRECTION FACTOR (BCF)
+        BCF = sum(10**regression.resid.values)/len(regression.resid)
     
-    coeffdf = pd.DataFrame({'a':[10**regression.beta[1]],'b':[regression.beta[0]],
-    'r2':[regression.r2],'rmse':[regression.rmse],'pearson':[pearson],'spearman':[spearman],'chi_square':[chi_square_stat],'chi_p':[chi_square_p]},
+    a = 10**regression.beta[1]
+    b = regression.beta[0]
+    
+    coeffdf = pd.DataFrame({'a':[a],'b':[b],
+    'r2':[regression.r2],'rmse':[regression.rmse],'pearson':[pearson],'spearman':[spearman],'pvalue':[pvalue],'ktest_pval':[ktest_pval],'BCF':[BCF]},
 index=[name])
     return coeffdf
+    
+#powerfunction(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'],correct_bias=False)
 
-def PowerFit(x,y,xspace = 'none',ax=plt,**kwargs):
+def PowerFit(x,y, xspace = 'none', ax=plt, correct_bias=False, **kwargs):
     ## Develop power function for x and y
-    powfunc = powerfunction(x,y) ## x and y should be Series
-    a, b = powfunc['a'].values, powfunc['b'].values
-    #print a,b
+    powfunc = powerfunction(x, y, correct_bias = correct_bias) ## x and y should be Series
+    a, b, BCF = powfunc['a'].values, powfunc['b'].values, powfunc['BCF'].values
+    #print a,b,BCF
     if xspace == 'none':
         xvals = np.linspace(x.min()-10,x.max()*1.2)
         #print 'No xspace, calculating xvals: '+'%.0f'%x.min()+'-'+'%.0f'%x.max()+'*1.5= '+'%.0f'%(x.max()*1.5)
     else:
         xvals=xspace
-    ypred = a*(xvals**b)
+    ypred = a*(xvals**b)*BCF
     ax.plot(xvals,ypred,**kwargs)
     return powfunc
-
+    
 def PowerFit_CI(x,y,xspace='none',ax=plt,**kwargs):
     datadf = pd.DataFrame.from_dict({'x':x,'y':y}).dropna().apply(np.log10) ## put x and y in a dataframe so you can drop ones that don't match up    
     regression = pd.ols(y=datadf['y'],x=datadf['x'])    
@@ -336,7 +351,7 @@ def Sum_Storms(Storm_list,Data,offset=0):
             #print str(start) +' '+str(end)
             event = Data.ix[start:end] ### slice list of Data for event
         except KeyError:
-            raise
+            #raise
             start = start+dt.timedelta(minutes=15) ## if the start time falls between 2 30minute periods
             print 'change storm start to '+str(start)            
             try:
@@ -405,9 +420,8 @@ study_start , study_end= dt.datetime(2014,3,1), dt.datetime(2015,4,30)
 
 #### Load Land Cover Data
 def LandCover_table(browser=True):
-    
     ## Read in Excel sheet of data, indexed by subwatershed
-    landcover_table = pd.ExcelFile(datadir+'LandCover/Fagaalu_Watershed_Stats.xlsx').parse('Fagaalu_Revised', index_col = 'Subwatershed (pourpoint)')
+    landcover_table = pd.ExcelFile(datadir+'LandCover/Fagaalu_Watershed_Stats.xlsx').parse('Fagaalu_Revised', index_col = 'Subwatershed (outlet)')
     landcover_table = landcover_table[['Cumulative Area km2','Cumulative %','Area km2','% of area','% Bare Land','% High Intensity Developed','% Developed Open Space','% Grassland (agriculture)','% Forest','% Scrub/ Shrub','% Disturbed','% Undisturbed']]
     # Format Table data                       
     for column in landcover_table.columns:
@@ -423,7 +437,7 @@ def LandCover_table(browser=True):
             pass
         
     ## Select the subwatersheds you want
-    landcover_table = landcover_table[landcover_table.index.isin(['UPPER (FG1)','LOWER_QUARRY (FG2)','LOWER_VILLAGE (FG3)','LOWER (FG3)','TOTAL (FG3)','Fagaalu Stream'])==True]
+    landcover_table = landcover_table[landcover_table.index.isin(['Upper (FG1)','Lower_Quarry (FG2)','Lower_Village (FG3)','Lower (FG3)','Total (FG3)','Fagaalu Stream'])==True]
     ## Rename the table columns
     landcover_table.columns=['km2 ','% ',' km2',' %','Bare (B)','High Intensity Developed (HI)',
                              'Developed Open Space (DOS)','Grassland (agriculture) (GA)','Forest (F)','Scrub/ Shrub (S)',
@@ -451,7 +465,8 @@ def LandCover_table(browser=True):
     caption=table_caption, \
     cgroup = c('Cumulative Area','Subwatershed Area','Land cover as % subwatershed area <sup>a</sup>'), \
     n.cgroup = c(2,2,8), \
-    tfoot='a. B=Bare, HI=High Intensity Developed, DOS=Developed Open Space, GA=Grassland (agriculture), F=Forest, S=Scrub/Shrub, Disturbed=B+HI+DOS+GA,  Undisturbed=F+S', \
+    tfoot='a. B=Bare, HI=High Intensity Developed, DOS=Developed Open Space, GA=Grassland (agriculture), F=Forest, S=Scrub/Shrub, Disturbed=B+HI+DOS+GA,  Undisturbed=F+S <br> \
+    b. Disturbed area for Upper was from natural landslide. Undisturbed is 100% from rounding up.', \
     css.cell = 'padding-left: .5em; padding-right: .2em;'  \
     "
     ## run htmlTable
@@ -501,6 +516,7 @@ if 'Precip' not in locals():
     Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2014',0)) ## (path,sheet,shift) no header needed
     ## 2015 Data
     Precip = Precip.append(raingauge(XL,'Timu-Fagaalu1-2015',0)) ## (path,sheet,shift) no header needed
+    
     Precip.columns=['Timu1']
     Precip['Timu1-15']=Precip['Timu1'].resample('15Min',how='sum')
     Precip['Timu1-30']=Precip['Timu1'].resample('30Min',how='sum')
@@ -559,7 +575,12 @@ Precip['FPmonthly'].dropna().to_csv(datadir+'OUTPUT/FPmonthly.csv',header=['FPmo
 ## Filled Precipitation record, priority = Timu1, fill with FPrain
 PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,6,17,51):dt.datetime(2012,1,6,23,59)], Precip['FPrain'][dt.datetime(2012,1,7,0,0):dt.datetime(2012,1,20,23,59)], Precip['Timu1-15'][dt.datetime(2012,1,21,0,0):dt.datetime(2013,2,8,0,0)], Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12,0,0)], Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24,0,0)], Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1,0,0)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,1,8,0,0)], Precip['Timu1-15'][dt.datetime(2014,1,13,0,0):dt.datetime(2015,6,18,23,59)] ]),columns=['Precip']).dropna()
 
+#PrecipFilled=pd.DataFrame(pd.concat([Precip['Timu1-15'][dt.datetime(2012,1,6,17,51):dt.datetime(2012,1,6,23,59)], Precip['FPrain'][dt.datetime(2012,1,7,0,0):dt.datetime(2012,1,20,23,59)], Precip['Timu1-15'][dt.datetime(2012,1,21,0,0):dt.datetime(2013,2,8,0,0)], Precip['FPrain'][dt.datetime(2013,2,8,0,15):dt.datetime(2013,3,12,0,0)], Precip['Timu1-15'][dt.datetime(2013,3,12,0,15):dt.datetime(2013,3,24,0,0)], Precip['FPrain'][dt.datetime(2013,3,24,0,15):dt.datetime(2013,5,1,0,0)],Precip['Timu1-15'][dt.datetime(2013,5,1,0,15):dt.datetime(2014,1,8,0,0)], Precip['Timu1-15'][dt.datetime(2014,1,14,0,0):dt.datetime(2014,12,31,23,59)] ]),columns=['Precip']).dropna()
+
 #PrecipFilled = PrecipFilled.reindex(pd.date_range(dt.datetime(2012,1,7),dt.datetime(2014,12,31),freq='15Min'))
+PrecipFilled['index'] = PrecipFilled.index
+PrecipFilled = PrecipFilled.drop_duplicates(['index'])
+
 
 
 #### Import BAROMETRIC Data: NDBC
@@ -1047,8 +1068,8 @@ def Mannings_Q_from_stage_data(Cross_section_file,sheetname,stage_data,Slope,Man
 if 'LBJ_Man' not in locals():
     try:
         print 'Loading Mannings Q for DAM from CSV'
-        LBJ_Man_reduced = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man_reduced.csv')
-        LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Man.csv')
+        LBJ_Man_reduced = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Q from Mannings_reduced.csv')
+        LBJ_Man = pd.DataFrame.from_csv(datadir+'Q/Manning_Q_files/LBJ_Q from Mannings.csv')
     except:
         print 'Calculate Mannings Q for LBJ and saving to CSV'
         LBJ_S, LBJ_n, LBJ_k = 0.016, 'Jarrett', .06/.08
@@ -1266,7 +1287,7 @@ def plotQratingLBJ(ms=6,show=False,log=False,save=False,filename=figdir+''): ## 
     show_plot(show,fig)
     savefig(save,filename)
     return
-plotQratingLBJ(ms=6,show=True,log=False,save=True,filename=figdir+'LBJ stage Q rating')
+#plotQratingLBJ(ms=6,show=True,log=False,save=True,filename=figdir+'LBJ stage Q rating')
 #plotQratingLBJ(ms=6,show=True,log=True,save=False,filename=figdir+'')
 
 ### Compare Discharg Ratings from different methods
@@ -1902,7 +1923,7 @@ def plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=False,log=False,save=
     savefig(save,filename)
     return
 ## Pre-mitigation
-plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=True,log=True,save=False,filename=figdir+'')
+#plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=6,show=True,log=True,save=False,filename=figdir+'')
 #plotQvsC(subset=['Pre-baseflow','Pre-storm'],ms=5,show=True,log=False,save=False,filename=figdir+'')
 ## Post-mitgation
 #plotQvsC(subset=['Post-baseflow','Post-storm'],ms=6,show=True,log=False,save=False,filename=figdir+'')
@@ -2940,30 +2961,35 @@ def StormPrecipAnalysis(storms=All_Storms):
         StormIndex = storm[1]['start']
         start = storm[1]['start']## storm start is when PT exceeds threshold, retrieve Precip x min. prior to this.
         end =  storm[1]['end'] ## when to end the storm?? falling limb takes too long I think
-        
-        rain_data = pd.DataFrame.from_dict({'Timu1':PrecipFilled['Precip'][start-dt.timedelta(minutes=15):end]})
-        if len(rain_data)>0:
-            try:
-                #print start,end
-                rain_data['AccumulativeDepth mm']=(rain_data['Timu1']).cumsum() ## cumulative depth at 1 min. intervals
-                rain_data['AccumulativeDepth in.']=rain_data['AccumulativeDepth mm']/25.4 ## cumulative depth at 1 min. intervals
-                rain_data['Intensity (in./hr)']=rain_data['Timu1']*60 ## intensity at each minute
-                rain_data['30minMax (in./hr)']=m.rolling_sum(Precip['Timu1'],window=30)/25.4
-                
-                Psum_in = rain_data['Timu1'].sum()/25.4
-                duration_hours = (end - start).days * 24 + (end - start).seconds//3600
-                I = Psum_in/duration_hours ## I = Storm Average Intensity
-                E = 1099. * (1.-(0.72*math.exp(-1.27*I))) ## E = Rain Kinetic Energy
-                I30 = rain_data['30minMax (in./hr)'].max()
-                EI = E*I30
-                EIm = EI*1.702
-                Stormdf=Stormdf.append(pd.DataFrame({'Total(in)':Psum_in,'Duration(hrs)':duration_hours,
-                'Max30minIntensity(in/hr)':I30,'AvgIntensity(in/hr)':I,'E-RainKineticEnergy(ft-tons/acre/inch)':E,'EI':EI,'EIm':EIm},index=[StormIndex]))
-                Stormdf = Stormdf[(Stormdf['Total(in)']>0.0)] ## filter out storms without good Timu1 data
-            except:
-                raise
-                print "Can't analyze Storm Precip for storm:"+str(start)+" No can do"
-                pass
+        try:
+            rain_data = pd.DataFrame.from_dict({'Timu1':PrecipFilled['Precip'][start-dt.timedelta(minutes=15):end]})
+            if len(rain_data)>0:
+                try:
+                    print start,end
+                    rain_data['AccumulativeDepth mm']=(rain_data['Timu1']).cumsum() ## cumulative depth at 1 min. intervals
+                    rain_data['AccumulativeDepth in.']=rain_data['AccumulativeDepth mm']/25.4 ## cumulative depth at 1 min. intervals
+                    rain_data['Intensity (in./hr)']=rain_data['Timu1']*60 ## intensity at each minute
+                    Thirty_Min_Max = m.rolling_sum(Precip['Timu1'],window=30)/25.4
+                    
+                    Psum_in = rain_data['Timu1'].sum()/25.4
+                    duration_hours = (end - start).days * 24 + (end - start).seconds//3600
+                    I = Psum_in/duration_hours ## I = Storm Average Intensity
+                    E = 1099. * (1.-(0.72*math.exp(-1.27*I))) ## E = Rain Kinetic Energy
+                    I30 = Thirty_Min_Max.max()
+                    EI = E*I30
+                    EIm = EI*1.702
+                    Stormdf=Stormdf.append(pd.DataFrame({'Total(in)':Psum_in,'Duration(hrs)':duration_hours,
+                    'Max30minIntensity(in/hr)':I30,'AvgIntensity(in/hr)':I,'E-RainKineticEnergy(ft-tons/acre/inch)':E,'EI':EI,'EIm':EIm},index=[StormIndex]))
+                    Stormdf = Stormdf[(Stormdf['Total(in)']>0.0)] ## filter out storms without good Timu1 data
+                except:
+                    raise
+                    print "Can't analyze Storm Precip for storm:"+str(start)+" No can do"
+                    pass
+            elif len(rain_data)==0:
+                print "no rain data"+str(start)+' '+str(end)
+        except:
+            print "Can't get rain data"
+            pass
     return Stormdf
 LBJ_Stormdf = StormPrecipAnalysis()
 QUARRY_Stormdf = LBJ_Stormdf
@@ -3596,7 +3622,7 @@ def plot_storm_hysteresis(storm_name, storm_data):
         #plt.tight_layout(pad=0.1)
     return
 
-#for index, storm in All_Storms.iterrows():
+#for index, storm in All_Storms[143:144].iterrows():
 #    storm_name = str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
 #    print storm_name
 #    #file_name = figdir+'storm_figures/Storm '+str(storm.name)+' - '+"{:%m-%d-%Y}".format(storm['start'])
@@ -3713,6 +3739,10 @@ def compile_storms_data(subset = 'pre'):
         ALLStorms = ALLStorms[ALLStorms.index<Mitigation]
     elif subset == 'post':
         ALLStorms = ALLStorms[ALLStorms.index>Mitigation]
+    elif subset == 'all':
+        ALLStorms = ALLStorms
+    elif subset == 'sedpods':
+        ALLStorms = ALLStorms[(ALLStorms.index > study_start) & (ALLStorms.index < study_end)]
     ## Order columns   
     ALLStorms = ALLStorms[['Pstorms','EI',
     'Supper','Squarry','Slower','Stotal',
@@ -3720,6 +3750,9 @@ def compile_storms_data(subset = 'pre'):
     'Supper_PE','Squarry_PE','Stotal_PE','SSY_data_source_upper','SSY_data_source_total']]
     return ALLStorms
 ALLStorms = compile_storms_data(subset='pre')
+SedPodStorms = compile_storms_data(subset='sedpods')
+SedPodStorms = SedPodStorms[['Pstorms','Stotal','Qmaxtotal','Stotal_PE','SSY_data_source_total']].dropna(subset=['Qmaxtotal'])
+
 
 def S_budget_table(subset='pre',browser=True):
     storms_data = compile_storms_data(subset)
@@ -3737,10 +3770,8 @@ def S_budget_table(subset='pre',browser=True):
     S_budget['% LOWER'] = storms_data['Slower'] / storms_data['Stotal'] * 100
     S_budget.loc[:,'% LOWER'] = S_budget['% LOWER'].dropna().apply(int)
     ## SSY data source and PE
-    S_budget['UPPER SSY data source'] = storms_data['SSY_data_source_upper']
-    S_budget['TOTAL SSY data source'] = storms_data['SSY_data_source_total']
-    # just pick one
-    S_budget['SSY data source'] = storms_data['SSY_data_source_total']
+    S_budget['SSY data source UPPER'] = storms_data['SSY_data_source_upper']
+    S_budget['SSY data source TOTAL'] = storms_data['SSY_data_source_total']
     # Harmel 2006 Probable Error (PE)
     S_budget['UPPER PE %'] = storms_data['Supper_PE'].dropna().apply(int)
     S_budget['TOTAL PE %'] = storms_data['Stotal_PE'].dropna().apply(int)
@@ -3754,7 +3785,10 @@ def S_budget_table(subset='pre',browser=True):
         S_budget = S_budget[S_budget.index<Mitigation]
     elif subset == 'post':
         S_budget = S_budget[S_budget.index>Mitigation]
-    
+    elif subset == 'all':
+        S_budget = S_budget
+    elif subset == 'sedpods':
+        S_budget = S_budget[(S_budget.index > study_start) & (S_budget.index < study_end)]
     
     ## ADD Storm Indices
     S_budget['Storm#']= Q_budget_table(subset,browser=False)['Storm#'] ## match up Storm #'s to Q_budget table (supposed to go in appendix)
@@ -3782,7 +3816,8 @@ def S_budget_table(subset='pre',browser=True):
     '% LOWER':"%.0f"%Percent_Lower,
     'UPPER PE %':"%.0f"%S_budget['UPPER PE %'].mean(),
     'TOTAL PE %':"%.0f"%S_budget['TOTAL PE %'].mean(),
-    'SSY data source':'-'},
+    'SSY data source UPPER':'-',
+    'SSY data source TOTAL':'-'},
     index=['Total/Avg']))
     
     ## add sSSY summary stats to bottom of table
@@ -3795,7 +3830,8 @@ def S_budget_table(subset='pre',browser=True):
     '% LOWER':'-',
     'UPPER PE %':'-',
     'TOTAL PE %':'-',
-    'SSY data source':'-',}, 
+    'SSY data source UPPER':'-',
+    'SSY data source TOTAL':'-'}, 
     index=['Tons/km2']))
     
     ## add Disturbance Ratio (sSSY:sSSY_UPPER) stats to bottom of table
@@ -3808,13 +3844,14 @@ def S_budget_table(subset='pre',browser=True):
     '% UPPER':'-',
     'UPPER PE %':'-',
     'TOTAL PE %':'-',
-    'SSY data source':'-'},
+    'SSY data source UPPER':'-',
+    'SSY data source TOTAL':'-'},
     index=['DR']))
  
     ## Order columns
     S_budget = S_budget[['Storm#','Storm Start','Precip (mm)',
     'UPPER tons','LOWER tons','TOTAL tons','% UPPER','% LOWER','UPPER PE %','TOTAL PE %',
-    'SSY data source']]
+    'SSY data source UPPER','SSY data source TOTAL']]
     
     ## SAVE AS htmlTABLE with R
     ## Want the table indexed by the Storm #
@@ -3823,7 +3860,7 @@ def S_budget_table(subset='pre',browser=True):
     S_budget_reindexed = S_budget_reindexed.drop('Storm#',1)
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(S_budget_reindexed)
-    caption="Event-wise suspended sediment yield (SSY<sub>EV</sub>) from subwatersheds in Faga'alu for events with simultaneous data from FG1 and FG3. Storm numbers correspond with the storms presented in Table A3.1."
+    caption="Event-wise suspended sediment yield (SSY<sub>EV</sub>) from subwatersheds in Faga'alu for events with simultaneous data from FG1 and FG3. Storm numbers correspond with the storms presented in Appendix C Table 1."
     table_num=2
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -3837,13 +3874,13 @@ def S_budget_table(subset='pre',browser=True):
     rowlabel='Storm#',\
     align='ccccccccccc', \
     caption=table_caption, \
-    cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV</sub>TOTAL','PE<sup>a</sup>','SSC'), \
-    n.cgroup = c(1,1,3,2,2,1), \
-    header= c('Start','mm','UPPER<sup>b</sup.','LOWER<sup>c</sup.','TOTAL<sup>d</sup>','UPPER','LOWER','UPPER','TOTAL','Data Source'), \
-    tfoot='a. PE is cumulative probable error (Eq 6) as a percentage of the mean observed SSY.<br> \
+    cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV_TOTAL</sub>','PE<sup>a</sup>','SSC'), \
+    n.cgroup = c(1,1,3,2,2,2), \
+    header= c('Start','mm','Upper<sup>b</sup.','Lower<sup>c</sup.','Total<sup>d</sup>','Upper','Lower','Upper','Total','Data Source Upper','Data Source Total'), \
+    tfoot='a. PE is cumulative probable error (Eq 4) as a percentage of the mean observed SSY<sub>EV</sub>.<br> \
     b. Measured SSY<sub>EV</sub> at FG1. <br> \
     c. SSY<sub>EV</sub> at FG3 &#45; SSY<sub>EV</sub> at FG1. <br> \
-    d. SSY<sub>EV</sub> at FG3.', \
+    d. Measured SSY<sub>EV</sub> at FG3.', \
     tspanner=c('',''), \
     n.tspanner = c(nrow(table_df)-3,3)\
     "
@@ -3860,7 +3897,11 @@ def S_budget_table(subset='pre',browser=True):
     ro.r("sink()")
 
     return S_budget
-S_budget = S_budget_table(subset='pre')
+#S_budget = S_budget_table(subset='pre')
+#S_budget = S_budget_table(subset='post')
+#S_budget = S_budget_table(subset='all')
+S_budget = S_budget_table(subset='sedpods')
+
 
 def S_budget_analysis_table(subset='pre', browser=True):
     ## Use the above function to process the sediment budget for storm events
@@ -3872,9 +3913,9 @@ def S_budget_analysis_table(subset='pre', browser=True):
     ## Retrieve Land cover data from Table 1
     lc_table = LandCover_table(browser=False)
     # Fraction Disturbed = % Disturbed in Land cover table
-    frac_disturbed_UPPER = lc_table.ix['UPPER (FG1)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_LOWER = lc_table.ix['LOWER (FG3)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_TOTAL = lc_table.ix['TOTAL (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_UPPER = lc_table.ix['Upper (FG1)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_LOWER = lc_table.ix['Lower (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_TOTAL = lc_table.ix['Total (FG3)']['Disturbed B+HI+DOS+GA']
     ## append Disturbed fraction %
     SSY_dist = SSY_dist.append(pd.DataFrame({' ':'Fraction of subwatershed area disturbed', 
     'UPPER':"%.1f"%frac_disturbed_UPPER, 'LOWER':"%.1f"%frac_disturbed_LOWER,'TOTAL':"%.1f"%frac_disturbed_TOTAL},
@@ -3949,7 +3990,7 @@ def S_budget_analysis_table(subset='pre', browser=True):
     ## SAVE AS htmlTABLE with R
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(SSY_dist)
-    caption = "Total Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of UPPER and LOWER subwatersheds for the storm events in Table 2."
+    caption = "Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of Upper and Lower subwatersheds for the storm events in Table 2."
     table_num=3
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -3962,11 +4003,11 @@ def S_budget_analysis_table(subset='pre', browser=True):
     table_df, \
     align='lccc', \
     caption=table_caption, \
-    header= c('UPPER<sup>a</sup>','LOWER','TOTAL'), \
+    header= c('Upper<sup>a</sup>','Lower','Total'), \
     rnames = c('Fraction of subwatershed area disturbed (%)','SSY (tons)','&nbsp;&nbsp;Forested areas','&nbsp;&nbsp;Disturbed areas','&nbsp;&nbsp;% from disturbed areas', \
     'sSSY, disturbed areas (tons/km<sup>2</sup>)','DR for sSSY from disturbed areas<sup>b</sup>'), \
-    tfoot='a. Disturbed areas in UPPER are bare areas from landslides.<br> \
-    b. Calculated as (sSSY from disturbed areas)/sSSY from UPPER ("+str(SSY_UPPER)+" tons/km<sup>2</sup>)' \
+    tfoot='a. Disturbed areas in Upper are bare areas from landslides.<br> \
+    b. Calculated as (sSSY from disturbed areas)/sSSY from Upper ("+str(SSY_UPPER)+" tons/km<sup>2</sup>)' \
     "
     ## run htmlTable
     ro.r("table_out <- htmlTable("+table_code_str+")")
@@ -4014,6 +4055,10 @@ def S_budget_2_table(subset='pre',manual_edit=True,browser=True):
         S_budget_2 = S_budget_2[S_budget_2.index<Mitigation]
     elif subset == 'post':
         S_budget_2 = S_budget_2[S_budget_2.index>Mitigation]
+    elif subset == 'all':
+        S_budget_2 = S_budget_2
+    elif subset == 'sedpods':
+        S_budget_2 = S_budget_2[(S_budget_2.index > study_start) & (S_budget_2.index < study_end)]
     
     #S_budget_2[['UPPER tons','LOWER_QUARRY tons','LOWER_VILLAGE tons','LOWER tons','TOTAL tons','% UPPER','% LOWER_QUARRY','% LOWER_VILLAGE']]
     
@@ -4078,7 +4123,7 @@ def S_budget_2_table(subset='pre',manual_edit=True,browser=True):
     S_budget_2_reindexed  = S_budget_2_reindexed .drop('Storm#',1)
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(S_budget_2_reindexed )
-    caption="Event-wise suspended sediment yield (SSYEV) from subwatersheds in Faga'alu for events with simultaneous data from FG1, FG2, and FG3. Storm numbers correspond with the storms presented in Table 2 and Appendix Table A3.1."
+    caption="Event-wise suspended sediment yield (SSY<sub>EV</sub>) from subwatersheds in Faga'alu for events with simultaneous data from FG1, FG2, and FG3. Storm numbers correspond with the storms presented in Table 2 and Appendix C Table 1."
     table_num=4
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -4092,10 +4137,10 @@ def S_budget_2_table(subset='pre',manual_edit=True,browser=True):
     rowlabel='Storm#',\
     align='cccccccccc', \
     caption=table_caption, \
-    cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV</sub>TOTAL'), \
+    cgroup = c('Storm','Precip','SSY<sub>EV</sub> tons','% of SSY<sub>EV_TOTAL</sub>'), \
     n.cgroup = c(1,1,5,4), \
-    header= c('Start','mm','UPPER<sup>a</sup.','LOWER_QUARRY<sup>b</sup.','LOWER_VILLAGE<sup>c</sup.','LOWER<sup>d</sup.','TOTAL<sup>e</sup>', \
-    'UPPER','LOWER_QUARRY','LOWER_VILLAGE','LOWER'), \
+    header= c('Start','mm','Upper<sup>a</sup.','Lower_Quarry<sup>b</sup.','Lower_Village<sup>c</sup.','Lower<sup>d</sup.','Total<sup>e</sup>', \
+    'Upper','Lower_Quarry','Lower_Village','Lower'), \
     tfoot='a. Measured SSY<sub>EV</sub> at FG1.<br> \
     b. SSY<sub>EV</sub> at FG2 &#45; SSY<sub>EV</sub> at FG1. <br> \
     c. SSY<sub>EV</sub> at FG3 &#45; SSY<sub>EV</sub> at FG2. <br> \
@@ -4118,7 +4163,9 @@ def S_budget_2_table(subset='pre',manual_edit=True,browser=True):
     return S_budget_2
     
 S_budget_2 = S_budget_2_table(subset='pre',manual_edit=False)
-
+#S_budget_2 = S_budget_2_table(subset='post')
+#S_budget_2 = S_budget_2_table(subset='all')
+S_budget_2 = S_budget_2_table(subset='sedpods',manual_edit=False)
 
 
 def S_budget_2_analysis_table(subset='pre', manual_edit=False, browser=True):
@@ -4131,11 +4178,11 @@ def S_budget_2_analysis_table(subset='pre', manual_edit=False, browser=True):
     ## Retrieve Land cover data from Table 1
     lc_table = LandCover_table(browser=False)
     # Fraction Disturbed = % Disturbed in Land cover table
-    frac_disturbed_UPPER = lc_table.ix['UPPER (FG1)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_LOWER_QUARRY = lc_table.ix['LOWER_QUARRY (FG2)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_LOWER_VILLAGE = lc_table.ix['LOWER_VILLAGE (FG3)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_LOWER = lc_table.ix['LOWER (FG3)']['Disturbed B+HI+DOS+GA']
-    frac_disturbed_TOTAL = lc_table.ix['TOTAL (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_UPPER = lc_table.ix['Upper (FG1)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_LOWER_QUARRY = lc_table.ix['Lower_Quarry (FG2)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_LOWER_VILLAGE = lc_table.ix['Lower_Village (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_LOWER = lc_table.ix['Lower (FG3)']['Disturbed B+HI+DOS+GA']
+    frac_disturbed_TOTAL = lc_table.ix['Total (FG3)']['Disturbed B+HI+DOS+GA']
     ## append Disturbed fraction %
     SSY_dist_2 = SSY_dist_2.append(pd.DataFrame({' ':'Fraction of subwatershed area disturbed', 
     'UPPER':"%.1f"%frac_disturbed_UPPER, 'TOTAL':"%.1f"%frac_disturbed_TOTAL,
@@ -4228,7 +4275,7 @@ def S_budget_2_analysis_table(subset='pre', manual_edit=False, browser=True):
     ## SAVE AS htmlTABLE with R
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(SSY_dist_2)
-    caption = "Total Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of UPPER and LOWER subwatersheds for the storm events in Table 4."
+    caption = "Suspended sediment yield (SSY), specific suspended sediment yield (sSSY), and disturbance ratio (DR) from disturbed portions of Upper, Lower_Quarry, and Lower_Village subwatersheds for the storm events in Table 4."
     table_num=5
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -4241,7 +4288,7 @@ def S_budget_2_analysis_table(subset='pre', manual_edit=False, browser=True):
     table_df, \
     align='lccc', \
     caption=table_caption, \
-    header= c('UPPER','LOWER_QUARRY','LOWER_VILLAGE','LOWER','TOTAL'), \
+    header= c('Upper','Lower_Quarry','Lower_Village','Lower','Total'), \
     rnames = c('Fraction of subwatershed area disturbed (%)','SSY (tons)','&nbsp;&nbsp;Forested areas','&nbsp;&nbsp;Disturbed areas','&nbsp;&nbsp;% from disturbed areas', \
     'sSSY, disturbed areas (tons/km<sup>2</sup>)','DR for sSSY from disturbed areas') \
     "
@@ -4259,7 +4306,6 @@ def S_budget_2_analysis_table(subset='pre', manual_edit=False, browser=True):
       
     return SSY_dist_2
 S_budget_2_analysis = S_budget_2_analysis_table(subset='pre', manual_edit=False)
-
 
 #### ANALYZE SSYEV-Storm Metric Relationships
 ##
@@ -4346,7 +4392,7 @@ def ANCOVA(ALLStorms, ind_var, pvalue=0.01):
 
 
 #### Sediment Rating Curves: on area-normalized SSY, Q and Qmax
-def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=False, save=False, filename=''):  
+def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, correct_bias=False, show=False, save=False, filename=''):  
     
     ## Normalize by area??
     if norm==True:
@@ -4378,11 +4424,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     ps.plot(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none',label='Upper')
     ps.plot(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o',label='Total')
     ## Upper Watershed (=DAM)
-    PS_upper_power = powerfunction(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], xy, ps, linestyle='-',color='grey', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
+    PS_upper_power = powerfunction(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_upper['Pstorms'], ALLStorms_upper['Supper'], xy, ps, correct_bias=correct_bias, linestyle='-',color='grey', label='Upper ' +r'$r^2$'+"%.2f"%PS_upper_power.r2)
     ## Total Watershed (=LBJ)
-    PS_total_power = powerfunction(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], xy,ps,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2+' '+PS_ANCOVA) 
+    PS_total_power = powerfunction(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_total['Pstorms'], ALLStorms_total['Stotal'], xy,ps, correct_bias=correct_bias,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%PS_total_power.r2+' '+PS_ANCOVA) 
     ## Format P vs S plot
     ps.set_xlabel('Total Event Precip (mm)'),ps.set_ylabel(ylabel)
     ps.set_xlim(10**0,10**3),ps.set_ylim(10**-4,10**2.2)
@@ -4395,11 +4441,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     ei.plot(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
     ei.plot(ALLStorms_total['EI'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)
-    EI_upper_power = powerfunction(ALLStorms_upper['EI'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], xy,ei,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
+    EI_upper_power = powerfunction(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_upper['EI'], ALLStorms_upper['Supper'], xy,ei, correct_bias=correct_bias,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%EI_upper_power.r2) 
     ## Total Watershed (=LBJ)       
-    EI_total_power = powerfunction(ALLStorms_total['EI'], ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'], xy,ei,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2+' '+EI_ANCOVA) 
+    EI_total_power = powerfunction(ALLStorms_total['EI'], ALLStorms_total['Stotal'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_total['EI'],ALLStorms_total['Stotal'], xy,ei, correct_bias=correct_bias,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%EI_total_power.r2+' '+EI_ANCOVA) 
     ## format EI vs S plot
     ei.set_xlabel('Event Erosivity Index (MJmm ha-1 h-1)')#ei.set_ylabel(ylabel)
     ei.set_xlim(10**0,10**3),ps.set_ylim(10**-4,10**2.2)
@@ -4412,11 +4458,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     qsums.plot(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
     qsums.plot(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)    
-    QsumS_upper_power = powerfunction(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], xy,qsums,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
+    QsumS_upper_power = powerfunction(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_upper['Qsumupper'], ALLStorms_upper['Supper'], xy,qsums, correct_bias=correct_bias,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QsumS_upper_power.r2)
     ## Total Watershed (=LBJ)
-    QsumS_total_power = powerfunction(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'], xy,qsums,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2+' '+QsumS_ANCOVA) 
+    QsumS_total_power = powerfunction(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_total['Qsumtotal'], ALLStorms_total['Stotal'], xy,qsums, correct_bias=correct_bias,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QsumS_total_power.r2+' '+QsumS_ANCOVA) 
     ## Format Qsum vs S plot
     qsums.set_xlabel('Total Event Discharge '+xlabelQsum)
     qsums.set_ylabel(ylabel)#qsums.set_xlabel(xlabelQsum)
@@ -4430,11 +4476,11 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     qmaxs.plot(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], color='grey',linestyle='none',marker='s',fillstyle='none')#,label='Upper')
     qmaxs.plot(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'], color='k',linestyle='none',marker='o')#,label='Total')
     ## Upper Watershed (=DAM)       
-    QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'])
-    PowerFit(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], xy,qmaxs,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
+    QmaxS_upper_power = powerfunction(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_upper['Qmaxupper'], ALLStorms_upper['Supper'], xy,qmaxs, correct_bias=correct_bias,linestyle='-',color='grey',label='Upper '+r'$r^2$'+"%.2f"%QmaxS_upper_power.r2)
     ## Total Watershed (=LBJ)
-    QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'])
-    PowerFit(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'], xy,qmaxs,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2+' '+QmaxS_ANCOVA)
+    QmaxS_total_power = powerfunction(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'], correct_bias=correct_bias)
+    PowerFit(ALLStorms_total['Qmaxtotal'], ALLStorms_total['Stotal'], xy,qmaxs, correct_bias=correct_bias,linestyle='-',color='k',label='Total '+r'$r^2$'+"%.2f"%QmaxS_total_power.r2+' '+QmaxS_ANCOVA)
     ## Format Qmax vs S plot
     qmaxs.set_xlabel('Maximum Event Discharge '+xlabelQmax)
     #qmaxs.set_ylabel(ylabel)#qmaxs.set_xlabel(xlabelQmax)
@@ -4458,37 +4504,52 @@ def plot_All_Storms_All_Models(subset='pre', ms=4, norm=False, log=False, show=F
     savefig(save,filename)
     show_plot(show,fig)
     return (PS_upper_power,PS_total_power,EI_upper_power,EI_total_power,QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power), (PS_ANCOVA, EI_ANCOVA, QsumS_ANCOVA, QmaxS_ANCOVA)
+## Plot all models and save them 
+#All_Storms_All_Models = plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=True, correct_bias=True,show=True,save=False,filename='')
 
 ## Plot all models and save them 
-All_Storms_All_Models = plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=False,show=True,save=False,filename='')
-plot_All_Storms_All_Models(subset='post',ms=4,norm=True,log=True,show=True,save=False,filename='')
+pre_Storms_All_Models = plot_All_Storms_All_Models(subset='pre',ms=4,norm=True,log=False, correct_bias=True,show=True,save=False,filename='')
 ## Models
-PS_upper_power,PS_total_power,EI_upper_power,EI_total_power, \
-    QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power = All_Storms_All_Models [0]
+PS_upper_pre,PS_total_pre,EI_upper_pre,EI_total_pre, \
+    QsumS_upper_pre, QsumS_total_pre,QmaxS_upper_pre, QmaxS_total_pre = pre_Storms_All_Models [0]
 
-def All_Models_stats_table(subset='pre', browser=True):
+
+## Plot all models and save them 
+post_Storms_All_Models = plot_All_Storms_All_Models(subset='post',ms=4,norm=True,log=False, correct_bias=True,show=True,save=False,filename='')
+## Models
+PS_upper_post,PS_total_post,EI_upper_post,EI_total_post, \
+    QsumS_upper_post, QsumS_total_post,QmaxS_upper_post, QmaxS_total_post = post_Storms_All_Models [0]
+    
+#plot_All_Storms_All_Models(subset='post',ms=4,norm=True,log=True,show=True,save=False,filename='')
+#plot_All_Storms_All_Models(subset='sedpods',ms=4,norm=True,log=True,show=True,save=False,filename='')
+
+## Models
+#PS_upper_power,PS_total_power,EI_upper_power,EI_total_power, \
+#    QsumS_upper_power, QsumS_total_power,QmaxS_upper_power, QmaxS_total_power = All_Storms_All_Models [0]
+
+def All_Models_stats_table(subset='pre', correct_bias=False, browser=True):
     ## Get Models and ANCOVAS separately
-    models = plot_All_Storms_All_Models(subset,ms=4,norm=True,log=True,show=False,filename='')[0]
+    models = plot_All_Storms_All_Models(subset,ms=4,norm=True,log=True, correct_bias=correct_bias, show=False,filename='')[0]
     ANCOVAs = models[1]
     
     ## Get model parameters
-    pearsons = ["%.2f"%rating.pearson[0] for rating in models]
+    BCFs = ["%.2f"%rating.BCF[0] for rating in models]
     spearmans = ["%.2f"%rating.spearman[0] for rating in models]
     r2s = ["%.2f"%rating.r2[0] for rating in models]
     rmses = ["%.2f"%10**rating.rmse[0] for rating in models]
     alphas= ["%.3f"%rating.a[0] for rating in models]
     betas  = ["%.2f"%rating.b[0] for rating in models]
     
-    All_Models_stats = pd.DataFrame({'Pearson':pearsons,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses,'alpha':alphas,'Beta':betas},
+    All_Models_stats = pd.DataFrame({'BCF':BCFs,'Spearman':spearmans,'r2':r2s,'RMSE(tons)':rmses,'alpha':alphas,'Beta':betas},
     index =['Psum_upper','Psum_total','EI_upper','EI_total',
     'Qsum_upper','Qsum_total','Qmax_upper','Qmax_total']).replace('nan','-')
     
-    All_Models_stats = All_Models_stats[['Pearson','Spearman','r2','RMSE(tons)','alpha','Beta']]
+    All_Models_stats = All_Models_stats[['Spearman','r2','RMSE(tons)','alpha','Beta','BCF']]
     
     ## SAVE AS htmlTABLE with R
     ## convert to R Data Frame
     table_df = com.convert_to_r_dataframe(All_Models_stats)
-    caption = "Goodness-of-fit statistics for SSY<sub>EV</sub> &#45; storm metric relationships. Pearson and Spearman correlation coefficients signifcant at p<0.01."
+    caption = "Goodness-of-fit statistics for storm metric&#45;SSY<sub>EV</sub> relationships. Spearman correlation coefficients signifcant at p<0.01."
     table_num= 6
     ## Send to R
     ro.globalenv['table_df'] = table_df
@@ -4502,7 +4563,7 @@ def All_Models_stats_table(subset='pre', browser=True):
     align='lcccccc', \
     caption=table_caption, \
     rowlabel='Model', \
-    header= c('Pearson','Spearman','r<sup>2</sup>','RMSE(tons)','Intercept(&#945;)','Slope(&#946;)')\
+    header= c('Spearman','r<sup>2</sup>','RMSE(tons)','Intercept(&#945;)','Slope(&#946;)','BCF')\
     "
     ## run htmlTable
     ro.r("table_out <- htmlTable("+table_code_str+")")
@@ -4518,17 +4579,19 @@ def All_Models_stats_table(subset='pre', browser=True):
 
     return All_Models_stats
     
-All_Models_stats = All_Models_stats_table(subset='pre', browser=True)
+#All_Models_stats = All_Models_stats_table(subset='pre', correct_bias=True, browser=True)
     
+pre_All_Models_stats = All_Models_stats_table(subset='pre', browser=True)
+post_All_Models_stats = All_Models_stats_table(subset='post', browser=True)  
 
 #### Predict Annual SSY from SSY-Qmqx model
 def predict_SSY(model, data, start, stop, watershed_area, show=False):
     ## Model parameters
-    a,b = model.iloc[0][['a','b']]
+    a,b, BCF = model.iloc[0][['a','b','BCF']]
     ## Get data between start and stop times
     data = data[(data.index > start) & (data.index < stop)]
     ## run model **AREA-NORMALIZED
-    SSY_EV_predicted = a * (( data / watershed_area) **b) ## model: ssy/km2 = a Qmax/km2 **b
+    SSY_EV_predicted = a * (( data / watershed_area) **b) * BCF ## model: ssy/km2 = a Qmax/km2 **b
     if show == True:
         ## Plot input data and SSYEV predicted (AREA NORMALIZED)
         fig, ax1 = plt.subplots(1,figsize=(5,4))
@@ -4547,27 +4610,26 @@ def predict_SSY(model, data, start, stop, watershed_area, show=False):
     
     ## output numbers
     SSY_EV_predicted = SSY_EV_predicted * watershed_area
-    SSY = SSY_EV_predicted.sum()
-    spec_SSY  = SSY/watershed_area
+
     
-    return "%.0f"%SSY, "%.0f"%spec_SSY
+    return SSY_EV_predicted
     
 ## Choose model to predict annual SSY
 ## Test
-#predict_SSY(model = QmaxS_total_power, data = Storms_LBJ['Qmax']/1000, start = start2014, stop = dt.datetime(2014,12,31), watershed_area = 1.78, show=True)
+#predict_SSY(model = QmaxS_total_pre, data = Storms_LBJ['Qmax']/1000, start = study_start, stop = Mitigation, watershed_area = 1.78, show=True)
+
 
 
 ## UPPER watershed
-SSY_Upper_Qmax_2012, sSSY_Upper_Qmax_2012 = predict_SSY(QmaxS_upper_power, Storms_DAM['Qmax']/1000, start2012, stop2012, 0.9)
-SSY_Upper_Qmax_2014, sSSY_Upper_Qmax_2014 = predict_SSY(QmaxS_upper_power, Storms_DAM['Qmax']/1000, start2014, dt.datetime(2014,12,31), 0.9)
-SSY_Upper_Psum_2014, sSSY_Upper_Psum_2014 = predict_SSY(PS_upper_power, Storms_DAM['Psum'], start2014, dt.datetime(2014,12,31), 0.9)
+#SSY_Upper_Qmax_2012, sSSY_Upper_Qmax_2012 = predict_SSY(QmaxS_upper_power, Storms_DAM['Qmax']/1000, start2012, stop2012, 0.9)
+#SSY_Upper_Qmax_2014, sSSY_Upper_Qmax_2014 = predict_SSY(QmaxS_upper_power, Storms_DAM['Qmax']/1000, start2014, dt.datetime(2014,12,31), 0.9)
+#SSY_Upper_Psum_2014, sSSY_Upper_Psum_2014 = predict_SSY(PS_upper_power, Storms_DAM['Psum'], start2014, dt.datetime(2014,12,31), 0.9)
 
 
 ## TOTAL watershed
 ## with missing Qmax data at LBJ
-SSY_Total_Qmax_2012, sSSY_Total_Qmax_2012 = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, start2012, stop2012, 1.78)
-SSY_Total_Qmax_2014, sSSY_Total_Qmax_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, start2014, dt.datetime(2014,12,31), 1.78)
-SSY_Total_Psum_2014, sSSY_Total_Psum_2014 = predict_SSY(PS_total_power, Storms_LBJ['Psum'], start2014, dt.datetime(2014,12,31), 1.78)
+#SSY_Total_Qmax_pre = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, study_start, Mitigation, 1.78)
+#SSY_Total_Qmax_post = predict_SSY(QmaxS_total_power, Storms_LBJ['Qmax']/1000, Mitigation, study_end, 1.78)
 
 
 
@@ -4595,29 +4657,64 @@ def Qmax_LBJ_DAM_regression(show=False):
 Qmax_fill = Qmax_LBJ_DAM_regression(show=False)
 
 ## Plot Qmax at LBJ Qmax predicted by the regression of Qmax at LBJ vs Qmax at DAM
-def Qmax_predicted_LBJ_vs_measured_LBJ():
+def Qmax_predicted_LBJ_vs_measured_LBJ(show=False):
     ## predict Qmax at LBJ from Qmax at DAM and the regression equation
     LBJ_Qmax_fill = Storms_DAM['Qmax'] * Qmax_fill.beta[0] + Qmax_fill.beta[1]
     Storms_LBJ_filled = pd.DataFrame({'LBJ_Q':Storms_LBJ['Qmax'],'LBJ_Q_filled':LBJ_Qmax_fill},index = LBJ_Qmax_fill.index)
     ## Plot Qmax_fill (Qmax predicted from DAM Qmax) against Qmax measured at LBJ
-    fig, ax = plt.subplots(1,1)
-    ax.plot(Storms_LBJ_filled['LBJ_Q'], Storms_LBJ_filled['LBJ_Q_filled'],ls='none',marker='o',fillstyle='none',color='k')
-    ax.set_xlabel('LBJ Qmax measured'), ax.set_ylabel('LBJ Qmax predicted')
-    ax.text(1000,8000,'Qmax_LBJ = Qmax_DAM * '+'%.2f'% Qmax_fill.beta[0]+' + '+'%.2f'% Qmax_fill.beta[1],fontsize=10)
-    ax.plot([0,14000],[0,14000],ls='--',color='k',label='1:1')
-    ax.set_xlim(0,14000), ax.set_ylim(0,14000)
-    ax.legend()
+    if show == True:
+        fig, ax = plt.subplots(1,1)
+        ax.plot(Storms_LBJ_filled['LBJ_Q'], Storms_LBJ_filled['LBJ_Q_filled'],ls='none',marker='o',fillstyle='none',color='k')
+        ax.set_xlabel('LBJ Qmax measured'), ax.set_ylabel('LBJ Qmax predicted')
+        ax.text(1000,8000,'Qmax_LBJ = Qmax_DAM * '+'%.2f'% Qmax_fill.beta[0]+' + '+'%.2f'% Qmax_fill.beta[1],fontsize=10)
+        ax.plot([0,14000],[0,14000],ls='--',color='k',label='1:1')
+        ax.set_xlim(0,14000), ax.set_ylim(0,14000)
+        ax.legend()
 
     return Storms_LBJ_filled
-Storms_LBJ_Qmax_filled = Qmax_predicted_LBJ_vs_measured_LBJ()
+Storms_LBJ_Qmax_filled = Qmax_predicted_LBJ_vs_measured_LBJ(False)
 
 ## Combined storms with measured and predicted Qmax (from Qmax DAM) 
 Storms_LBJ_Qmax_filled['LBJ_Q_combined'] =  Storms_LBJ_Qmax_filled['LBJ_Q'].where(Storms_LBJ_Qmax_filled['LBJ_Q']>0, Storms_LBJ_Qmax_filled['LBJ_Q_filled'])
+Storms_LBJ_Qmax_filled['SSY_meas'] = Storms_LBJ['Ssum']
 
-SSY_Total_Qmax_filled_2014, sSSY_Total_Qmax_filled_2014 = predict_SSY(QmaxS_total_power, Storms_LBJ_Qmax_filled['LBJ_Q_combined']/1000, start2014, dt.datetime(2014,12,31),1.78)
+## Predict SSYEV for events with Qmax, pre-mitigation
+Storms_LBJ_Qmax_filled['SSY_pred_pre'] = predict_SSY(QmaxS_total_pre, Storms_LBJ_Qmax_filled['LBJ_Q_combined']/1000, study_start, Mitigation,1.78)
+## Predict SSYEV for events with Qmax, post-mitigation
+Storms_LBJ_Qmax_filled['SSY_pred_post'] = predict_SSY(QmaxS_total_post, Storms_LBJ_Qmax_filled['LBJ_Q_combined']/1000, Mitigation, study_end,1.78)
+## Combine them
+Storms_LBJ_Qmax_filled['SSY_pred_combined'] = Storms_LBJ_Qmax_filled['SSY_pred_pre'].where(Storms_LBJ_Qmax_filled['SSY_pred_pre']>0, Storms_LBJ_Qmax_filled['SSY_pred_post'])
+## Combine measured and predicted
+Storms_LBJ_Qmax_filled['SSY_combined'] = Storms_LBJ_Qmax_filled['SSY_meas'].where(Storms_LBJ_Qmax_filled['SSY_meas']>0, Storms_LBJ_Qmax_filled['SSY_pred_combined'])
+
+SedPods_SSY = Storms_LBJ_Qmax_filled[study_start:study_end]
+SedPods_SSY.to_csv(sedpods_datadir+'SSY-measured and predicted.csv')
+SedPods_SSY_daily = SedPods_SSY.resample('D',how='sum').fillna(0)
+SedPods_SSY_daily.to_csv(sedpods_datadir+'SSY_daily-measured and predicted.csv')
 
 
-SSY_Total_Qmax_filled_SedPods = pd.DataFrame()
+def pred_and_meas_SSY():
+    fig, ax = plt.subplots(1,1)
+    
+    ## Pre-mitigation
+    SedPods_SSY = Storms_LBJ_Qmax_filled[study_start:Mitigation]
+    ax.plot(SedPods_SSY['LBJ_Q'],SedPods_SSY['SSY_meas'],ls='none',marker='o',c='k',label='SSY_meas_pre')
+    ax.plot(SedPods_SSY['LBJ_Q_combined'],SedPods_SSY['SSY_pred_pre'],ls='none',marker='o',c='grey',label='SSY_pred_pre')
+    ## Post-mitigation
+    SedPods_SSY = Storms_LBJ_Qmax_filled[Mitigation:study_end]
+    ax.plot(SedPods_SSY['LBJ_Q'],SedPods_SSY['SSY_meas'],ls='none',marker='s',c='k',label='SSY_meas_post')
+    ax.plot(SedPods_SSY['LBJ_Q_combined'],SedPods_SSY['SSY_pred_post'],ls='none',marker='s',c='grey',label='SSY_pred_post')
+    ax.legend(loc='upper left')
+    plt.show()
+    
+    return
+pred_and_meas_SSY()
+
+
+fig, ax = plt.subplots(1,1)
+SedPods_SSY_daily['SSY_combined'].plot(ls='steps')
+ax.set_ylabel('SSY tons/day')
+
 
 
 #SedPod_Storms = All_Storms[(All_Storms['start'] > study_start) & (All_Storms['end'] < study_end)]
@@ -4630,23 +4727,26 @@ SSY_Total_Qmax_filled_SedPods = pd.DataFrame()
 #    
 #    
 
-## LOWER subwatershed
-SSY_Lower_Qmax_2014 = float(SSY_Total_Qmax_filled_2014) - float(SSY_Upper_Qmax_2014)
-sSSY_Lower_Qmax_2014 = float(SSY_Lower_Qmax_2014) / 0.88
-                                                
-SSY_Lower_Psum_2014 = float(SSY_Total_Psum_2014) - float(SSY_Upper_Psum_2014)
-sSSY_Lower_Psum_2014 = float(sSSY_Lower_Qmax_2014) / 0.88
+### LOWER subwatershed
+#SSY_Lower_Qmax_2014 = float(SSY_Total_Qmax_filled_2014) - float(SSY_Upper_Qmax_2014)
+#sSSY_Lower_Qmax_2014 = float(SSY_Lower_Qmax_2014) / 0.88
+#                                                
+#SSY_Lower_Psum_2014 = float(SSY_Total_Psum_2014) - float(SSY_Upper_Psum_2014)
+#sSSY_Lower_Psum_2014 = float(sSSY_Lower_Qmax_2014) / 0.88
 
 
 ## From Qmax relationship
-no_storms_2014 = All_Storms[(All_Storms['start']>dt.datetime(2014,1,1)) & (All_Storms['start']<dt.datetime(2015,1,1))]
-lbjstorms2014 = Storms_LBJ[(Storms_LBJ.index > dt.datetime(2014,1,1)) & (Storms_LBJ.index < dt.datetime(2015,1,1))][['Ssum','Psum']].dropna()
-damstorms2014 = Storms_DAM[(Storms_DAM.index > dt.datetime(2014,1,1)) & (Storms_DAM.index < dt.datetime(2015,1,1))][['Ssum','Psum']].dropna()
+no_storms_pre_SedPods = All_Storms[(All_Storms['start']>study_start) & (All_Storms['start']<Mitigation)]
+no_storms_post_SedPods = All_Storms[(All_Storms['start']>Mitigation) & (All_Storms['start']<study_end)]
+
+lbjstorms_pre = Storms_LBJ[(Storms_LBJ.index > dt.datetime(2014,1,1)) & (Storms_LBJ.index < dt.datetime(2015,1,1))][['Ssum','Psum']].dropna()
+lbjstorms_post = Storms_LBJ[(Storms_LBJ.index > dt.datetime(2014,1,1)) & (Storms_LBJ.index < dt.datetime(2015,1,1))][['Ssum','Psum']].dropna()
+#damstorms2014 = Storms_DAM[(Storms_DAM.index > dt.datetime(2014,1,1)) & (Storms_DAM.index < dt.datetime(2015,1,1))][['Ssum','Psum']].dropna()
 
 
 ## Storm precipitation for only annual period with continuous P and Q
-P_2014_storm = "%.0f"%Storms_LBJ[(Storms_LBJ.index > start2014) & (Storms_LBJ.index < dt.datetime(2014,12,31))]['Psum'].sum()
-P_2014_perc_ann = "%.0f"%(Storms_LBJ[(Storms_LBJ.index > start2014) & (Storms_LBJ.index < dt.datetime(2014,12,31))]['Psum'].sum()/4000*100)
+#P_2014_storm = "%.0f"%Storms_LBJ[(Storms_LBJ.index > start2014) & (Storms_LBJ.index < dt.datetime(2014,12,31))]['Psum'].sum()
+#P_2014_perc_ann = "%.0f"%(Storms_LBJ[(Storms_LBJ.index > start2014) & (Storms_LBJ.index < dt.datetime(2014,12,31))]['Psum'].sum()/4000*100)
 
 def times(x,factor,round_to):
     return int(int(round(int(factor*float(x))/float(round_to)))* float(round_to))
@@ -4655,99 +4755,100 @@ def times(x,factor,round_to):
 
 ## From Table 2: S_budget for UPPER, LOWER, and TOTAL
 
-# Subwatershed area
-Area_UPPER, Area_LOWER = landcover_table.ix['UPPER (FG1)'][' km2'], landcover_table.ix['LOWER (FG3)'][' km2']
-disturbed_area_LOWER = S_budget_analysis['LOWER']['Fraction of subwatershed area disturbed']
-
-# % Contributions
-# Max/Min for UPPER and LOWER
-S_budget_percents = S_budget[S_budget['% UPPER']!='-']
-Percent_Upper_S_min, Percent_Upper_S_max =  "%0.1f"%S_budget_percents['% UPPER'].astype(float).min(), "%.0f"%S_budget_percents['% UPPER'].astype(float).max()
-Percent_Lower_S_min, Percent_Lower_S_max =  "%.0f"%S_budget_percents['% LOWER'].astype(float).min(), "%.0f"%S_budget_percents['% LOWER'].astype(float).max()
-# Average for UPPER and LOWER
-Percent_Upper_S_2 = S_budget['% UPPER']['Total/Avg']
-Percent_Lower_S_2 = S_budget['% LOWER']['Total/Avg']
-# S contributions (tons)
-SSY_UPPER_2, sSSY_UPPER_2 = S_budget['UPPER tons']['Total/Avg'], S_budget['UPPER tons']['Tons/km2'] 
-SSY_LOWER_2, sSSY_LOWER_2 = S_budget['LOWER tons']['Total/Avg'], S_budget['LOWER tons']['Tons/km2']
-SSY_TOTAL_2, sSSY_TOTAL_2 = S_budget['TOTAL tons']['Total/Avg'], S_budget['TOTAL tons']['Tons/km2']
-
-## Storms precipitation
-P_measured_2 = S_budget['Precip (mm)']['Total/Avg']
-P_measured_2_perc_storm = (float(P_measured_2)/float(P_2014_storm))*100
-## Estimate annual SSY ans sSSY
-## calculate the multiplication factor???
-table2_storm_precip_factor = (float(P_2014_storm)/float(P_measured_2))
-annual_SSY_UPPER_2 =  "%.0f"%times(SSY_UPPER_2, table2_storm_precip_factor, 1)#+"-"+"%.0f"%times(SSY_UPPER_2,3,10),
-annual_sSSY_UPPER_2 = "%.0f"%times(sSSY_UPPER_2, table2_storm_precip_factor, 1)#+"-"+"%.0f"%times(sSSY_UPPER_2,3,10)
-annual_SSY_LOWER_2 =  "%.0f"%times(SSY_LOWER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_2,3,10)
-annual_sSSY_LOWER_2 = "%.0f"%times(sSSY_LOWER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_LOWER_2,3,10)
-annual_SSY_TOTAL_2 =  "%.0f"%times(SSY_TOTAL_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_TOTAL_2,3,10)
-annual_sSSY_TOTAL_2 = "%.0f"%times(sSSY_TOTAL_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_TOTAL_2,3,10)
-
-
-
-## From Table 4: S_budget for UPPER, LOWER_QUARRY, LOWER_VILLAGE, LOWER, and TOTAL
-Area_UPPER, Area_LOWER_QUARRY, Area_LOWER_VILLAGE = landcover_table.ix['UPPER (FG1)'][' km2'], landcover_table.ix['LOWER_QUARRY (FG2)'][' km2'], landcover_table.ix['LOWER_VILLAGE (FG3)'][' km2']
-percent_disturbed_area_LOWER_QUARRY =S_budget_2_analysis['LOWER_QUARRY']['Fraction of subwatershed area disturbed']
-percent_disturbed_area_LOWER_VILLAGE = S_budget_2_analysis['LOWER_VILLAGE']['Fraction of subwatershed area disturbed']
-
-# % Contributions
-# Average for UPPER, LOWER_QUARRY, LOWER_VILLAGE, and LOWER (from Table 4)
-Percent_UPPER_S_4 = S_budget_2['% UPPER']['Total/Avg']
-Percent_QUARRY_S =  S_budget_2['% LOWER_QUARRY']['Total/Avg']
-Percent_VILLAGE_S = S_budget_2['% LOWER_VILLAGE']['Total/Avg']
-Percent_LOWER_S_4 = S_budget_2['% LOWER']['Total/Avg']
-
-
-# S contributions (tons)
-SSY_UPPER_4, sSSY_UPPER_4 = S_budget_2['UPPER tons']['Total/Avg'], S_budget_2['UPPER tons']['Tons/km2'] 
-SSY_LOWER_QUARRY, sSSY_LOWER_QUARRY = S_budget_2['LOWER_QUARRY tons']['Total/Avg'], S_budget_2['LOWER_QUARRY tons']['Tons/km2']
-SSY_LOWER_VILLAGE, sSSY_LOWER_VILLAGE = S_budget_2['LOWER_VILLAGE tons']['Total/Avg'], S_budget_2['LOWER_VILLAGE tons']['Tons/km2']
-SSY_LOWER_4, sSSY_LOWER_4 = S_budget_2['LOWER tons']['Total/Avg'], S_budget_2['LOWER tons']['Tons/km2']
-SSY_TOTAL_4, sSSY_TOTAL_4 = S_budget_2['TOTAL tons']['Total/Avg'], S_budget_2['TOTAL tons']['Tons/km2']
+## Subwatershed area
+#Area_UPPER, Area_LOWER = landcover_table.ix['Upper (FG1)'][' km2'], landcover_table.ix['Lower (FG3)'][' km2']
+#disturbed_area_LOWER = S_budget_analysis['LOWER']['Fraction of subwatershed area disturbed']
+#
+## % Contributions
+## Max/Min for UPPER and LOWER
+#S_budget_percents = S_budget[S_budget['% UPPER']!='-']
+#Percent_Upper_S_min, Percent_Upper_S_max =  "%0.1f"%S_budget_percents['% UPPER'].astype(float).min(), "%.0f"%S_budget_percents['% UPPER'].astype(float).max()
+#Percent_Lower_S_min, Percent_Lower_S_max =  "%.0f"%S_budget_percents['% LOWER'].astype(float).min(), "%.0f"%S_budget_percents['% LOWER'].astype(float).max()
+## Average for UPPER and LOWER
+#Percent_Upper_S_2 = S_budget['% UPPER']['Total/Avg']
+#Percent_Lower_S_2 = S_budget['% LOWER']['Total/Avg']
+## S contributions (tons)
+#SSY_UPPER_2, sSSY_UPPER_2 = S_budget['UPPER tons']['Total/Avg'], S_budget['UPPER tons']['Tons/km2'] 
+#SSY_LOWER_2, sSSY_LOWER_2 = S_budget['LOWER tons']['Total/Avg'], S_budget['LOWER tons']['Tons/km2']
+#SSY_TOTAL_2, sSSY_TOTAL_2 = S_budget['TOTAL tons']['Total/Avg'], S_budget['TOTAL tons']['Tons/km2']
+#
+### Storms precipitation
+#P_measured_2 = S_budget['Precip (mm)']['Total/Avg']
+#P_measured_2_perc_storm = (float(P_measured_2)/float(P_2014_storm))*100
+### Estimate annual SSY ans sSSY
+### calculate the multiplication factor???
+#table2_storm_precip_factor = (float(P_2014_storm)/float(P_measured_2))
+#annual_SSY_UPPER_2 =  "%.0f"%times(SSY_UPPER_2, table2_storm_precip_factor, 1)#+"-"+"%.0f"%times(SSY_UPPER_2,3,10),
+#annual_sSSY_UPPER_2 = "%.0f"%times(sSSY_UPPER_2, table2_storm_precip_factor, 1)#+"-"+"%.0f"%times(sSSY_UPPER_2,3,10)
+#annual_SSY_LOWER_2 =  "%.0f"%times(SSY_LOWER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_2,3,10)
+#annual_sSSY_LOWER_2 = "%.0f"%times(sSSY_LOWER_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_LOWER_2,3,10)
+#annual_SSY_TOTAL_2 =  "%.0f"%times(SSY_TOTAL_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_TOTAL_2,3,10)
+#annual_sSSY_TOTAL_2 = "%.0f"%times(sSSY_TOTAL_2, table2_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_TOTAL_2,3,10)
 
 
 
-## Storms precipitation
-P_measured_4 = S_budget_2['Precip (mm)']['Total/Avg']
-P_measured_4_perc_storm =  (float(P_measured_4)/float(P_2014_storm))*100
-## Estimate annual SSY ans sSSY
-## calculate the multiplication factor???
-table4_storm_precip_factor = (float(P_2014_storm)/float(P_measured_4))
-annual_SSY_UPPER_4 =        "%.0f"%times(SSY_UPPER_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_UPPER_3,5,10),
-annual_sSSY_UPPER_4 =       "%.0f"%times(sSSY_UPPER_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_UPPER_3,5,10)
-annual_SSY_LOWER_QUARRY_4 = "%.0f"%times(SSY_LOWER_QUARRY, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_QUARRY,5,10),
-annual_sSSY_LOWER_QUARRY_4 ="%.0f"%times(sSSY_LOWER_QUARRY, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_LOWER_QUARRY,5,10)
-annual_SSY_LOWER_VILLAGE_4 ="%.0f"%times(SSY_LOWER_VILLAGE, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_VILLAGE,5,10),
-annual_sSSY_LOWER_VILLAGE_4="%.0f"%times(sSSY_LOWER_VILLAGE, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_LOWER_VILLAGE,5,10)
-annual_SSY_LOWER_4 =        "%.0f"%times(SSY_LOWER_4, table4_storm_precip_factor, 10)
-annual_sSSY_LOWER_4 =       "%.0f"%times(sSSY_LOWER_4, table4_storm_precip_factor, 10)
-annual_SSY_TOTAL_4 =        "%.0f"%times(SSY_TOTAL_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_TOTAL_3,5,10),
-annual_sSSY_TOTAL_4 =       "%.0f"%times(sSSY_TOTAL_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_TOTAL_3,5,10)
-
-## sSSY from disturbed areas in the LOWER_QUARRY subwatershed
-sSSY_disturbed_LOWER_QUARRY_4 = "{:,}".format(float(S_budget_2_analysis['LOWER_QUARRY']['sSSY, disturbed areas (tons/km2)']))
-## Estimated annual sSSY from disturbed areas in the LOWER_QUARRY subwatershed
-annual_sSSY_disturbed_LOWER_QUARRY_4 = "{:,g}".format(times(S_budget_2_analysis['LOWER_QUARRY']['sSSY, disturbed areas (tons/km2)'], table4_storm_precip_factor, 100))
-
-
-## Annual SSY for all storms with measured SSYev at DAM and at LBJ
-
-# DAM/FG1
-P_FG1_all_storms = Storms_DAM[['Ssum','Psum']].dropna()['Psum'].sum()
-P_FG1_percent_storm = P_FG1_all_storms/float(P_2014_storm) * 100
-annual_SSY_UPPER_ALL = Storms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG1_percent_storm/100) * Storms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum())
-annual_sSSY_UPPER_ALL = annual_SSY_UPPER_ALL/0.90
-
-# LBJ/FG3
-P_FG3_all_storms = Storms_LBJ[['Ssum','Psum']].dropna()['Psum'].sum()
-P_FG3_percent_storm = P_FG3_all_storms/float(P_2014_storm) * 100
-annual_SSY_TOTAL_ALL = Storms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG3_percent_storm/100) * Storms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum())
-annual_sSSY_TOTAL_ALL = annual_SSY_TOTAL_ALL/1.78
-
-annual_SSY_LOWER_ALL =  float(annual_SSY_TOTAL_ALL) - float(annual_SSY_UPPER_ALL)
-annual_sSSY_LOWER_ALL = float(annual_SSY_LOWER_ALL) / 0.88
+### From Table 4: S_budget for UPPER, LOWER_QUARRY, LOWER_VILLAGE, LOWER, and TOTAL
+#Area_UPPER, Area_LOWER_QUARRY, Area_LOWER_VILLAGE = landcover_table.ix['Upper (FG1)'][' km2'], landcover_table.ix['Lower_Quarry (FG2)'][' km2'], landcover_table.ix['Lower_Village (FG3)'][' km2']
+#percent_disturbed_area_LOWER_QUARRY =S_budget_2_analysis['LOWER_QUARRY']['Fraction of subwatershed area disturbed']
+#percent_disturbed_area_LOWER_VILLAGE = S_budget_2_analysis['LOWER_VILLAGE']['Fraction of subwatershed area disturbed']
+#
+#
+## % Contributions
+## Average for UPPER, LOWER_QUARRY, LOWER_VILLAGE, and LOWER (from Table 4)
+#Percent_UPPER_S_4 = S_budget_2['% UPPER']['Total/Avg']
+#Percent_QUARRY_S =  S_budget_2['% LOWER_QUARRY']['Total/Avg']
+#Percent_VILLAGE_S = S_budget_2['% LOWER_VILLAGE']['Total/Avg']
+#Percent_LOWER_S_4 = S_budget_2['% LOWER']['Total/Avg']
+#
+#
+## S contributions (tons)
+#SSY_UPPER_4, sSSY_UPPER_4 = S_budget_2['UPPER tons']['Total/Avg'], S_budget_2['UPPER tons']['Tons/km2'] 
+#SSY_LOWER_QUARRY, sSSY_LOWER_QUARRY = S_budget_2['LOWER_QUARRY tons']['Total/Avg'], S_budget_2['LOWER_QUARRY tons']['Tons/km2']
+#SSY_LOWER_VILLAGE, sSSY_LOWER_VILLAGE = S_budget_2['LOWER_VILLAGE tons']['Total/Avg'], S_budget_2['LOWER_VILLAGE tons']['Tons/km2']
+#SSY_LOWER_4, sSSY_LOWER_4 = S_budget_2['LOWER tons']['Total/Avg'], S_budget_2['LOWER tons']['Tons/km2']
+#SSY_TOTAL_4, sSSY_TOTAL_4 = S_budget_2['TOTAL tons']['Total/Avg'], S_budget_2['TOTAL tons']['Tons/km2']
+#
+#
+#
+### Storms precipitation
+#P_measured_4 = S_budget_2['Precip (mm)']['Total/Avg']
+#P_measured_4_perc_storm =  (float(P_measured_4)/float(P_2014_storm))*100
+### Estimate annual SSY ans sSSY
+### calculate the multiplication factor???
+#table4_storm_precip_factor = (float(P_2014_storm)/float(P_measured_4))
+#annual_SSY_UPPER_4 =        "%.0f"%times(SSY_UPPER_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_UPPER_3,5,10),
+#annual_sSSY_UPPER_4 =       "%.0f"%times(sSSY_UPPER_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_UPPER_3,5,10)
+#annual_SSY_LOWER_QUARRY_4 = "%.0f"%times(SSY_LOWER_QUARRY, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_QUARRY,5,10),
+#annual_sSSY_LOWER_QUARRY_4 ="%.0f"%times(sSSY_LOWER_QUARRY, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_LOWER_QUARRY,5,10)
+#annual_SSY_LOWER_VILLAGE_4 ="%.0f"%times(SSY_LOWER_VILLAGE, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_LOWER_VILLAGE,5,10),
+#annual_sSSY_LOWER_VILLAGE_4="%.0f"%times(sSSY_LOWER_VILLAGE, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_LOWER_VILLAGE,5,10)
+#annual_SSY_LOWER_4 =        "%.0f"%times(SSY_LOWER_4, table4_storm_precip_factor, 10)
+#annual_sSSY_LOWER_4 =       "%.0f"%times(sSSY_LOWER_4, table4_storm_precip_factor, 10)
+#annual_SSY_TOTAL_4 =        "%.0f"%times(SSY_TOTAL_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(SSY_TOTAL_3,5,10),
+#annual_sSSY_TOTAL_4 =       "%.0f"%times(sSSY_TOTAL_4, table4_storm_precip_factor, 10)#+"-"+"%.0f"%times(sSSY_TOTAL_3,5,10)
+#
+### sSSY from disturbed areas in the LOWER_QUARRY subwatershed
+#sSSY_disturbed_LOWER_QUARRY_4 = "{:,}".format(float(S_budget_2_analysis['LOWER_QUARRY']['sSSY, disturbed areas (tons/km2)']))
+### Estimated annual sSSY from disturbed areas in the LOWER_QUARRY subwatershed
+#annual_sSSY_disturbed_LOWER_QUARRY_4 = "{:,g}".format(times(S_budget_2_analysis['LOWER_QUARRY']['sSSY, disturbed areas (tons/km2)'], table4_storm_precip_factor, 100))
+#
+#
+### Annual SSY for all storms with measured SSYev at DAM and at LBJ
+#
+## DAM/FG1
+#P_FG1_all_storms = Storms_DAM[['Ssum','Psum']].dropna()['Psum'].sum()
+#P_FG1_percent_storm = P_FG1_all_storms/float(P_2014_storm) * 100
+#annual_SSY_UPPER_ALL = Storms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG1_percent_storm/100) * Storms_DAM[['Ssum','Psum']].dropna()['Ssum'].sum())
+#annual_sSSY_UPPER_ALL = annual_SSY_UPPER_ALL/0.90
+#
+## LBJ/FG3
+#P_FG3_all_storms = Storms_LBJ[['Ssum','Psum']].dropna()['Psum'].sum()
+#P_FG3_percent_storm = P_FG3_all_storms/float(P_2014_storm) * 100
+#annual_SSY_TOTAL_ALL = Storms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum() + ((1-P_FG3_percent_storm/100) * Storms_LBJ[['Ssum','Psum']].dropna()['Ssum'].sum())
+#annual_sSSY_TOTAL_ALL = annual_SSY_TOTAL_ALL/1.78
+#
+#annual_SSY_LOWER_ALL =  float(annual_SSY_TOTAL_ALL) - float(annual_SSY_UPPER_ALL)
+#annual_sSSY_LOWER_ALL = float(annual_SSY_LOWER_ALL) / 0.88
 
 
 def est_Annual_SSY_table(subset='pre',browser=False):
@@ -4860,7 +4961,7 @@ def est_Annual_SSY_table(subset='pre',browser=False):
     ro.r("sink()")
     return est_Annual
     
-est_Annual = est_Annual_SSY_table(subset='pre', browser=True)
+#est_Annual = est_Annual_SSY_table(subset='pre', browser=True)
 
 #SSY_Qmax_TOTAL = est_Annual()[0].ix['TOTAL']['Qmax model, Events in 2014']
 #sSSY_Qmax_TOTAL = est_Annual()[1].ix['TOTAL.']['Qmax model, Events in 2014']

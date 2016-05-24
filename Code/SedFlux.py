@@ -9,6 +9,21 @@ import datetime as dt
 start_time = dt.datetime.now()
 print 'Start time: '+start_time.strftime('%H:%M:%S')
 
+#### DIRECTORIES
+git=True
+if git==True: ## Git repository
+    maindir = 'C:/Users/atm19/Documents/GitHub/Fagaalu-Sediment-Flux/' 
+    datadir=maindir+'Data/'
+    dataoutputdir = datadir+'Output/'
+    GISdir = maindir+'Data/GIS/'
+    figdir = maindir+'Figures/'
+    tabledir = maindir+'Tables/'
+    dirs={'main':maindir,'data':datadir,'GIS':GISdir,'fig':figdir}
+elif git!=True: ## Local folders
+    maindir = 'C:/Users/Alex/Desktop/'### samoa/
+    csvoutputdir = datadir+'samoa/WATERSHED_ANALYSIS/FAGAALU/MasterDataFiles/csv_output/'
+    savedir = datadir+'samoa/WATERSHED_ANALYSIS/GoodFigures/'
+    figdir = datadir+'samoa/WATERSHED_ANALYSIS/GoodFigures/rawfigoutput/'
 
 
 #### Import modules
@@ -61,23 +76,8 @@ pd.set_option('display.width', 180)
 pd.set_option('display.max_rows', 30)
 pd.set_option('display.max_columns', 13)
 
-#### DIRECTORIES
-git=True
-if git==True: ## Git repository
-    maindir = 'C:/Users/Alex/Documents/GitHub/Fagaalu-Sediment-Flux/' 
-    datadir=maindir+'Data/'
-    dataoutputdir = datadir+'Output/'
-    GISdir = maindir+'Data/GIS/'
-    figdir = maindir+'Figures/'
-    tabledir = maindir+'Tables/'
-    dirs={'main':maindir,'data':datadir,'GIS':GISdir,'fig':figdir}
-elif git!=True: ## Local folders
-    maindir = 'C:/Users/Alex/Desktop/'### samoa/
-    csvoutputdir = datadir+'samoa/WATERSHED_ANALYSIS/FAGAALU/MasterDataFiles/csv_output/'
-    savedir = datadir+'samoa/WATERSHED_ANALYSIS/GoodFigures/'
-    figdir = datadir+'samoa/WATERSHED_ANALYSIS/GoodFigures/rawfigoutput/'
 
-def show_plot(show=False,fig=figure):
+def show_plot(show=False,fig='figure'):
     if show==True:
         plt.show()
 def logaxes(log=False,fig=figure):

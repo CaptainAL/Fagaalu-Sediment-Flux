@@ -1,0 +1,1 @@
+"C:\Program Files\gs\gs9.14\bin\gswin64c.exe" -sDEVICE=pdfwrite -dNOPAUSE -dBATCH -dSAFER -sOutputFile="alltables.pdf" Fig 1 - FagaaluInstruments land only map with regional.tif
